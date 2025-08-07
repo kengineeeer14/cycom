@@ -69,7 +69,7 @@ class UartConfig {
          * 
          * @param[in] data 
          */
-        void DevUartSendString(const std::string &data);
+        void DevUartSendString(const char *data);
 
         /**
          * @brief 文字列を最大Numとしてdataに受け取り返す．
@@ -77,7 +77,7 @@ class UartConfig {
          * @param[in] Num 
          * @param[inout] data 
          */
-        void DevUartReceiveString(const UWORD Num, std::string &data);
+        void UartConfig::DevUartReceiveString(const UWORD Num, char *data);
 
         /******************************************************************************
         function:	

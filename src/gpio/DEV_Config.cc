@@ -20,20 +20,22 @@ void UartConfig::DevUartSendByte(const char &data) {
     serialPutchar(fd, data);
 }
 
-void UartConfig::DevUartSendString(const std::string &data)
+void UartConfig::DevUartSendString(const char *data)
 {
-    for (char c : data) {
-        serialPutchar(fd, c);
+    UWORD i;
+    for(i = 0; data[i] != '\0'; i++){
+        serialPutchar(fd, data[i]);
     }
+    
 }
 
-void UartConfig::DevUartReceiveString(const UWORD Num, std::string &data)
+void UartConfig::DevUartReceiveString(const UWORD Num, char *data)
 {
-    data.clear();
-    for (UWORD i = 0; i < Num - 1; ++i) {
-        data.push_back(serialGetchar(fd));
+    UWORD i;
+    for(i = 0; i < Num-1; i++){
+        data[i] = serialGetchar(fd);
     }
-    data.push_back('\0');
+    data[i] = '\0';
 }
 
 void UartConfig::DevSetBaudrate(const UDOUBLE &Baudrate) {
