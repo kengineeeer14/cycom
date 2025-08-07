@@ -76,12 +76,6 @@ UBYTE UartConfig::DevModuleInit() {
 void UartConfig::DevModuleExit() {
     serialFlush(fd);
     serialClose(fd);
-    // pinMode(DEV_FORCE, INPUT);
-    // pinMode(DEV_STANDBY, INPUT);
-
-    // スリープしないように明示的に LOW を維持
-    pinMode(DEV_FORCE, OUTPUT);
-    pinMode(DEV_STANDBY, OUTPUT);
-    DevDigitalWrite(DEV_FORCE, 0);
-    DevDigitalWrite(DEV_STANDBY, 0);
+    pinMode(DEV_FORCE, INPUT);
+    pinMode(DEV_STANDBY, INPUT);
 }
