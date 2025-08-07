@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 
     uartconfig.DevDelayMs=(100);
     uartconfig.DevSetBaudrate(9600);
-    uartconfig.DevDelayMs(100);
+    uartconfig.DevDelayMs=(100);
 
     while (true) {
         GPS = l76k.GetGNRMC();
@@ -40,6 +40,6 @@ int main(int argc, char** argv)
         // std::cout << "Baidu Coordinates: " << Baidu.Lat << ", " << Baidu.Lon << "\r\n";
     }
 
-    DevModuleExit();
+    uartconfig.DevModuleExit();
     return 0;
 }

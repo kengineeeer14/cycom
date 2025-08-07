@@ -31,7 +31,7 @@ void L76X::SendCommand(const std::string& data) {
 }
 
 GNRMC L76X::GetGNRMC() {
-    uartconfig_.DevUartReceiveString(buffer_, BUFFSIZE);
+    uartconfig_.DevUartReceiveString(BUFFSIZE, buffer_);
     std::cout << buffer_ << "\r\n";
 
     gps_ = {};
