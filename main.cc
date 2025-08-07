@@ -1,6 +1,6 @@
 #include <iostream>
 #include <csignal>
-#include "DEV_Config.h"
+#include "gpio/DEV_Config.h"
 #include "L76X.h"
 
 void Handler(int signo)
