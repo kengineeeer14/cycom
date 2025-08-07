@@ -22,16 +22,16 @@ void L76X::SendCommand(const std::string& data) {
         '\0'
     };
 
-    DevUartSendString(data.c_str());
-    DevUartSendByte('*');
-    DevUartSendString(checksum);
-    DevUartSendByte('\r');
-    DevUartSendByte('\n');
-    DevDelayMs(200);
+    uartconfig_.DevUartSendString(data.c_str());
+    uartconfig_.DevUartSendByte('*');
+    uartconfig_.DevUartSendString(checksum);
+    uartconfig_.DevUartSendByte('\r');
+    uartconfig_.DevUartSendByte('\n');
+    uartconfig_.DevDelayMs(200);
 }
 
 GNRMC L76X::GetGNRMC() {
-    DevUartReceiveString(buffer_, BUFFSIZE);
+    uartconfig_.DevUartReceiveString(buffer_, BUFFSIZE);
     std::cout << buffer_ << "\r\n";
 
     gps_ = {};

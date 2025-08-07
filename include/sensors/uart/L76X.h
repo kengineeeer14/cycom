@@ -56,6 +56,7 @@ public:
 private:
     char buffer_[BUFFSIZE] = {0};
     GNRMC gps_;
+    UartConfig uartconfig_;
 
     /**
      * @brief WGS-84(GPSが使うグローバルな座標系)からGCJ-02(中国政府が定めた火星座標)に
