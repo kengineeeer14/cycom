@@ -79,10 +79,9 @@ void UartConfig::DevModuleExit() {
     // pinMode(DEV_FORCE, INPUT);
     // pinMode(DEV_STANDBY, INPUT);
 
-    // STANDBYピンを明示的にLOWにする（スリープしない）
+    // スリープしないように明示的に LOW を維持
+    pinMode(DEV_FORCE, OUTPUT);
     pinMode(DEV_STANDBY, OUTPUT);
-    digitalWrite(DEV_STANDBY, LOW);
-
-    // FORCEピンはINPUTにしておく
-    pinMode(DEV_FORCE, INPUT);
+    DevDigitalWrite(DEV_FORCE, 0);
+    DevDigitalWrite(DEV_STANDBY, 0);
 }
