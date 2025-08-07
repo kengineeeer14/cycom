@@ -6,7 +6,7 @@
 void Handler(int signo)
 {
     std::cout << "\r\nHandler: Program stop\r\n";
-    DevModuleExit();
+    uartconfig.DevModuleExit();
     std::exit(0);
 }
 
@@ -23,9 +23,9 @@ int main(int argc, char** argv)
     // 割り込み処理：Ctrl+Cが送られると，Handler関数が呼び出され，終了処理される．
     std::signal(SIGINT, Handler);
 
-    uartconfig.DevDelayMs=(100);
+    uartconfig.DevDelayMs(100);
     uartconfig.DevSetBaudrate(9600);
-    uartconfig.DevDelayMs=(100);
+    uartconfig.DevDelayMs(100);
 
     while (true) {
         GPS = l76k.GetGNRMC();

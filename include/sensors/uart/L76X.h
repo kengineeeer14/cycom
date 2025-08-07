@@ -54,7 +54,7 @@ public:
     Coordinates GetGoogleCoordinates();
 
 private:
-    char buffer_[BUFFSIZE] = {0};
+    std::string buffer_[BUFFSIZE] = {0};
     GNRMC gps_;
     UartConfig uartconfig_;
 
