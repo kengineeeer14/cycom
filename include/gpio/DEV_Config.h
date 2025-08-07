@@ -118,7 +118,7 @@ class UartConfig {
         void DevModuleExit();
     
     private:
-        static int fd{-1};
+        int fd{-1};
         const std::string uart_port{"/dev/ttyS0"};
         
 

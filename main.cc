@@ -1,7 +1,7 @@
 #include <iostream>
 #include <csignal>
 #include "gpio/DEV_Config.h"
-#include "L76X.h"
+#include "sensors/uart/L76X.h
 
 void Handler(int signo)
 {

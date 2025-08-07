@@ -38,7 +38,7 @@ void UartConfig::DevUartReceiveString(const UWORD Num, std::string &data)
 
 void UartConfig::DevSetBaudrate(const UDOUBLE &Baudrate) {
     serialClose(fd);
-    fd = serialOpen(uart_port, Baudrate);
+    fd = serialOpen(uart_port.c_str(), Baudrate);
     if (fd < 0) {
         std::cerr << "set uart failed !!!" << std::endl;
     } else {
@@ -58,7 +58,7 @@ UBYTE UartConfig::DevModuleInit() {
         std::cout << "set wiringPi lib success !!!" << std::endl;
     }
 
-    fd = serialOpen(uart_port, 9600);
+    fd = serialOpen(uart_port.c_str(), Baudrate);
     if (fd < 0) {
         return 1;
     } else {
