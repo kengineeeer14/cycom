@@ -58,7 +58,7 @@ UBYTE UartConfig::DevModuleInit() {
         std::cout << "set wiringPi lib success !!!" << std::endl;
     }
 
-    fd = serialOpen(uart_port.c_str(), Baudrate);
+    fd = serialOpen(uart_port.c_str(), 9600);   // TODO: マジックナンバーの使用を避ける．
     if (fd < 0) {
         return 1;
     } else {

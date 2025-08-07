@@ -1,7 +1,7 @@
 #include <iostream>
 #include <csignal>
 #include "gpio/DEV_Config.h"
-#include "sensors/uart/L76X.h
+#include "sensors/uart/L76X.h"
 
 void Handler(int signo)
 {
@@ -12,20 +12,23 @@ void Handler(int signo)
 
 int main(int argc, char** argv)
 {
+    UartConfig uartconfig;
+    L76X l76k;
+
     GNRMC GPS;
     Coordinates Baidu;
 
-    if (DevModuleInit() == 1) return 1;
+    if (uartconfig.DevModuleInit() == 1) return 1;
 
     // 割り込み処理：Ctrl+Cが送られると，Handler関数が呼び出され，終了処理される．
     std::signal(SIGINT, Handler);
 
-    DEV_Delay_ms(100);
-    DevSetBaudrate(9600);
-    DEV_Delay_ms(100);
+    uartconfig.DevDelayMs=(100);
+    uartconfig.DevSetBaudrate(9600);
+    uartconfig.DevDelayMs(100);
 
     while (true) {
-        GPS = L76X_Gat_GNRMC();
+        GPS = l76k.GetGNRMC();
         std::cout << "\r\n";
         std::cout << "Time: " << static_cast<int>(GPS.Time_H) << ":"
                   << static_cast<int>(GPS.Time_M) << ":"
