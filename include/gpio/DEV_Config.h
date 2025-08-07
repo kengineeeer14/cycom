@@ -77,7 +77,7 @@ class UartConfig {
          * @param[in] Num 
          * @param[inout] data 
          */
-        void UartConfig::DevUartReceiveString(const UWORD Num, char *data);
+        void DevUartReceiveString(const UWORD Num, char *data);
 
         /******************************************************************************
         function:	

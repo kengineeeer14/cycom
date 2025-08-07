@@ -3,6 +3,9 @@
 #include "gpio/DEV_Config.h"
 #include "sensors/uart/L76X.h"
 
+UartConfig uartconfig;
+L76X l76k;
+
 void Handler(int signo)
 {
     std::cout << "\r\nHandler: Program stop\r\n";
@@ -12,8 +15,6 @@ void Handler(int signo)
 
 int main(int argc, char** argv)
 {
-    UartConfig uartconfig;
-    L76X l76k;
 
     GNRMC GPS;
     Coordinates Baidu;
