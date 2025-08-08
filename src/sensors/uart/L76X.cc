@@ -40,7 +40,7 @@ GNRMC L76X::Test(){
     gps_.Time_M = 6;
     gps_.Time_S = 7;
     gps_.Status = 8;
-    return gps_
+    return gps_;
 }
 
 GNRMC L76X::GetGNRMC() {
