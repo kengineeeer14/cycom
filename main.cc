@@ -35,7 +35,7 @@ int main(int argc, char** argv)
         std::cout << "Lat: " << GPS.Lat << "\n";
         std::cout << "Lon_area: " << GPS.Lon_area << "\n";
         std::cout << "Lat_area: " << GPS.Lat_area << "\n";
-        std::cout << "Time_H: " << GPS.Time_Hon << "\n";
+        std::cout << "Time_H: " << GPS.Time_H << "\n";
         std::cout << "Time_M: " << GPS.Time_M << "\n";
         std::cout << "Time_S: " << GPS.Time_S << "\n";
         std::cout << "Status: " << GPS.Status << "\n";
