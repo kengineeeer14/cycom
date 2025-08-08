@@ -33,12 +33,12 @@ int main(int argc, char** argv)
         std::cout << "\r\n";
         std::cout << "Lon: " << GPS.Lon << "\n";
         std::cout << "Lat: " << GPS.Lat << "\n";
-        std::cout << "Lon_area: " << GPS.Lon_area << "\n";
-        std::cout << "Lat_area: " << GPS.Lat_area << "\n";
-        std::cout << "Time_H: " << GPS.Time_H << "\n";
-        std::cout << "Time_M: " << GPS.Time_M << "\n";
-        std::cout << "Time_S: " << GPS.Time_S << "\n";
-        std::cout << "Status: " << GPS.Status << "\n";
+        std::cout << "Lon_area: " << static_cast<char>(GPS.Lon_area) << "\n";
+        std::cout << "Lat_area: " << static_cast<char>(GPS.Lat_area) << "\n";
+        std::cout << "Time_H: " << static_cast<int>(GPS.Time_H) << "\n";
+        std::cout << "Time_M: " << static_cast<int>(GPS.Time_M) << "\n";
+        std::cout << "Time_S: " << static_cast<int>(GPS.Time_S) << "\n";
+        std::cout << "Status: " << static_cast<int>(GPS.Status) << "\n";
 
 
         // GPS = l76k.GetGNRMC();
