@@ -30,6 +30,18 @@ void L76X::SendCommand(const std::string& data) {
     uartconfig_.DevDelayMs(200);
 }
 
+GNRMC L76X::Test(){
+    gps_ = {};
+    gps_.Lon = 1.0;
+    gps_.Lat = 2.0;
+    gps_.Lon_area = 3;
+    gps_.Lat_area = 4;
+    gps_.Time_H = 5;
+    gps_.Time_M = 6;
+    gps_.Time_S = 7;
+    gps_.Status = 8;
+}
+
 GNRMC L76X::GetGNRMC() {
     uartconfig_.DevUartReceiveString(BUFFSIZE, buffer_);
     std::cout << buffer_ << "\r\n";
