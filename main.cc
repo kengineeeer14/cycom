@@ -68,69 +68,69 @@ int setup_uart(const char *port) {
     return fd;
 }
 
-// int main() {
-//     if (!setup_gpio()) {
-//         return 1;
-//     }
-
-//     int fd = setup_uart(UART_PORT);
-//     if (fd < 0) {
-//         return 1;
-//     }
-
-    
-//     char buf[256];
-//     while (true) {
-//         std::cout << "Waiting for data...\n";
-//         int n = read(fd, buf, sizeof(buf) - 1);
-//         if (n > 0) {
-//             buf[n] = '\0';
-//             std::cout << "Received: " << buf << std::endl;
-//         } else if (n == 0) {
-//             std::cout << "No data received\n";
-//         } else {
-//             std::cerr << "Read error\n";
-//         }
-//         usleep(500000);  // 0.5秒待つ
-//     }
-
-//     close(fd);
-//     return 0;
-// }
-
 int main() {
-    std::string uart_port = "/dev/ttyS0";
-    int fd = open(uart_port.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
-    if (fd < 0) {
-        std::cerr << "Failed to open " << uart_port << "\n";
+    if (!setup_gpio()) {
         return 1;
     }
 
-    termios tty{};
-    tcgetattr(fd, &tty);
-    cfsetospeed(&tty, B9600);
-    cfsetispeed(&tty, B9600);
-    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
-    tty.c_cflag |= (CLOCAL | CREAD);
-    tty.c_cflag &= ~(PARENB | PARODD);
-    tty.c_cflag &= ~CSTOPB;
-    tty.c_cflag &= ~CRTSCTS;
-    tty.c_iflag = 0;
-    tty.c_oflag = 0;
-    tty.c_lflag = 0;
-    tty.c_cc[VMIN] = 0;
-    tty.c_cc[VTIME] = 5;
-    tcsetattr(fd, TCSANOW, &tty);
+    int fd = setup_uart(UART_PORT);
+    if (fd < 0) {
+        return 1;
+    }
 
+    
     char buf[256];
     while (true) {
+        std::cout << "Waiting for data...\n";
         int n = read(fd, buf, sizeof(buf) - 1);
         if (n > 0) {
             buf[n] = '\0';
-            std::cout << buf;
+            std::cout << "Received: " << buf << std::endl;
+        } else if (n == 0) {
+            std::cout << "No data received\n";
+        } else {
+            std::cerr << "Read error\n";
         }
+        usleep(500000);  // 0.5秒待つ
     }
 
     close(fd);
     return 0;
 }
+
+// int main() {
+//     std::string uart_port = "/dev/ttyS0";
+//     int fd = open(uart_port.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+//     if (fd < 0) {
+//         std::cerr << "Failed to open " << uart_port << "\n";
+//         return 1;
+//     }
+
+//     termios tty{};
+//     tcgetattr(fd, &tty);
+//     cfsetospeed(&tty, B9600);
+//     cfsetispeed(&tty, B9600);
+//     tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
+//     tty.c_cflag |= (CLOCAL | CREAD);
+//     tty.c_cflag &= ~(PARENB | PARODD);
+//     tty.c_cflag &= ~CSTOPB;
+//     tty.c_cflag &= ~CRTSCTS;
+//     tty.c_iflag = 0;
+//     tty.c_oflag = 0;
+//     tty.c_lflag = 0;
+//     tty.c_cc[VMIN] = 0;
+//     tty.c_cc[VTIME] = 5;
+//     tcsetattr(fd, TCSANOW, &tty);
+
+//     char buf[256];
+//     while (true) {
+//         int n = read(fd, buf, sizeof(buf) - 1);
+//         if (n > 0) {
+//             buf[n] = '\0';
+//             std::cout << buf;
+//         }
+//     }
+
+//     close(fd);
+//     return 0;
+// }
