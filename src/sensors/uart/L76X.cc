@@ -31,7 +31,6 @@ void L76X::SendCommand(const std::string& data) {
 }
 
 char* L76X::Test(){
-    memset(buffer_, 0, BUFFSIZE);
     uartconfig_.DevUartReceiveString(BUFFSIZE, buffer_);
     return buffer_;
 }
