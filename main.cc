@@ -44,7 +44,7 @@ bool setup_gpio() {
 }
 
 int setup_uart(const char *port) {
-    int fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(port, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd == -1) {
         std::cerr << "Failed to open UART\n";
         return -1;
