@@ -53,12 +53,12 @@ void UartConfig::DevSetGpioMode(const UWORD &pin, const UWORD &mode) {
 }
 
 UBYTE UartConfig::DevModuleInit() {
-    // if (wiringPiSetupGpio() < 0) {
-    //     std::cerr << "set wiringPi lib failed !!!" << std::endl;
-    //     return 1;
-    // } else {
-    //     std::cout << "set wiringPi lib success !!!" << std::endl;
-    // }
+    if (wiringPiSetupGpio() < 0) {
+        std::cerr << "set wiringPi lib failed !!!" << std::endl;
+        return 1;
+    } else {
+        std::cout << "set wiringPi lib success !!!" << std::endl;
+    }
 
     // fd = serialOpen(uart_port.c_str(), 9600);   // TODO: マジックナンバーの使用を避ける．
     // if (fd < 0) {
