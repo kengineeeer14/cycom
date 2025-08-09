@@ -40,7 +40,7 @@ void UartConfig::DevUartReceiveString(const UWORD Num, char *data)
 
 void UartConfig::DevSetBaudrate(const UDOUBLE &Baudrate) {
     serialClose(fd);
-    fd = serialOpen(uart_port.c_str(), Baudrate);
+    fd = serialOpen(uart_port, Baudrate);
     if (fd < 0) {
         std::cerr << "set uart failed !!!" << std::endl;
     } else {
