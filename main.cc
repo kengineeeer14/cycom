@@ -28,20 +28,13 @@ bool setup_gpio() {
         return false;
     }
 
-    // FORCE_ONをHIGH、STANDBYをLOWでGPS起動
-    if (gpiod_line_request_output(force_line, "gps_control", 1) < 0 ||
-        gpiod_line_request_output(standby_line, "gps_control", 0) < 0) {
-        if (gpiod_line_request_output(force_line, "gps_control_force", 1) < 0) {
-            std::cerr << "Failed to request FORCE_ON GPIO output\n";
-            gpiod_chip_close(chip);
-            return false;
-        }
-        if (gpiod_line_request_output(standby_line, "gps_control_standby", 0) < 0) {
-            std::cerr << "Failed to request STANDBY GPIO output\n";
-            gpiod_chip_close(chip);
-            return false;
-        }
-        std::cerr << "Failed to request GPIO output\n";
+    if (gpiod_line_request_output(force_line, "gps_control_force", 1) < 0) {
+        std::cerr << "Failed to request FORCE_ON GPIO output\n";
+        gpiod_chip_close(chip);
+        return false;
+    }
+    if (gpiod_line_request_output(standby_line, "gps_control_standby", 0) < 0) {
+        std::cerr << "Failed to request STANDBY GPIO output\n";
         gpiod_chip_close(chip);
         return false;
     }
