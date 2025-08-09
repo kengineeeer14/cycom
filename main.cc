@@ -14,6 +14,7 @@ void Handler(int signo)
 }
 
 int main() {
+    if (uartconfig.DevModuleInit() == 1) return 1;
     std::signal(SIGINT, Handler);
 
     int fd = serialOpen("/dev/ttyS0", 9600);
