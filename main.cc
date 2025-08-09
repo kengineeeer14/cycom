@@ -78,13 +78,20 @@ int main() {
         return 1;
     }
 
+    
     char buf[256];
     while (true) {
+        std::cout << "Waiting for data...\n";
         int n = read(fd, buf, sizeof(buf) - 1);
         if (n > 0) {
             buf[n] = '\0';
-            std::cout << buf; // NMEA文をそのまま出力
+            std::cout << "Received: " << buf << std::endl;
+        } else if (n == 0) {
+            std::cout << "No data received\n";
+        } else {
+            std::cerr << "Read error\n";
         }
+        usleep(500000);  // 0.5秒待つ
     }
 
     close(fd);
