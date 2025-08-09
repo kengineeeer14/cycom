@@ -23,7 +23,7 @@ int main() {
 
     // int fd = serialOpen("/dev/ttyS0", 9600);
     std::string uart_port = "/dev/ttyS0";
-    int fd = serialOpen(uart_port, 9600);
+    int fd = serialOpen(uart_port.c_str(), 9600);
 
     while (true) {
         if (serialDataAvail(fd)) {  // データがあるかチェック
