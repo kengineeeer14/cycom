@@ -67,9 +67,9 @@ UBYTE UartConfig::DevModuleInit() {
         std::cout << "set uart success !!!" << std::endl;
     }
 
-    pinMode(DEV_FORCE, INPUT);
-    pinMode(DEV_STANDBY, OUTPUT);
-    DevDigitalWrite(DEV_STANDBY, 0);
+    // pinMode(DEV_FORCE, INPUT);
+    // pinMode(DEV_STANDBY, OUTPUT);
+    // DevDigitalWrite(DEV_STANDBY, 0);
     return 0;
 }
 
