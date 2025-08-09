@@ -3,6 +3,9 @@
 #include "gpio/DEV_Config.h"
 #include "sensors/uart/L76X.h"
 
+#include <wiringPi.h>
+#include <wiringSerial.h>
+
 UartConfig uartconfig;
 L76X l76k;
 
@@ -14,17 +17,24 @@ void Handler(int signo)
 }
 
 int main() {
-    std::string uart_port{"/dev/ttyS0"};
-    int fd = serialOpen(uart_port.c_str(), 9600);
+    if (wiringPiSetup() == -1) {
+        std::cerr << "wiringPi setup failed\n";
+        return 1;
+    }
+
+    int fd = serialOpen("/dev/ttyS0", 9600);
     if (fd < 0) {
         std::cerr << "Unable to open serial device\n";
         return 1;
     }
 
     while (true) {
-        char c = serialGetchar(fd);
-        std::cout << c;
+        if (serialDataAvail(fd)) {  // データがあるかチェック
+            char c = serialGetchar(fd);
+            std::cout << c << std::flush;
+        }
     }
+
     serialClose(fd);
     return 0;
 }
