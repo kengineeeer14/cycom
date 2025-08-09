@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
-#include "sensers/uart/L76X.h"
+#include "sensors/uart/L76X.h"
 
 // int main() {
 //     std::string uart_port = "/dev/ttyS0";
