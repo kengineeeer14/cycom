@@ -21,7 +21,7 @@ int main() {
     // uartconfig.DevSetBaudrate(9600);
     // uartconfig.DevDelayMs(100);
 
-    int fd = serialOpen("/dev/ttyS0", 9600);
+    // int fd = serialOpen("/dev/ttyS0", 9600);
 
     while (true) {
         if (serialDataAvail(fd)) {  // データがあるかチェック

@@ -53,7 +53,7 @@ void UartConfig::DevSetGpioMode(const UWORD &pin, const UWORD &mode) {
 }
 
 UBYTE UartConfig::DevModuleInit() {
-    // fd = serialOpen(uart_port.c_str(), 9600);   // TODO: マジックナンバーの使用を避ける．
+    fd = serialOpen(uart_port.c_str(), 9600);   // TODO: マジックナンバーの使用を避ける．
     // if (fd < 0) {
     //     return 1;
     // } else {
