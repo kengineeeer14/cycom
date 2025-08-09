@@ -28,14 +28,13 @@ bool setup_gpio() {
         return false;
     }
 
-    if (gpiod_line_request_output(standby_line, "gps_control_standby", 0) < 0) {
-        std::cerr << "Failed to request STANDBY GPIO output\n";
+    if (!force_line) {
+        std::cerr << "force_line is nullptr\n";
         gpiod_chip_close(chip);
         return false;
     }
-
-    if (gpiod_line_request_output(force_line, "gps_control_force", 1) < 0) {
-        std::cerr << "Failed to request FORCE_ON GPIO output\n";
+    if (!standby_line) {
+        std::cerr << "standby_line is nullptr\n";
         gpiod_chip_close(chip);
         return false;
     }
