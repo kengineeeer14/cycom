@@ -16,6 +16,8 @@ void Handler(int signo)
 int main() {
     std::signal(SIGINT, Handler);
 
+    int fd = serialOpen("/dev/ttyS0", 9600);
+
     while (true) {
         if (serialDataAvail(fd)) {  // データがあるかチェック
             char c = serialGetchar(fd);
