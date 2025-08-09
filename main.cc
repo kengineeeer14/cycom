@@ -14,7 +14,7 @@ void Handler(int signo)
 }
 
 int main() {
-    int fd = serialOpen("/dev/serial0", 9600);
+    int fd = serialOpen("/dev/ttyS0", 9600);
     if (fd < 0) {
         std::cerr << "Unable to open serial device\n";
         return 1;
