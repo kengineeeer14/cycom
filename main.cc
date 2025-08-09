@@ -21,10 +21,8 @@ int main() {
     }
 
     while (true) {
-        if (serialDataAvail(fd)) {
-            char c = serialGetchar(fd);
-            std::cout << c;
-        }
+        char c = serialGetchar(fd);
+        std::cout << c;
     }
     serialClose(fd);
     return 0;
