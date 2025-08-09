@@ -17,9 +17,9 @@ int main() {
     if (uartconfig.DevModuleInit() == 1) return 1;
     std::signal(SIGINT, Handler);
 
-    // uartconfig.DevDelayMs(100);
-    // uartconfig.DevSetBaudrate(9600);
-    // uartconfig.DevDelayMs(100);
+    uartconfig.DevDelayMs(100);
+    uartconfig.DevSetBaudrate(9600);
+    uartconfig.DevDelayMs(100);
 
     // int fd = serialOpen("/dev/ttyS0", 9600);
     std::string uart_port ="/dev/ttyS0";
