@@ -3,7 +3,17 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include <csignal>
 #include "sensors/uart/L76X.h"
+
+UartConfig uartconfig;
+L76X l76k;
+
+void Handler(int signo) {
+    uartconfig.DevModuleExit();
+    std::cout << "\nProgram terminated.\n";
+    std::exit(0);
+}
 
 // int main() {
 //     std::string uart_port = "/dev/ttyS0";
