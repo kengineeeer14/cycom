@@ -1,0 +1,4 @@
+#ifndef GPIO_SETTING_H
+#define GPIO_SETTING_H
+
+#endif // GPIO_SETTING_H
