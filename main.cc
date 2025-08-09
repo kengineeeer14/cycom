@@ -30,16 +30,11 @@ int main(int argc, char** argv)
     uartconfig.DevDelayMs(100);
 
     while (true) {
-        buffer = l76k.Test();
-        std::cout << "\r\n";
-        // std::cout << "Lon: " << GPS.Lon << "\n";
-        // std::cout << "Lat: " << GPS.Lat << "\n";
-        std::cout << buffer << "\n";
-        // std::cout << "Lat_area: " << static_cast<int>(GPS.Lat_area) << "\n";
-        // std::cout << "Time_H: " << static_cast<int>(GPS.Time_H) << "\n";
-        // std::cout << "Time_M: " << static_cast<int>(GPS.Time_M) << "\n";
-        // std::cout << "Time_S: " << static_cast<int>(GPS.Time_S) << "\n";
-        // std::cout << "Status: " << static_cast<int>(GPS.Status) << "\n";
+    char* buf = l76k.Test();
+    for (int i = 0; i < 32; ++i) {  // 受信バッファの一部を16進数表示
+        printf("%02X ", (unsigned char)buf[i]);
+    }
+    printf("\n");
 
 
         // GPS = l76k.GetGNRMC();
