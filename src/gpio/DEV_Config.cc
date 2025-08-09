@@ -55,14 +55,14 @@ void UartConfig::DevSetGpioMode(const UWORD &pin, const UWORD &mode) {
 UBYTE UartConfig::DevModuleInit() {
     // fd = serialOpen(uart_port.c_str(), 9600);   // TODO: マジックナンバーの使用を避ける．
     // if (fd < 0) {
-    //     return 1;
+    //     return 1;s
     // } else {
     //     std::cout << "set uart success !!!" << std::endl;
     // }
 
-    // pinMode(DEV_FORCE, INPUT);
-    // pinMode(DEV_STANDBY, OUTPUT);
-    // DevDigitalWrite(DEV_STANDBY, 0);
+    pinMode(DEV_FORCE, INPUT);
+    pinMode(DEV_STANDBY, OUTPUT);
+    DevDigitalWrite(DEV_STANDBY, 0);
     return 0;
 }
 
