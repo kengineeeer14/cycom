@@ -20,5 +20,5 @@ set(SOURCES
 # 実行ファイルを作成
 add_executable(cycom ${SOURCES})
 
-# wiringPi ライブラリをリンク
-target_link_libraries(cycom wiringPi)
+# libgpiod ライブラリをリンク
+target_link_libraries(cycom gpiod)

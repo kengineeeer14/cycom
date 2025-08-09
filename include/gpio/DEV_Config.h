@@ -1,11 +1,16 @@
 #ifndef DEV_CONFIG_H
 #define DEV_CONFIG_H
 
-#include <termio.h>
+#include <gpiod.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#include <cstring>
 #include <iostream>
-#include <wiringPi.h>
-#include <wiringSerial.h>
+#include <chrono>
+#include <thread>
 #include <cstdint>
+#include <string>
 
 using UBYTE = uint8_t;
 using UWORD = uint16_t;
@@ -16,8 +21,8 @@ class UartConfig {
         /**
          * GPIO config
          */
-        static constexpr int DEV_FORCE = 15;
-        static constexpr int DEV_STANDBY = 14;
+        static constexpr unsigned int DEV_FORCE = 15;
+        static constexpr unsigned int DEV_STANDBY = 14;
 
         /**
          * GPIO read and write
@@ -28,7 +33,7 @@ class UartConfig {
          * @param pin 
          * @param value 
          */
-        void DevDigitalWrite(const int &pin, const int &value);
+        void DevDigitalWrite(const unsigned int &pin, const int &value);
 
         /**
          * @brief 指定されたGPIOピンの値を読み取り，ピンにかかっている論理レベルに応じて，HIGH(1)またはLOW(0)のいずれかが返される．
@@ -36,7 +41,7 @@ class UartConfig {
          * @param pin 
          * @return int 
          */
-        int DevDigitalRead(const int &pin);
+        int DevDigitalRead(const unsigned int &pin));
 
         /**
          * @brief 指定したミリ秒数だけ待機する．
@@ -90,14 +95,6 @@ class UartConfig {
          */
         void DevSetBaudrate(const UDOUBLE &Baudrate);
 
-        /**
-         * @brief 指定したGPIOピンの入出力モードを設定する．1ならINPUT，それ以外はOUTPUT．
-         * 
-         * @param[in] pin 
-         * @param[in] mode 
-         */
-        void DevSetGpioMode(const UWORD &pin, const UWORD &mode);
-
         /******************************************************************************
         function:	
             Module initialization, BCM2835 library and initialization pins,
@@ -120,6 +117,10 @@ class UartConfig {
     private:
         int fd{-1};
         const std::string uart_port{"/dev/ttyS0"};
+        // libgpiod用のGPIO chipハンドル
+        void* chip_{nullptr};  // 実装でgpiod_chip*
+        void* line_force_{nullptr};  // 実装でgpiod_line*
+        void* line_standby_{nullptr};
         
 
 };
