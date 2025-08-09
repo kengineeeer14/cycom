@@ -77,8 +77,8 @@ int main(int argc, char** argv)
         std::cout << "Latitude and longitude: " << GPS.Lat << " " << GPS.Lat_area << " "
                   << GPS.Lon << " " << GPS.Lon_area << "\r\n";
 
-        Baidu = L76X_Baidu_Coordinates();
-        std::cout << "Baidu Coordinates: " << Baidu.Lat << ", " << Baidu.Lon << "\r\n";
+        // Baidu = l76k.L76X_Baidu_Coordinates();
+        // std::cout << "Baidu Coordinates: " << Baidu.Lat << ", " << Baidu.Lon << "\r\n";
     }
 
     uartconfig.DevModuleExit();
