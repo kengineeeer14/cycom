@@ -32,6 +32,13 @@ void L76X::SendCommand(const std::string& data) {
 
 char* L76X::Test(){
     uartconfig_.DevUartReceiveString(BUFFSIZE, buffer_);
+    // DevUartReceiveStringが返すのが受信長さなら、それを使って終端文字を入れるのが理想
+    int len = uartconfig_.DevUartReceiveString(BUFFSIZE, buffer_);
+    if (len > 0 && len < BUFFSIZE) {
+        buffer_[len] = '\0';  // これを入れて文字列終端にする
+    } else {
+        buffer_[0] = '\0'; // 受信失敗なら空文字にする
+    }
     return buffer_;
 }
 
