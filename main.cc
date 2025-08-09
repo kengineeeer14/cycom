@@ -1,38 +1,43 @@
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
 #include <iostream>
-#include <csignal>
-#include "gpio/DEV_Config.h"
-#include "sensors/uart/L76X.h"
-
-UartConfig uartconfig;
-L76X l76k;
-
-void Handler(int signo)
-{
-    std::cout << "\r\nHandler: Program stop\r\n";
-    uartconfig.DevModuleExit();
-    std::exit(0);
-}
+#include <string>
 
 int main() {
-    if (uartconfig.DevModuleInit() == 1) return 1;
-    std::signal(SIGINT, Handler);
+    std::string uart_port = "/dev/ttyS0";
+    int fd = open(uart_port.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+    if (fd < 0) {
+        std::cerr << "Failed to open " << uart_port << "\n";
+        return 1;
+    }
 
-    uartconfig.DevDelayMs(100);
-    uartconfig.DevSetBaudrate(9600);
-    uartconfig.DevDelayMs(100);
+    termios tty{};
+    tcgetattr(fd, &tty);
+    cfsetospeed(&tty, B9600);
+    cfsetispeed(&tty, B9600);
+    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
+    tty.c_cflag |= (CLOCAL | CREAD);
+    tty.c_cflag &= ~(PARENB | PARODD);
+    tty.c_cflag &= ~CSTOPB;
+    tty.c_cflag &= ~CRTSCTS;
+    tty.c_iflag = 0;
+    tty.c_oflag = 0;
+    tty.c_lflag = 0;
+    tty.c_cc[VMIN] = 0;
+    tty.c_cc[VTIME] = 5;
+    tcsetattr(fd, TCSANOW, &tty);
 
-    // int fd = serialOpen("/dev/ttyS0", 9600);
-    std::string uart_port ="/dev/ttyS0";
-    int fd = serialOpen(uart_port.c_str(), 9600);
-
+    char buf[256];
     while (true) {
-        if (serialDataAvail(fd)) {  // データがあるかチェック
-            char c = serialGetchar(fd);
-            std::cout << c << std::flush;
+        int n = read(fd, buf, sizeof(buf) - 1);
+        if (n > 0) {
+            buf[n] = '\0';
+            std::cout << buf;
         }
     }
 
-    serialClose(fd);
+    close(fd);
     return 0;
 }
 

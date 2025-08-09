@@ -41,7 +41,7 @@ class UartConfig {
          * @param pin 
          * @return int 
          */
-        int DevDigitalRead(const unsigned int &pin));
+        int DevDigitalRead(const unsigned int &pin);
 
         /**
          * @brief 指定したミリ秒数だけ待機する．
