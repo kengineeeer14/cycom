@@ -85,13 +85,8 @@ int main() {
         int n = read(fd, buf, sizeof(buf) - 1);
         if (n > 0) {
             buf[n] = '\0';
-            std::cout << "Received: " << buf << std::endl;
-        } else if (n == 0) {
-            std::cout << "No data received\n";
-        } else {
-            std::cerr << "Read error\n";
+            std::cout << buf;
         }
-        // usleep(500000);  // 0.5秒待つ
     }
 
     close(fd);
