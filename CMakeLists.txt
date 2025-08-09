@@ -13,8 +13,9 @@ include_directories(
 # ソースファイルのリスト
 set(SOURCES
     main.cc
-    src/gpio/gpio_setting.cc
-    src/sensors/uart/gps_l76k.cc
+    src/gpio/gpio_config.cc
+    src/sensors/uart/uart_config.cc
+    src/sensors/uart/gps/gps_l76k.cc
 )
 
 # 実行ファイルを作成
