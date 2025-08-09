@@ -17,6 +17,8 @@ void Handler(int signo)
 }
 
 int main() {
+    std::signal(SIGINT, Handler);
+
     if (wiringPiSetup() == -1) {
         std::cerr << "wiringPi setup failed\n";
         return 1;
@@ -56,23 +58,16 @@ int main() {
 //     uartconfig.DevDelayMs(100);
 
 //     while (true) {
-//     char* buf = l76k.Test();
-//     for (int i = 0; i < 32; ++i) {  // 受信バッファの一部を16進数表示
-//         printf("%02X ", (unsigned char)buf[i]);
-//     }
-//     printf("\n");
+//         GPS = l76k.GetGNRMC();
+//         std::cout << "\r\n";
+//         std::cout << "Time: " << static_cast<int>(GPS.Time_H) << ":"
+//                   << static_cast<int>(GPS.Time_M) << ":"
+//                   << static_cast<int>(GPS.Time_S) << "\r\n";
+//         std::cout << "Latitude and longitude: " << GPS.Lat << " " << GPS.Lat_area << " "
+//                   << GPS.Lon << " " << GPS.Lon_area << "\r\n";
 
-
-//         // GPS = l76k.GetGNRMC();
-//         // std::cout << "\r\n";
-//         // std::cout << "Time: " << static_cast<int>(GPS.Time_H) << ":"
-//         //           << static_cast<int>(GPS.Time_M) << ":"
-//         //           << static_cast<int>(GPS.Time_S) << "\r\n";
-//         // std::cout << "Latitude and longitude: " << GPS.Lat << " " << GPS.Lat_area << " "
-//         //           << GPS.Lon << " " << GPS.Lon_area << "\r\n";
-
-//         // Baidu = L76X_Baidu_Coordinates();
-//         // std::cout << "Baidu Coordinates: " << Baidu.Lat << ", " << Baidu.Lon << "\r\n";
+//         Baidu = L76X_Baidu_Coordinates();
+//         std::cout << "Baidu Coordinates: " << Baidu.Lat << ", " << Baidu.Lon << "\r\n";
 //     }
 
 //     uartconfig.DevModuleExit();
