@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
     GNRMC GPS;
     Coordinates Baidu;
-    char buffer;
+    char* buffer;
 
     if (uartconfig.DevModuleInit() == 1) return 1;
 

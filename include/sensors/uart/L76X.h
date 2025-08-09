@@ -32,7 +32,7 @@ public:
      */
     void SendCommand(const std::string& cmd);
 
-    char Test();
+    char* Test();
 
     /**
      * @brief $GNRMC または $GPRMC センテンスをパースし、GPS時刻・位置・状態を抽出．

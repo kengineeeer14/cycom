@@ -30,7 +30,7 @@ void L76X::SendCommand(const std::string& data) {
     uartconfig_.DevDelayMs(200);
 }
 
-char L76X::Test(){
+char* L76X::Test(){
     uartconfig_.DevUartReceiveString(BUFFSIZE, buffer_);
     return buffer_;
 }
