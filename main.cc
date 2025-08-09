@@ -6,9 +6,9 @@
 #include <string>
 
 #define CHIP_NAME "/dev/gpiochip0"
-#define LINE_FORCE 17   // FORCE_ONピン(GPIO17)
-#define LINE_STANDBY 27 // STANDBYピン(GPIO27)
-#define UART_PORT "/dev/serial0"
+#define LINE_FORCE 15   // FORCE_ONピン(GPIO15)
+#define LINE_STANDBY 14 // STANDBYピン(GPIO14)
+#define UART_PORT "/dev/ttys0"
 #define BAUDRATE B9600
 
 bool setup_gpio() {
