@@ -91,7 +91,7 @@ int main() {
         } else {
             std::cerr << "Read error\n";
         }
-        usleep(500000);  // 0.5秒待つ
+        // usleep(500000);  // 0.5秒待つ
     }
 
     close(fd);
