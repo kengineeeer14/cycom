@@ -9,12 +9,12 @@
 namespace sensor_uart{
     class UartConfigure{
         public:
+            explicit UartConfigure(const std::string& config_path);
             int SetupUart();
 
         private:
-            // TODO 定数はjsonで設定できるようにする．
-            const std::string uart_port_;
-            const unsigned int baudrate_;
+            const std::string uart_port_{"/dev/ttyS0"};
+            unsigned int baudrate_;
             speed_t baudrate_speed_;
 
             /**

@@ -9,7 +9,6 @@ namespace sensor_uart{
         nlohmann::json j;
         ifs >> j;
 
-        uart_port_ = j["uart"]["uart_port"].get<std::string>();
         baudrate_ = j["uart"]["baudrate"].get<unsigned int>();
         ConvertBaudrateToSpeed(baudrate_, baudrate_speed_);
     }
