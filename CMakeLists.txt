@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # ヘッダファイルのディレクトリを指定
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
+    /usr/include
 )
 
 # ソースファイルのリスト
