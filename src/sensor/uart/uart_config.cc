@@ -1,4 +1,4 @@
-#include "sensors/uart/uart_config.h"
+#include "sensor/uart/uart_config.h"
 
 namespace sensor_uart{
     UartConfigure::UartConfigure(const std::string &config_path) {
@@ -9,7 +9,7 @@ namespace sensor_uart{
         nlohmann::json j;
         ifs >> j;
 
-        baudrate_ = j["uart"]["baudrate"].get<unsigned int>();
+        baudrate_ = j["sensor_uart"]["baudrate"].get<unsigned int>();
         ConvertBaudrateToSpeed(baudrate_, baudrate_speed_);
     }
 
