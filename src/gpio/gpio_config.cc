@@ -9,8 +9,8 @@ namespace gpio{
             return false;
         }
 
-        gpiod_line *force_line = gpiod_chip_get_line(chip, line_force_);
-        gpiod_line *standby_line = gpiod_chip_get_line(chip, line_standby_);
+        gpiod_line *force_line = gpiod_chip_get_line(chip, line_uart_rx_);
+        gpiod_line *standby_line = gpiod_chip_get_line(chip, line_uart_tx_);
 
         if (!force_line || !standby_line) {
             std::cerr << "Failed to get GPIO line\n";
