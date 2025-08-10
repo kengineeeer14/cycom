@@ -2,7 +2,7 @@
 
 namespace gpio{
     bool GpioConfigure::SetupGpio(){
-        gpiod_chip *chip = gpiod_chip_open(chip_name_);
+        gpiod_chip *chip = gpiod_chip_open(chip_name_.c_str());
         
         if (!chip) {
             std::cerr << "Failed to open gpiochip\n";
