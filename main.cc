@@ -7,9 +7,9 @@
 #include "sensors/uart/uart_config.h"
 
 int main() {
-    const std::string "config/config.json";
-    gpio::GpioConfigure gpio_config();
-    sensor_uart::UartConfigure uart_config();
+    const std::string config_path = "config/config.json";
+    gpio::GpioConfigure gpio_config(config_path);
+    sensor_uart::UartConfigure uart_config(config_path);
 
     if (!gpio_config.SetupGpio()) {
         return 1;
