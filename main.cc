@@ -8,7 +8,7 @@
 
 int main() {
     const std::string config_path = "config/config.json";
-    gpio::GpioConfigure gpio_config(config_path);
+    gpio::GpioConfigure gpio_config;
     sensor_uart::UartConfigure uart_config(config_path);
 
     if (!gpio_config.SetupGpio()) {

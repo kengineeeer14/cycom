@@ -2,6 +2,8 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <fstream>          // for std::ifstream
+#include <nlohmann/json.hpp> // for JSON handling
 
 #ifndef UART_CONFIG_H
 #define UART_CONFIG_H
