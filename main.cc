@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include "gpio/gpio_config.h"
-#include "sensors/uart/uart_config.h"
+#include "sensor/uart/uart_config.h"
 
 int main() {
     const std::string config_path = "config/config.json";
