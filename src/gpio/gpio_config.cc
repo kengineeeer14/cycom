@@ -1,6 +1,20 @@
 #include "gpio/gpio_config.h"
 
 namespace gpio{
+    GpioConfigure::GpioConfigure(const std::string& config_path) {
+        // JSONファイルを開く
+        std::ifstream ifs(config_path);
+        if (!ifs.is_open()) {
+            throw std::runtime_error("Failed to open config file");
+        }
+        nlohmann::json j;
+        ifs >> j;
+
+        chip_name_ = j["gpio"]["chip_name"].get<std::string>();
+        line_uart_rx_ = j["gpio"]["line_uart_rx"].get<unsigned int>();
+        line_uart_tx_ = j["gpio"]["line_uart_tx"].get<unsigned int>();
+    }
+
     bool GpioConfigure::SetupGpio(){
         gpiod_chip *chip = gpiod_chip_open(chip_name_.c_str());
         

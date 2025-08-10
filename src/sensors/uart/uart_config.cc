@@ -1,15 +1,25 @@
 #include "sensors/uart/uart_config.h"
 
 namespace sensor_uart{
-    
+    UartConfigure::UartConfigure(const std::string &config_path) {
+        std::ifstream ifs(config_path);
+        if (!ifs.is_open()) {
+            throw std::runtime_error("Failed to open config file");
+        }
+        nlohmann::json j;
+        ifs >> j;
+
+        uart_port_ = j["uart"]["uart_port"].get<std::string>();
+        baudrate_ = j["uart"]["baudrate"].get<unsigned int>();
+        ConvertBaudrateToSpeed(baudrate_, baudrate_speed_);
+    }
+
     int UartConfigure::SetupUart(){
         int fd = open(uart_port_.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
         if (fd == -1) {
             std::cerr << "Failed to open UART\n";
             return -1;
         }
-
-        ConvertBaudrateToSpeed(baudrate_, baudrate_speed_);
 
         struct termios options;
         tcgetattr(fd, &options);

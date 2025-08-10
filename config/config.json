@@ -1,0 +1,11 @@
+{
+  "gpio": {
+    "chip_name": "/dev/gpiochip0",
+    "line_uart_rx": 15,
+    "line_uart_tx": 14
+  },
+  "sensor_uart": {
+    "uart_port": "/dev/ttyS0",
+    "baudrate": 9600
+  }
+}

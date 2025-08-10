@@ -13,10 +13,9 @@ namespace sensor_uart{
 
         private:
             // TODO 定数はjsonで設定できるようにする．
-            const std::string uart_port_{"/dev/ttyS0"};
-            const unsigned int baudrate_{9600};
-
-            speed_t baudrate_speed_{0U};
+            const std::string uart_port_;
+            const unsigned int baudrate_;
+            speed_t baudrate_speed_;
 
             /**
              * @brief int型のボーレートをtermios用に変換する．

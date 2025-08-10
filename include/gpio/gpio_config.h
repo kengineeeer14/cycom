@@ -11,9 +11,9 @@ namespace gpio {
 
         private:
             // TODO 定数はjsonで設定できるようにする．
-            const std::string chip_name_{"/dev/gpiochip0"};
-            const unsigned int line_force_{15U};
-            const unsigned int line_uart_tx_{14U};
+            const std::string chip_name_;
+            const unsigned int line_uart_rx_;
+            const unsigned int line_uart_tx_;
     };
 }   // namespace gpio
 
