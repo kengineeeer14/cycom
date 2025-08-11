@@ -1,6 +1,17 @@
 #include "sensor/uart/gps/gps_l76k.h"
 
 namespace sensor_uart{
+
+    std::vector<std::string> L76k::split_csv(const std::string &line) {
+        std::vector<std::string> fields;
+        std::stringstream ss(line);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            fields.push_back(item);
+        }
+        return fields;
+    }
+
     bool L76k::parseGNRMC(const std::string &nmea, GNRMC &out) {
 
         if (nmea.rfind("$GNRMC", 0) != 0) return false;
