@@ -12,11 +12,10 @@ namespace sensor_uart{
         return fields;
     }
 
-    bool L76k::ParseGnrmc(const std::string &nmea, GNRMC &gnrmc) {
+    void L76k::ParseGnrmc(const std::string &nmea, GNRMC &gnrmc) {
         // TODO マジックナンバーの使用を回避
 
-        auto fields = SplitString(nmea);
-        if (fields.size() < 13) return false;
+        std::vector<std::string> fields = SplitString(nmea);
 
         // UTC時刻
         if (fields[1].size() >= 6) {
@@ -42,14 +41,12 @@ namespace sensor_uart{
             gnrmc.navigation_status = (starPos > 1) ? fields[12][1] : ' ';
             gnrmc.checksum = std::stoi(fields[12].substr(starPos + 1), nullptr, 16);
         }
-        return true;
     }
 
-    bool L76k::ParseGnvtg(const std::string &nmea, GNVTG &gnvtg) {
+    void L76k::ParseGnvtg(const std::string &nmea, GNVTG &gnvtg) {
         // TODO マジックナンバーの使用を回避
 
-        auto fields = SplitString(nmea);
-        if (fields.size() < 9) return false;
+        std::vector<std::string> fields = SplitString(nmea);
 
         gnvtg.true_track_deg         = fields[1].empty() ? 0.0 : std::stod(fields[1]);
         gnvtg.true_track_indicator   = fields[2].empty() ? ' ' : fields[2][0];
@@ -65,14 +62,12 @@ namespace sensor_uart{
             gnvtg.mode = (starPos > 1) ? fields[8][1] : ' ';
             gnvtg.checksum = std::stoi(fields[8].substr(starPos + 1), nullptr, 16);
         }
-        return true;
     }
 
-    bool L76k::ParseGngaa(const std::string &nmea, GNGGA &gngaa) {
+    void L76k::ParseGngaa(const std::string &nmea, GNGGA &gngaa) {
         // TODO マジックナンバーの使用を回避
 
-        auto fields = SplitString(nmea);
-        if (fields.size() < 15) return false;
+        std::vector<std::string> fields = SplitString(nmea);
 
         if (fields[1].size() >= 6) {
             gngaa.hour   = std::stoi(fields[1].substr(0, 2));
@@ -97,7 +92,6 @@ namespace sensor_uart{
             gngaa.dgps_id = fields[14].substr(0, starPos);
             gngaa.checksum = std::stoi(fields[14].substr(starPos + 1), nullptr, 16);
         }
-        return true;
     }
 
     
