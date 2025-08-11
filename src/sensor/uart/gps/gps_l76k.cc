@@ -40,7 +40,6 @@ namespace sensor_uart{
         gnrmc.mag_variation_dir = (fields.size() > 11 && !fields[11].empty()) ? fields[11][0] : '\0';
         gnrmc.mode = (fields.size() > 12 && !fields[12].empty()) ? fields[12][0] : '\0';
 
-        // navigation_status と checksum（<nav>*CS のみ扱う）
         gnrmc.navigation_status = (fields.size() > 13 && !fields[13].empty()) ? fields[13][0] : '\0';
         gnrmc.checksum = 0;  // デフォルトは0（無効扱い）
 
@@ -64,6 +63,9 @@ namespace sensor_uart{
         gnvtg.speed_knots_unit         = (fields.size() > 6 && !fields[6].empty()) ? fields[6][0] : '\0';
         gnvtg.speed_kmh                = (fields.size() > 7 && !fields[7].empty()) ? std::stod(fields[7]) : std::numeric_limits<double>::quiet_NaN();
         gnvtg.speed_kmh_unit           = (fields.size() > 8 && !fields[8].empty()) ? fields[8][0] : '\0';
+
+        gnvtg.mode = '\0';
+        gnvtg.checksum = 0;
         if (fields.size() > 9 && !fields[9].empty()) {
             const std::string &f9 = fields[9];
             size_t starPos = f9.find('*');
