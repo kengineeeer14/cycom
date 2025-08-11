@@ -12,10 +12,9 @@ void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
     if (nmea_line.rfind("$GNRMC", 0) == 0) {
         sensor_uart::L76k::GNRMC rmc{};
         gps.ParseGnrmc(nmea_line, rmc);
-        std::cout << "[GNRMC] Lat: " << rmc.latitude << rmc.lat_dir
-                    << " Lon: " << rmc.longitude << rmc.lon_dir
-                    << " Speed(knots): " << rmc.speed_knots
-                    << " Track: " << rmc.track_deg << "\n";
+        std::cout << "[GNRMC] mode: " << rmc.mode
+                    << " navigation_status: " << rmc.navigation_status
+                    << " checksum: " << rmc.checksum << "\n";
     }
     if (nmea_line.rfind("$GNGGA", 0) == 0) {
         sensor_uart::L76k::GNGGA gga{};

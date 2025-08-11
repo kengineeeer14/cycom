@@ -22,14 +22,18 @@ namespace sensor_uart{
             gnrmc.hour   = std::stoi(fields[1].substr(0, 2));
             gnrmc.minute = std::stoi(fields[1].substr(2, 2));
             gnrmc.second = std::stod(fields[1].substr(4));
+        } else {
+            gnrmc.hour = 0;
+            gnrmc.minute = 0;
+            gnrmc.second = 0.0;
         }
-        gnrmc.data_status = fields[2].empty() ? 'V' : fields[2][0];
-        gnrmc.latitude    = std::stod(fields[3]);
+        gnrmc.data_status = fields[2].empty() ? ' ' : fields[2][0];
+        gnrmc.latitude    = fields[3].empty() ? 0.0 : std::stod(fields[3]);
         gnrmc.lat_dir     = fields[4].empty() ? ' ' : fields[4][0];
-        gnrmc.longitude   = std::stod(fields[5]);
+        gnrmc.longitude   = fields[5].empty() ? 0.0 : std::stod(fields[5]);
         gnrmc.lon_dir     = fields[6].empty() ? ' ' : fields[6][0];
-        gnrmc.speed_knots = std::stod(fields[7]);
-        gnrmc.track_deg   = std::stod(fields[8]);
+        gnrmc.speed_knots = fields[7].empty() ? 0.0 : std::stod(fields[7]);
+        gnrmc.track_deg   = fields[8].empty() ? 0.0 : std::stod(fields[8]);
         gnrmc.date        = static_cast<uint16_t>(std::stoi(fields[9]));
         gnrmc.mag_variation = fields[10].empty() ? 0.0 : std::stod(fields[10]);
         gnrmc.mag_variation_dir = fields[11].empty() ? ' ' : fields[11][0];
@@ -73,6 +77,10 @@ namespace sensor_uart{
             gngaa.hour   = std::stoi(fields[1].substr(0, 2));
             gngaa.minute = std::stoi(fields[1].substr(2, 2));
             gngaa.second = std::stod(fields[1].substr(4));
+        } else {
+            gngaa.hour = 0;
+            gngaa.minute = 0;
+            gngaa.second = 0.0;
         }
         gngaa.latitude = std::stod(fields[2]);
         gngaa.lat_dir  = fields[3].empty() ? ' ' : fields[3][0];
