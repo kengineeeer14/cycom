@@ -26,7 +26,7 @@ void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
     }
     if (nmea_line.rfind("$GNVTG", 0) == 0) {
         sensor_uart::L76k::GNVTG vtg{};
-        gps.ParseGnvtg(nmea_line, vtg)
+        gps.ParseGnvtg(nmea_line, vtg);
         std::cout << "[GNVTG] True Track: " << vtg.true_track_deg << vtg.true_track_indicator
                     << " Speed(knots): " << vtg.speed_knots
                     << " Speed(km/h): " << vtg.speed_kmh << "\n";
