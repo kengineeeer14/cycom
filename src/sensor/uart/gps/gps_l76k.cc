@@ -47,7 +47,7 @@ namespace sensor_uart{
             const std::string &f13 = fields[13];
             size_t starPos = f13.find('*');
             if (starPos != std::string::npos && starPos + 1 < f13.size()) {
-                gnrmc.checksum = std::stoi(f13.substr(starPos + 1), nullptr, 16);
+                gnrmc.checksum = static_cast<uint8_t>(std::stoi(f13.substr(starPos + 1), nullptr, 16));
             }
         }
     }
