@@ -15,7 +15,7 @@ void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
         std::cout << "[GNRMC] "
                   << "time=" << rmc.hour << ":"
                   << rmc.minute << ":"
-                  << std::fixed << rmc.second
+                  << rmc.second
                   << " status=" << rmc.data_status
                   << " lat=" << rmc.latitude << rmc.lat_dir
                   << " lon=" << rmc.longitude << rmc.lon_dir
@@ -26,7 +26,6 @@ void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
                   << " mode=" << rmc.mode
                   << " nav=" << rmc.navigation_status
                   << " checksum" << static_cast<int>(rmc.checksum)
-                  << std::dec << std::setfill(' ')
                   << "\n";
     }
     if (nmea_line.rfind("$GNGGA", 0) == 0) {
