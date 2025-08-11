@@ -1,4 +1,6 @@
-#include <limits>
+#include <iostream>
+#include <iomanip>
+#include <cmath>
 #include "sensor/uart/gps/gps_l76k.h"
 
 namespace sensor_uart{
@@ -33,7 +35,7 @@ namespace sensor_uart{
         gnrmc.lon_dir     = (fields.size() > 6 && !fields[6].empty()) ? fields[6][0] : '\0';
         gnrmc.speed_knots = (fields.size() > 7 && !fields[7].empty()) ? std::stod(fields[7]) : std::numeric_limits<double>::quiet_NaN();
         gnrmc.track_deg   = (fields.size() > 8 && !fields[8].empty()) ? std::stod(fields[8]) : std::numeric_limits<double>::quiet_NaN();
-        gnrmc.date        = (fields.size() > 9 && !fields[9].empty()) ? static_cast<uint16_t>(std::stoi(fields[9])) : UINT16_MAX;
+        gnrmc.date        = (fields.size() > 9 && !fields[9].empty()) ? static_cast<uint32_t>(std::stoi(fields[9])) : UINT16_MAX;
         gnrmc.mag_variation = (fields.size() > 10 && !fields[10].empty()) ? std::stod(fields[10]) : std::numeric_limits<double>::quiet_NaN();
         gnrmc.mag_variation_dir = (fields.size() > 11 && !fields[11].empty()) ? fields[11][0] : '\0';
         gnrmc.mode = (fields.size() > 12 && !fields[12].empty()) ? fields[12][0] : '\0';

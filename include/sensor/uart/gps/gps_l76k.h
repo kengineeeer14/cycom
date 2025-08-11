@@ -22,7 +22,7 @@ namespace sensor_uart{
                 char lon_dir;           // 'E' or 'W'
                 double speed_knots;     // 対地速度[knot]
                 double track_deg;       // 移動の真方位[deg]
-                uint16_t date;          // UTC日付．ddmmyy形式．
+                uint32_t date;          // UTC日付．ddmmyy形式．
                 double mag_variation;   // 磁気偏角[deg]．地北と真北との差．
                 char mag_variation_dir; // 磁気偏角の方向；E or W
                 char mode;              // モード：N=測位不能、E=デッドレコニング、A=単独測位、D=DGPS、F=RTK float、R=RTK fix
