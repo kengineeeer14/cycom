@@ -14,7 +14,6 @@ namespace sensor_uart{
 
     bool L76k::ParseGnrmc(const std::string &nmea, GNRMC &gnrmc) {
         // TODO マジックナンバーの使用を回避
-        if (nmea.rfind("$GNRMC", 0) != 0) return false;
 
         auto fields = SplitString(nmea);
         if (fields.size() < 13) return false;
@@ -48,7 +47,6 @@ namespace sensor_uart{
 
     bool L76k::ParseGnvtg(const std::string &nmea, GNVTG &gnvtg) {
         // TODO マジックナンバーの使用を回避
-        if (nmea.rfind("$GNVTG", 0) != 0) return false;
 
         auto fields = SplitString(nmea);
         if (fields.size() < 9) return false;
@@ -72,7 +70,6 @@ namespace sensor_uart{
 
     bool L76k::ParseGngaa(const std::string &nmea, GNGGA &gngaa) {
         // TODO マジックナンバーの使用を回避
-        if (nmea.rfind("$GNGGA", 0) != 0) return false;
 
         auto fields = SplitString(nmea);
         if (fields.size() < 15) return false;
