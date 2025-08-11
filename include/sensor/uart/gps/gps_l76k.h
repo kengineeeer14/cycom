@@ -1,6 +1,7 @@
 #include <cstdint>  // uint8_t, uint16_t
 #include <string>   // std::string
 #include <vector>   // std::vector
+#include <sstream>
 
 #ifndef GPS_L76K_H
 #define GPS_L76K_H
