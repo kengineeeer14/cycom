@@ -41,8 +41,7 @@ int main() {
 
                     // --- パーサ呼び出し ---
                     sensor_uart::L76k::GNRMC rmc{};
-
-                    if (sensor_uart::parseGNRMC(nmea_line, rmc)) {
+                    if (gps.parseGNRMC(nmea_line, rmc)) {
                         std::cout << "[GNRMC] Lat: " << rmc.latitude << rmc.lat_dir
                                   << " Lon: " << rmc.longitude << rmc.lon_dir
                                   << " Speed(knots): " << rmc.speed_knots
