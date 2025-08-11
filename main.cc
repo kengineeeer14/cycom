@@ -41,20 +41,21 @@ int main() {
                     }
 
                     // --- パーサ呼び出し ---
-                    sensor_uart::L76k::GNRMC rmc{};
-                    if (gps.parseGNRMC(nmea_line, rmc)) {
-                        std::cout << "[GNRMC] Lat: " << rmc.latitude << rmc.lat_dir
-                                  << " Lon: " << rmc.longitude << rmc.lon_dir
-                                  << " Speed(knots): " << rmc.speed_knots
-                                  << " Track: " << rmc.track_deg << "\n";
-                    }
-
-                    sensor_uart::L76k::GNGGA gga{};
-                    if (gps.parseGNGGA(nmea_line, gga)) {
-                        std::cout << "[GNGGA] quality: " << gga.quality
-                                  << " num_satellites: " << gga.num_satellites
-                                  << " dgps_id: " << gga.dgps_id << "\n";
-                    }
+                    if (nmea_line.rfind("$GNRMC", 0) == 0) {
+                        sensor_uart::L76k::GNRMC rmc{};
+                        if (gps.parseGNRMC(nmea_line, rmc)) {
+                            std::cout << "[GNRMC] Lat: " << rmc.latitude << rmc.lat_dir
+                                      << " Lon: " << rmc.longitude << rmc.lon_dir
+                                      << " Speed(knots): " << rmc.speed_knots
+                                      << " Track: " << rmc.track_deg << "\n";
+                        }
+                    } else if (nmea_line.rfind("$GNGGA", 0) == 0) {
+                        sensor_uart::L76k::GNGGA gga{};
+                        if (gps.parseGNGGA(nmea_line, gga)) {
+                            std::cout << "[GNGGA] quality: " << gga.quality
+                                      << " num_satellites: " << gga.num_satellites
+                                      << " dgps_id: " << gga.dgps_id << "\n";
+                        }
 
                     nmea_line.clear(); // 次の行へ
                 }
