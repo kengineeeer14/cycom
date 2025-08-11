@@ -53,7 +53,7 @@ int main() {
                     if (gps.parseGNGGA(nmea_line, gga)) {
                         std::cout << "[GNGGA] quality: " << gga.quality
                                   << " num_satellites: " << gga.num_satellites
-                                  << " dgps_id: " << gga.dgps_id
+                                  << " dgps_id: " << gga.dgps_id << "\n";
                     }
 
                     nmea_line.clear(); // 次の行へ

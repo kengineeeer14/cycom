@@ -46,7 +46,7 @@ namespace sensor_uart{
         return true;
     }
 
-    bool parseGNVTG(const std::string &nmea, GNVTG &out) {
+    bool L76k::parseGNVTG(const std::string &nmea, GNVTG &out) {
         if (nmea.rfind("$GNVTG", 0) != 0) return false;
 
         auto fields = split_csv(nmea);
@@ -69,7 +69,7 @@ namespace sensor_uart{
         return true;
     }
 
-    bool parseGNGGA(const std::string &nmea, GNGGA &out) {
+    bool L76k::parseGNGGA(const std::string &nmea, GNGGA &out) {
         if (nmea.rfind("$GNGGA", 0) != 0) return false;
 
         auto fields = split_csv(nmea);
