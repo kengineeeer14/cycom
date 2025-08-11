@@ -56,7 +56,7 @@ int main() {
                                       << " num_satellites: " << gga.num_satellites
                                       << " dgps_id: " << gga.dgps_id << "\n";
                         }
-
+                    }
                     nmea_line.clear(); // 次の行へ
                 }
                 else {
