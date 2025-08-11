@@ -25,13 +25,13 @@ int main() {
         return 1;
     }
 
-    char buf[256];
+    char buf[2560];
     std::string nmea_line;
 
     while (true) {
-        int n = read(fd, buf, sizeof(buf) - 1);
+        int n = read(fd, buf, sizeof(buf) - 1); // 読み取ったバイト数を取得
         if (n > 0) {
-            buf[n] = '\0';
+            buf[n] = '\0';  // 文字列の終わりを判別できるようにヌル終端を追加
             for (int i = 0; i < n; i++) {
                 char c = buf[i];
                 if (c == '\n') {
