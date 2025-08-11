@@ -72,7 +72,7 @@ namespace sensor_uart{
 
             bool ParseGnvtg(const std::string &nmea, GNVTG &gnvtg);
 
-            bool parseGngaa(const std::string &nmea, GNGGA &gnvtg);
+            bool ParseGngaa(const std::string &nmea, GNGGA &gnvtg);
 
         private:
             GNRMC gnrmc_last_;
