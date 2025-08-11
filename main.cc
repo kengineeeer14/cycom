@@ -9,10 +9,6 @@
 
 void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
     std::string nmea_line = line;
-    // if (!nmea_line.empty() && nmea_line.back() == '\r') {
-    //     nmea_line.pop_back(); // \r 削除
-    // }
-
     if (nmea_line.rfind("$GNRMC", 0) == 0) {
         sensor_uart::L76k::GNRMC rmc{};
         if (gps.parseGNRMC(nmea_line, rmc)) {

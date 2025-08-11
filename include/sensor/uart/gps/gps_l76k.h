@@ -75,7 +75,7 @@ namespace sensor_uart{
             bool parseGNGGA(const std::string &nmea, GNGGA &out);
 
         private:
-            std::vector<std::string> split_csv(const std::string &line);
+            std::vector<std::string> split_string(const std::string &line);
     };
 
 }   // namespace sensor_uart
