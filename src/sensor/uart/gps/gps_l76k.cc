@@ -66,7 +66,6 @@ namespace sensor_uart{
         gnvtg.speed_kmh_unit           = (fields.size() > 8 && !fields[8].empty()) ? fields[8][0] : '\0';
         if (fields.size() > 9 && !fields[9].empty()) {
             size_t starPos = fields[9].find('*');
-            gnvtg.speed_kmh_unit = fields[9][0];
             gnvtg.mode = (starPos > 1) ? fields[9][1] : '\0';
             if (starPos != std::string::npos && starPos + 1 < fields[9].size()) {
                 gnvtg.checksum = std::stoi(fields[9].substr(starPos + 1), nullptr, 16);
