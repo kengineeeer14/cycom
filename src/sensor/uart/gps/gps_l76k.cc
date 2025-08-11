@@ -39,11 +39,32 @@ namespace sensor_uart{
         gnrmc.mag_variation_dir = fields[11].empty() ? ' ' : fields[11][0];
         gnrmc.mode = fields[12].empty() ? ' ' : fields[12][0];
 
-        // モードとナビゲーションステータス＋チェックサム
-        if (fields[13].size() > 2 && fields[13].find('*') != std::string::npos) {
-            size_t starPos = fields[13].find('*');
-            gnrmc.navigation_status = fields[13].empty() ? ' ' : fields[13][0];
-            gnrmc.checksum = std::stoi(fields[13].substr(starPos + 1), nullptr, 16);
+        // NMEA RMC (v4.1+) では <mode>(fields[12]) と <navigation status>(fields[13]) の両方が存在することがある。
+        // 古い/短いフォーマットでは fields[13] が無く、checksum が fields[12] の後ろに付く("<mode>*CS") ことがある。
+        // どちらの形式でも安全に扱えるようにする。
+        gnrmc.navigation_status = ' ';
+
+        // fields[13] が存在する場合は "<nav>*CS" 形式を処理
+        if (fields.size() > 13 && !fields[13].empty()) {
+            const std::string &f13 = fields[13];
+            size_t starPos = f13.find('*');
+            // 先頭1文字をナビゲーションステータスとして採用（例: 'V', 'A', 'D', 'R', 'F' など）
+            gnrmc.navigation_status = f13[0];
+            // チェックサムが付いていれば取得
+            if (starPos != std::string::npos && starPos + 1 < f13.size()) {
+                gnrmc.checksum = std::stoi(f13.substr(starPos + 1), nullptr, 16);
+            }
+        } else if (fields.size() > 12 && !fields[12].empty()) {
+            // fields[13] が無い場合、fields[12] が "<mode>*CS" の可能性があるのでチェックサムだけ拾う
+            const std::string &f12 = fields[12];
+            size_t starPos = f12.find('*');
+            if (starPos != std::string::npos && starPos + 1 < f12.size()) {
+                // star の前の1文字が mode。上の既存代入で mode はすでに設定済みだが、念のため安全に扱う
+                if (starPos > 0) {
+                    gnrmc.mode = f12[0];
+                }
+                gnrmc.checksum = std::stoi(f12.substr(starPos + 1), nullptr, 16);
+            }
         }
     }
 
