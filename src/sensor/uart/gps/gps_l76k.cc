@@ -36,8 +36,8 @@ namespace sensor_uart{
         gnrmc.track_deg   = fields[8].empty() ? 0.0 : std::stod(fields[8]);
         gnrmc.date        = static_cast<uint16_t>(std::stoi(fields[9]));
         gnrmc.mag_variation = fields[10].empty() ? 0.0 : std::stod(fields[10]);
-        gnrmc.mag_variation_dir = fields[11].empty() ? ' ' : fields[11];
-        gnrmc.mode = fields[12].empty() ? ' ' : fields[12];
+        gnrmc.mag_variation_dir = fields[11].empty() ? ' ' : fields[11][0];
+        gnrmc.mode = fields[12].empty() ? ' ' : fields[12][0];
 
         // モードとナビゲーションステータス＋チェックサム
         if (fields[12].size() > 2 && fields[12].find('*') != std::string::npos) {
