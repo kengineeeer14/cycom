@@ -49,6 +49,13 @@ int main() {
                                   << " Track: " << rmc.track_deg << "\n";
                     }
 
+                    sensor_uart::L76k::GNGGA gga{};
+                    if (gps.parseGNGGA(nmea_line, gga)) {
+                        std::cout << "[GNGGA] quality: " << gga.quality
+                                  << " num_satellites: " << gga.num_satellites
+                                  << " dgps_id: " << gga.dgps_id
+                    }
+
                     nmea_line.clear(); // 次の行へ
                 }
                 else {

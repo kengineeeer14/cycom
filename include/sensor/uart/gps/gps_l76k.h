@@ -70,9 +70,9 @@ namespace sensor_uart{
 
             bool parseGNRMC(const std::string &nmea, GNRMC &out);
 
-            // void parseGNVTG(const std::string &nmea, GNVTG &out);
+            void parseGNVTG(const std::string &nmea, GNVTG &out);
 
-            // void parseGNGGA(const std::string &nmea, GNGGA &out);
+            void parseGNGGA(const std::string &nmea, GNGGA &out);
 
         private:
             std::vector<std::string> split_csv(const std::string &line);
