@@ -14,21 +14,21 @@ void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
         gps.ParseGnrmc(nmea_line, rmc);
         std::cout << "[GNRMC] mode: " << rmc.mode
                     << " navigation_status: " << rmc.navigation_status
-                    << " checksum: " << rmc.checksum << "\n";
+                    << " checksum: " << static_cast<int>(rmc.checksum) << "\n";
     }
     if (nmea_line.rfind("$GNGGA", 0) == 0) {
         sensor_uart::L76k::GNGGA gga{};
         gps.ParseGngaa(nmea_line, gga);
-        std::cout << "[GNGGA] quality: " << static_cast<int>(gga.quality)
-                    << " num_satellites: " << static_cast<int>(gga.num_satellites)
-                    << " dgps_id: " << gga.dgps_id << "\n";
+        // std::cout << "[GNGGA] quality: " << static_cast<int>(gga.quality)
+        //             << " num_satellites: " << static_cast<int>(gga.num_satellites)
+        //             << " dgps_id: " << gga.dgps_id << "\n";
     }
     if (nmea_line.rfind("$GNVTG", 0) == 0) {
         sensor_uart::L76k::GNVTG vtg{};
         gps.ParseGnvtg(nmea_line, vtg);
-        std::cout << "[GNVTG] True Track: " << vtg.true_track_deg << vtg.true_track_indicator
-                    << " Speed(knots): " << vtg.speed_knots
-                    << " Speed(km/h): " << vtg.speed_kmh << "\n";
+        // std::cout << "[GNVTG] True Track: " << vtg.true_track_deg << vtg.true_track_indicator
+        //             << " Speed(knots): " << vtg.speed_knots
+        //             << " Speed(km/h): " << vtg.speed_kmh << "\n";
     }
 }
 
