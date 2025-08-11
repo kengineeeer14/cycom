@@ -25,7 +25,7 @@ int main() {
         return 1;
     }
 
-    char buf[2560];
+    char buf[256];
     std::string nmea_line;
 
     while (true) {
