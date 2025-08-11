@@ -40,10 +40,10 @@ namespace sensor_uart{
         gnrmc.mode = fields[12].empty() ? ' ' : fields[12][0];
 
         // モードとナビゲーションステータス＋チェックサム
-        if (fields[12].size() > 2 && fields[12].find('*') != std::string::npos) {
-            size_t starPos = fields[12].find('*');
-            gnrmc.navigation_status = (starPos > 1) ? fields[12][1] : ' ';
-            gnrmc.checksum = std::stoi(fields[12].substr(starPos + 1), nullptr, 16);
+        if (fields[13].size() > 2 && fields[13].find('*') != std::string::npos) {
+            size_t starPos = fields[13].find('*');
+            gnrmc.navigation_status = fields[13][0].empty() ? ' ' : fields[13][0];
+            gnrmc.checksum = std::stoi(fields[13].substr(starPos + 1), nullptr, 16);
         }
     }
 
