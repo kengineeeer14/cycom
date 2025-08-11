@@ -11,7 +11,7 @@ int main() {
 
     gpio::GpioConfigure gpio_config;
     sensor_uart::UartConfigure uart_config(config_path);
-    sensor_uart::
+    sensor_uart::L76k gps;   // インスタンス作成
 
     // GPIOの設定
     if (!gpio_config.SetupGpio()) {
@@ -40,7 +40,7 @@ int main() {
                     }
 
                     // --- パーサ呼び出し ---
-                    sensor_uart::GNRMC rmc{};
+                    sensor_uart::L76k::GNRMC rmc{};
 
                     if (sensor_uart::parseGNRMC(nmea_line, rmc)) {
                         std::cout << "[GNRMC] Lat: " << rmc.latitude << rmc.lat_dir

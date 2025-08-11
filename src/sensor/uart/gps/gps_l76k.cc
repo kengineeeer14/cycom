@@ -1,7 +1,7 @@
 #include "sensor/uart/gps/gps_l76k.h"
 
 namespace sensor_uart{
-    L76k::parseGNRMC(const std::string &nmea, GNRMC &out) {
+    bool L76k::parseGNRMC(const std::string &nmea, GNRMC &out) {
 
         if (nmea.rfind("$GNRMC", 0) != 0) return false;
 
@@ -32,7 +32,7 @@ namespace sensor_uart{
             out.navigation_status = (starPos > 1) ? fields[12][1] : ' ';
             out.checksum = std::stoi(fields[12].substr(starPos + 1), nullptr, 16);
         }
-        return true
+        return true;
     }
 
 }   // namespace sensor_uart
