@@ -28,7 +28,10 @@ void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
                   << " Speed(knots): " << vtg.speed_knots << " " << vtg.speed_knots_unit
                   << " Speed(km/h): " << vtg.speed_kmh << " " << vtg.speed_kmh_unit
                   << " Mode: " << vtg.mode
-                  << " Checksum: " << std::hex << std::uppercase << vtg.checksum << std::dec
+                  << " Checksum: "
+                  << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
+                  << static_cast<int>(vtg.checksum)
+                  << std::dec << std::setfill(' ')
                   << "\n";
     }
 }
