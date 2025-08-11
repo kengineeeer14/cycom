@@ -75,6 +75,8 @@ namespace sensor_uart{
             bool parseGngaa(const std::string &nmea, GNGGA &out);
 
         private:
+            GNRMC gnrmc_last_;
+
             std::vector<std::string> SplitString(const std::string &line);
     };
 
