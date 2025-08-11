@@ -42,7 +42,7 @@ namespace sensor_uart{
         // モードとナビゲーションステータス＋チェックサム
         if (fields[13].size() > 2 && fields[13].find('*') != std::string::npos) {
             size_t starPos = fields[13].find('*');
-            gnrmc.navigation_status = fields[13][0].empty() ? ' ' : fields[13][0];
+            gnrmc.navigation_status = fields[13].empty() ? ' ' : fields[13][0];
             gnrmc.checksum = std::stoi(fields[13].substr(starPos + 1), nullptr, 16);
         }
     }
