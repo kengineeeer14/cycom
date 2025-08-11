@@ -2,7 +2,7 @@
 
 namespace sensor_uart{
 
-    std::vector<std::string> L76k::split_string(const std::string &line) {
+    std::vector<std::string> L76k::SplitString(const std::string &line) {
         std::vector<std::string> fields;
         std::stringstream ss(line);
         std::string item;
@@ -16,7 +16,7 @@ namespace sensor_uart{
 
         if (nmea.rfind("$GNRMC", 0) != 0) return false;
 
-        auto fields = split_string(nmea);
+        auto fields = SplitString(nmea);
         if (fields.size() < 13) return false;
 
         // UTC時刻
@@ -49,7 +49,7 @@ namespace sensor_uart{
     bool L76k::parseGNVTG(const std::string &nmea, GNVTG &out) {
         if (nmea.rfind("$GNVTG", 0) != 0) return false;
 
-        auto fields = split_string(nmea);
+        auto fields = SplitString(nmea);
         if (fields.size() < 9) return false;
 
         out.true_track_deg         = fields[1].empty() ? 0.0 : std::stod(fields[1]);
@@ -72,7 +72,7 @@ namespace sensor_uart{
     bool L76k::parseGNGGA(const std::string &nmea, GNGGA &out) {
         if (nmea.rfind("$GNGGA", 0) != 0) return false;
 
-        auto fields = split_string(nmea);
+        auto fields = SplitString(nmea);
         if (fields.size() < 15) return false;
 
         if (fields[1].size() >= 6) {
