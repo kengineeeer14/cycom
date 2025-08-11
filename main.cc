@@ -9,9 +9,9 @@
 
 void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
     std::string nmea_line = line;
-    if (!nmea_line.empty() && nmea_line.back() == '\r') {
-        nmea_line.pop_back(); // \r 削除
-    }
+    // if (!nmea_line.empty() && nmea_line.back() == '\r') {
+    //     nmea_line.pop_back(); // \r 削除
+    // }
 
     if (nmea_line.rfind("$GNRMC", 0) == 0) {
         sensor_uart::L76k::GNRMC rmc{};
@@ -60,12 +60,14 @@ int main() {
     while (true) {
         int n = read(fd, buf, sizeof(buf) - 1);
         if (n > 0) {
-            buf[n] = '\0';
+            buf[n] = '\0';  // 文字列の最後を示すためにヌル終端を入れる
             nmea_line.append(buf, n);
 
             size_t pos;
+            // 一回のreadで複数のNMEA文をまとめて受信しても安全に処理．
+            // ex.)nmea_line: "$GNRMC,....\n$GNGGA,....\n"
             while ((pos = nmea_line.find('\n')) != std::string::npos) {
-                std::string line = nmea_line.substr(0, pos + 1);
+                std::string line = nmea_line.substr(0, pos + 1); // 改行文字も含めて取得
                 process_nmea_line(gps, line);
                 nmea_line.erase(0, pos + 1);
             }
