@@ -68,11 +68,11 @@ namespace sensor_uart{
                 double Lat;
             };
 
-            bool parseGNRMC(const std::string &nmea, GNRMC &out);
+            bool ParseGnrmc(const std::string &nmea, GNRMC &out);
 
-            bool parseGNVTG(const std::string &nmea, GNVTG &out);
+            bool ParseGnvtg(const std::string &nmea, GNVTG &out);
 
-            bool parseGNGGA(const std::string &nmea, GNGGA &out);
+            bool parseGngaa(const std::string &nmea, GNGGA &out);
 
         private:
             std::vector<std::string> SplitString(const std::string &line);

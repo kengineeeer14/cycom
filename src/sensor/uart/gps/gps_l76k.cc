@@ -12,7 +12,7 @@ namespace sensor_uart{
         return fields;
     }
 
-    bool L76k::parseGNRMC(const std::string &nmea, GNRMC &out) {
+    bool L76k::ParseGnrmc(const std::string &nmea, GNRMC &out) {
 
         if (nmea.rfind("$GNRMC", 0) != 0) return false;
 
@@ -69,7 +69,7 @@ namespace sensor_uart{
         return true;
     }
 
-    bool L76k::parseGNGGA(const std::string &nmea, GNGGA &out) {
+    bool L76k::ParseGngaa(const std::string &nmea, GNGGA &out) {
         if (nmea.rfind("$GNGGA", 0) != 0) return false;
 
         auto fields = SplitString(nmea);
