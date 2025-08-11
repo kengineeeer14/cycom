@@ -2,6 +2,8 @@
 #include <termios.h>
 #include <unistd.h>
 #include <iostream>
+#include <iomanip>
+#include <cmath>
 #include <string>
 #include "gpio/gpio_config.h"
 #include "sensor/uart/uart_config.h"
@@ -12,21 +14,72 @@ void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
     if (nmea_line.rfind("$GNRMC", 0) == 0) {
         sensor_uart::L76k::GNRMC rmc{};
         gps.ParseGnrmc(nmea_line, rmc);
-        std::cout << "[GNRMC] "
-                  << "time=" << rmc.hour << ":"
-                  << rmc.minute << ":"
-                  << rmc.second
-                  << " status=" << rmc.data_status
-                  << " lat=" << rmc.latitude << rmc.lat_dir
-                  << " lon=" << rmc.longitude << rmc.lon_dir
-                  << " spd(kn)=" << rmc.speed_knots
-                  << " track=" << rmc.track_deg
-                  << " date=" << rmc.date
-                  << " magVar=" << rmc.mag_variation << rmc.mag_variation_dir
-                  << " mode=" << rmc.mode
-                  << " nav=" << rmc.navigation_status
-                  << " checksum" << static_cast<int>(rmc.checksum)
-                  << "\n";
+        std::cout << "[GNRMC] ";
+
+        // time: hour/minute use UINT8_MAX as sentinel, second uses NaN
+        std::cout << "time=";
+        if (rmc.hour != UINT8_MAX && rmc.minute != UINT8_MAX && std::isfinite(rmc.second)) {
+            std::cout << std::setw(2) << std::setfill('0') << static_cast<int>(rmc.hour)
+                      << ":" << std::setw(2) << static_cast<int>(rmc.minute)
+                      << ":" << std::fixed << std::setprecision(2) << rmc.second;
+        }
+
+        // status (optional char)
+        std::cout << " status=";
+        if (rmc.data_status != '\0') std::cout << rmc.data_status;
+
+        // latitude (optional)
+        std::cout << " lat=";
+        if (!std::isnan(rmc.latitude)) {
+            std::cout << std::fixed << std::setprecision(6) << rmc.latitude;
+            if (rmc.lat_dir != '\0') std::cout << rmc.lat_dir;
+        }
+
+        // longitude (optional)
+        std::cout << " lon=";
+        if (!std::isnan(rmc.longitude)) {
+            std::cout << std::fixed << std::setprecision(6) << rmc.longitude;
+            if (rmc.lon_dir != '\0') std::cout << rmc.lon_dir;
+        }
+
+        // speed in knots (optional)
+        std::cout << " spd(kn)=";
+        if (!std::isnan(rmc.speed_knots)) {
+            std::cout << std::fixed << std::setprecision(2) << rmc.speed_knots;
+        }
+
+        // track (optional)
+        std::cout << " track=";
+        if (!std::isnan(rmc.track_deg)) {
+            std::cout << std::fixed << std::setprecision(2) << rmc.track_deg;
+        }
+
+        // date (optional, UINT16_MAX sentinel)
+        std::cout << " date=";
+        if (rmc.date != UINT16_MAX) {
+            std::cout << rmc.date;
+        }
+
+        // magnetic variation (optional)
+        std::cout << " magVar=";
+        if (!std::isnan(rmc.mag_variation)) {
+            std::cout << std::fixed << std::setprecision(2) << rmc.mag_variation;
+            if (rmc.mag_variation_dir != '\0') std::cout << rmc.mag_variation_dir;
+        }
+
+        // mode (optional)
+        std::cout << " mode=";
+        if (rmc.mode != '\0') std::cout << rmc.mode;
+
+        // navigation status (optional)
+        std::cout << " nav=";
+        if (rmc.navigation_status != '\0') std::cout << rmc.navigation_status;
+
+        // checksum (uint8_t -> hex 2 digits)
+        std::cout << " checksum="
+                  << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
+                  << static_cast<int>(rmc.checksum)
+                  << std::dec << std::setfill(' ') << "\n";
     }
     if (nmea_line.rfind("$GNGGA", 0) == 0) {
         sensor_uart::L76k::GNGGA gga{};
