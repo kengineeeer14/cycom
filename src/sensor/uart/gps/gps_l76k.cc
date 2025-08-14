@@ -118,7 +118,7 @@ namespace sensor_uart{
         if (nmea_line.rfind("$GNRMC", 0) == 0) {
             ParseGnrmc(nmea_line, gnrmc_data_);
         } else if (nmea_line.rfind("$GNGGA", 0) == 0) {
-            ParseGngga(nmea_line, gngga);
+            ParseGngga(nmea_line, gngga_data_);
         } else if (nmea_line.rfind("$GNVTG", 0) == 0) {
             ParseGnvtg(nmea_line, gnvtg_data_);
         } 
