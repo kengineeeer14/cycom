@@ -70,14 +70,14 @@ namespace sensor_uart{
 
             // GPSデータの結果格納用
             GNRMC gnrmc_data_;
-            GNGAA gngaa_data_;
+            GNGGA gngga_data_;
             GNVTG gnvtg_data_;
 
             void ParseGnrmc(const std::string &nmea, GNRMC &gnrmc);
 
             void ParseGnvtg(const std::string &nmea, GNVTG &gnvtg);
 
-            void ParseGngaa(const std::string &nmea, GNGGA &gnvtg);
+            void ParseGngga(const std::string &nmea, GNGGA &gngga);
 
             void ProcessNmeaLine(const std::string &line);
 

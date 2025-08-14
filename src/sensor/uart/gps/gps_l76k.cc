@@ -77,37 +77,37 @@ namespace sensor_uart{
         }
     }
 
-    void L76k::ParseGngaa(const std::string &nmea, GNGGA &gngaa) {
+    void L76k::ParseGngga(const std::string &nmea, GNGGA &gngga) {
         std::vector<std::string> fields = SplitString(nmea);
 
         if (fields.size() > 1 && fields[1].size() >= 6) {
-            gngaa.hour   = std::stoi(fields[1].substr(0, 2));
-            gngaa.minute = std::stoi(fields[1].substr(2, 2));
-            gngaa.second = std::stod(fields[1].substr(4));
+            gngga.hour   = std::stoi(fields[1].substr(0, 2));
+            gngga.minute = std::stoi(fields[1].substr(2, 2));
+            gngga.second = std::stod(fields[1].substr(4));
         } else {
-            gngaa.hour = UINT8_MAX;
-            gngaa.minute = UINT8_MAX;
-            gngaa.second = std::numeric_limits<double>::quiet_NaN();
+            gngga.hour = UINT8_MAX;
+            gngga.minute = UINT8_MAX;
+            gngga.second = std::numeric_limits<double>::quiet_NaN();
         }
-        gngaa.latitude      = (fields.size() > 2 && !fields[2].empty()) ? std::stod(fields[2]) : std::numeric_limits<double>::quiet_NaN();
-        gngaa.lat_dir       = (fields.size() > 3 && !fields[3].empty()) ? fields[3][0] : '\0';
-        gngaa.longitude     = (fields.size() > 4 && !fields[4].empty()) ? std::stod(fields[4]) : std::numeric_limits<double>::quiet_NaN();
-        gngaa.lon_dir       = (fields.size() > 5 && !fields[5].empty()) ? fields[5][0] : '\0';
-        gngaa.quality       = (fields.size() > 6 && !fields[6].empty()) ? static_cast<uint8_t>(std::stoi(fields[6])) : UINT8_MAX;
-        gngaa.num_satellites= (fields.size() > 7 && !fields[7].empty()) ? static_cast<uint8_t>(std::stoi(fields[7])) : UINT8_MAX;
-        gngaa.hdop          = (fields.size() > 8 && !fields[8].empty()) ? std::stod(fields[8]) : std::numeric_limits<double>::quiet_NaN();
-        gngaa.altitude      = (fields.size() > 9 && !fields[9].empty()) ? std::stod(fields[9]) : std::numeric_limits<double>::quiet_NaN();
-        gngaa.altitude_unit = (fields.size() > 10 && !fields[10].empty()) ? fields[10][0] : '\0';
-        gngaa.geoid_height  = (fields.size() > 11 && !fields[11].empty()) ? std::stod(fields[11]) : std::numeric_limits<double>::quiet_NaN();
-        gngaa.geoid_unit    = (fields.size() > 12 && !fields[12].empty()) ? fields[12][0] : '\0';
-        gngaa.dgps_age      = (fields.size() > 13 && !fields[13].empty()) ? std::stod(fields[13]) : std::numeric_limits<double>::quiet_NaN();
+        gngga.latitude      = (fields.size() > 2 && !fields[2].empty()) ? std::stod(fields[2]) : std::numeric_limits<double>::quiet_NaN();
+        gngga.lat_dir       = (fields.size() > 3 && !fields[3].empty()) ? fields[3][0] : '\0';
+        gngga.longitude     = (fields.size() > 4 && !fields[4].empty()) ? std::stod(fields[4]) : std::numeric_limits<double>::quiet_NaN();
+        gngga.lon_dir       = (fields.size() > 5 && !fields[5].empty()) ? fields[5][0] : '\0';
+        gngga.quality       = (fields.size() > 6 && !fields[6].empty()) ? static_cast<uint8_t>(std::stoi(fields[6])) : UINT8_MAX;
+        gngga.num_satellites= (fields.size() > 7 && !fields[7].empty()) ? static_cast<uint8_t>(std::stoi(fields[7])) : UINT8_MAX;
+        gngga.hdop          = (fields.size() > 8 && !fields[8].empty()) ? std::stod(fields[8]) : std::numeric_limits<double>::quiet_NaN();
+        gngga.altitude      = (fields.size() > 9 && !fields[9].empty()) ? std::stod(fields[9]) : std::numeric_limits<double>::quiet_NaN();
+        gngga.altitude_unit = (fields.size() > 10 && !fields[10].empty()) ? fields[10][0] : '\0';
+        gngga.geoid_height  = (fields.size() > 11 && !fields[11].empty()) ? std::stod(fields[11]) : std::numeric_limits<double>::quiet_NaN();
+        gngga.geoid_unit    = (fields.size() > 12 && !fields[12].empty()) ? fields[12][0] : '\0';
+        gngga.dgps_age      = (fields.size() > 13 && !fields[13].empty()) ? std::stod(fields[13]) : std::numeric_limits<double>::quiet_NaN();
 
         if (fields.size() > 14 && !fields[14].empty()) {
             size_t starPos = fields[14].find('*');
             if (starPos != std::string::npos) {
-                gngaa.dgps_id = fields[14].substr(0, starPos);
+                gngga.dgps_id = fields[14].substr(0, starPos);
                 if (starPos + 1 < fields[14].size()) {
-                    gngaa.checksum = std::stoi(fields[14].substr(starPos + 1), nullptr, 16);
+                    gngga.checksum = std::stoi(fields[14].substr(starPos + 1), nullptr, 16);
                 }
             }
         }
@@ -118,7 +118,7 @@ namespace sensor_uart{
         if (nmea_line.rfind("$GNRMC", 0) == 0) {
             gps.ParseGnrmc(nmea_line, gnrmc_data_);
         } else if (nmea_line.rfind("$GNGGA", 0) == 0) {
-            gps.ParseGngaa(nmea_line, gngaa_data_);
+            gps.ParseGngga(nmea_line, gngga);
         } else if (nmea_line.rfind("$GNVTG", 0) == 0) {
             gps.ParseGnvtg(nmea_line, gnvtg_data_);
         } 
