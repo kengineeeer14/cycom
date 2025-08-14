@@ -116,11 +116,11 @@ namespace sensor_uart{
     void L76k::ProcessNmeaLine(const std::string &line){
            std::string nmea_line = line;
         if (nmea_line.rfind("$GNRMC", 0) == 0) {
-            gps.ParseGnrmc(nmea_line, gnrmc_data_);
+            ParseGnrmc(nmea_line, gnrmc_data_);
         } else if (nmea_line.rfind("$GNGGA", 0) == 0) {
-            gps.ParseGngga(nmea_line, gngga);
+            ParseGngga(nmea_line, gngga);
         } else if (nmea_line.rfind("$GNVTG", 0) == 0) {
-            gps.ParseGnvtg(nmea_line, gnvtg_data_);
+            ParseGnvtg(nmea_line, gnvtg_data_);
         } 
     }
 }   // namespace sensor_uart
