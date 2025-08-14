@@ -112,4 +112,15 @@ namespace sensor_uart{
             }
         }
     }
+
+    void ProcessNmeaLine(const std::string &line){
+           std::string nmea_line = line;
+        if (nmea_line.rfind("$GNRMC", 0) == 0) {
+            gps.ParseGnrmc(nmea_line, gnrmc_data_);
+        } else if (nmea_line.rfind("$GNGGA", 0) == 0) {
+            gps.ParseGngaa(nmea_line, gngaa_data_);
+        } else if (nmea_line.rfind("$GNVTG", 0) == 0) {
+            gps.ParseGnvtg(nmea_line, gnvtg_data_);
+        } 
+    }
 }   // namespace sensor_uart

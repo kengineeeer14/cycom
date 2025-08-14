@@ -9,33 +9,6 @@
 #include "sensor/uart/uart_config.h"
 #include "sensor/uart/gps/gps_l76k.h"
 
-void process_nmea_line(sensor_uart::L76k &gps, const std::string &line) {
-    std::string nmea_line = line;
-    if (nmea_line.rfind("$GNRMC", 0) == 0) {
-        sensor_uart::L76k::GNRMC rmc{};
-        gps.ParseGnrmc(nmea_line, rmc);
-    }
-    if (nmea_line.rfind("$GNGGA", 0) == 0) {
-        sensor_uart::L76k::GNGGA gga{};
-        gps.ParseGngaa(nmea_line, gga);
-    }
-    if (nmea_line.rfind("$GNVTG", 0) == 0) {
-        sensor_uart::L76k::GNVTG vtg{};
-        gps.ParseGnvtg(nmea_line, vtg);
-        std::cout << "[GNVTG] "
-                  << "True Track: " << vtg.true_track_deg << vtg.true_track_indicator
-                  << " Magnetic Track: " << vtg.magnetic_track_deg << vtg.magnetic_track_indicator
-                  << " Speed(knots): " << vtg.speed_knots << " " << vtg.speed_knots_unit
-                  << " Speed(km/h): " << vtg.speed_kmh << " " << vtg.speed_kmh_unit
-                  << " Mode: " << vtg.mode
-                  << " Checksum: "
-                  << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
-                  << static_cast<int>(vtg.checksum)
-                  << std::dec << std::setfill(' ')
-                  << "\n";
-    }
-}
-
 int main() {
     const std::string config_path = "config/config.json";
 
@@ -66,7 +39,7 @@ int main() {
             // ex.)nmea_line: "$GNRMC,....\n$GNGGA,....\n"
             while ((pos = nmea_line.find('\n')) != std::string::npos) {
                 std::string line = nmea_line.substr(0, pos + 1); // 改行文字も含めて取得
-                process_nmea_line(gps, line);
+                gps.ProcessNmeaLine(gps, line);
                 nmea_line.erase(0, pos + 1);
             }
         }
