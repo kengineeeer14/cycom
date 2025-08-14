@@ -10,11 +10,6 @@ namespace sensor_uart{
     
     class L76k{
         public:
-            // GPSデータの結果格納用
-            GNRMC gnrmc_data_;
-            GNGAA gngaa_data_;
-            GNVTG gnvtg_data_;
-
             // 受信データ
             struct GNRMC {
                 uint8_t hour;           // UTC時刻: 時
@@ -72,6 +67,11 @@ namespace sensor_uart{
                 double Lon;
                 double Lat;
             };
+
+            // GPSデータの結果格納用
+            GNRMC gnrmc_data_;
+            GNGAA gngaa_data_;
+            GNVTG gnvtg_data_;
 
             void ParseGnrmc(const std::string &nmea, GNRMC &gnrmc);
 

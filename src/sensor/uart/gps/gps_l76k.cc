@@ -113,7 +113,7 @@ namespace sensor_uart{
         }
     }
 
-    void ProcessNmeaLine(const std::string &line){
+    void L76k::ProcessNmeaLine(const std::string &line){
            std::string nmea_line = line;
         if (nmea_line.rfind("$GNRMC", 0) == 0) {
             gps.ParseGnrmc(nmea_line, gnrmc_data_);

@@ -39,7 +39,7 @@ int main() {
             // ex.)nmea_line: "$GNRMC,....\n$GNGGA,....\n"
             while ((pos = nmea_line.find('\n')) != std::string::npos) {
                 std::string line = nmea_line.substr(0, pos + 1); // 改行文字も含めて取得
-                gps.ProcessNmeaLine(gps, line);
+                gps.ProcessNmeaLine(line);
                 nmea_line.erase(0, pos + 1);
             }
         }
