@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 #include <string> 
+#include "sensor/uart/gps/gps_l76k.h"
+
 
 namespace util {
 class Logger {
