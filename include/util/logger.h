@@ -43,6 +43,7 @@ public:
     void WriteCsv(const LogData &log_data);
 
 private:
+    void WriteLogHeader();
     std::thread th_;
     std::atomic<bool> running_{false};
     std::chrono::milliseconds period_{0};
