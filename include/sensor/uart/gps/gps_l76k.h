@@ -11,12 +11,6 @@ namespace sensor_uart{
     
     class L76k{
         public:
-            struct GnssSnapshot {
-                GNRMC gnrmc;
-                GNVTG gnvtg;
-                GNGGA gngga;
-            };
-
             // 受信データ
             struct GNRMC {
                 uint8_t hour;           // UTC時刻: 時
@@ -70,9 +64,10 @@ namespace sensor_uart{
                 uint8_t checksum;       // チェックサム
             };
 
-            struct Coordinates {
-                double Lon;
-                double Lat;
+            struct GnssSnapshot {
+                GNRMC gnrmc;
+                GNVTG gnvtg;
+                GNGGA gngga;
             };
 
             void ProcessNmeaLine(const std::string &line);
