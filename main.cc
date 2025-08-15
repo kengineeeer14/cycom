@@ -27,7 +27,11 @@ int main() {
         return 1;
     }
 
-    logger.Start(std::chrono::milliseconds(logger.log_interval_ms_));
+    logger.Start(std::chrono::milliseconds(logger.log_interval_ms_), [&] {
+        sensor_uart::L76k::GnssSnapshot snap = gps.Snapshot();
+        util::Logger::LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
+        logger.WriteCsv(log_data);
+    });
 
     char buf[256];
     std::string nmea_line;

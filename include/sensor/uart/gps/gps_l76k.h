@@ -2,6 +2,8 @@
 #include <string>   // std::string
 #include <vector>   // std::vector
 #include <sstream>
+#include <mutex>
+#include <limits>
 
 #ifndef GPS_L76K_H
 #define GPS_L76K_H
@@ -12,6 +14,24 @@ namespace sensor_uart{
         public:
             // 受信データ
             struct GNRMC {
+                GNRMC()
+                    : hour(0),
+                      minute(0),
+                      second(std::numeric_limits<double>::quiet_NaN()),
+                      data_status('V'),
+                      latitude(std::numeric_limits<double>::quiet_NaN()),
+                      lat_dir('\0'),
+                      longitude(std::numeric_limits<double>::quiet_NaN()),
+                      lon_dir('\0'),
+                      speed_knots(std::numeric_limits<double>::quiet_NaN()),
+                      track_deg(std::numeric_limits<double>::quiet_NaN()),
+                      date(0),
+                      mag_variation(std::numeric_limits<double>::quiet_NaN()),
+                      mag_variation_dir('\0'),
+                      mode('N'),
+                      navigation_status('V'),
+                      checksum(0)
+                {}
                 uint8_t hour;           // UTC時刻: 時
                 uint8_t minute;         // UTC時刻: 分
                 double second;          // UTC時刻: 秒
@@ -31,6 +51,18 @@ namespace sensor_uart{
             };
 
             struct GNVTG {
+                GNVTG()
+                    : true_track_deg(std::numeric_limits<double>::quiet_NaN()),
+                      true_track_indicator('\0'),
+                      magnetic_track_deg(std::numeric_limits<double>::quiet_NaN()),
+                      magnetic_track_indicator('\0'),
+                      speed_knots(std::numeric_limits<double>::quiet_NaN()),
+                      speed_knots_unit('\0'),
+                      speed_kmh(std::numeric_limits<double>::quiet_NaN()),
+                      speed_kmh_unit('\0'),
+                      mode('N'),
+                      checksum(0)
+                {}
                 double true_track_deg;      // 真方位 [0.0 - 359.9deg]
                 char true_track_indicator; // 'T'（True courseの意味）
                 double magnetic_track_deg; // 磁方位 [0.0 - 359.9deg]
@@ -44,6 +76,25 @@ namespace sensor_uart{
             };
 
             struct GNGGA {
+                GNGGA()
+                    : hour(0),
+                      minute(0),
+                      second(std::numeric_limits<double>::quiet_NaN()),
+                      latitude(std::numeric_limits<double>::quiet_NaN()),
+                      lat_dir('\0'),
+                      longitude(std::numeric_limits<double>::quiet_NaN()),
+                      lon_dir('\0'),
+                      quality(0),
+                      num_satellites(0),
+                      hdop(std::numeric_limits<double>::quiet_NaN()),
+                      altitude(std::numeric_limits<double>::quiet_NaN()),
+                      altitude_unit('\0'),
+                      geoid_height(std::numeric_limits<double>::quiet_NaN()),
+                      geoid_unit('\0'),
+                      dgps_age(std::numeric_limits<double>::quiet_NaN()),
+                      dgps_id(),
+                      checksum(0)
+                {}
                 uint8_t hour;           // UTC時刻: 時
                 uint8_t minute;         // UTC時刻: 分
                 double second;          // UTC時刻: 秒
@@ -63,28 +114,29 @@ namespace sensor_uart{
                 uint8_t checksum;       // チェックサム
             };
 
-            struct Coordinates {
-                double Lon;
-                double Lat;
+            struct GnssSnapshot {
+                GNRMC gnrmc;
+                GNVTG gnvtg;
+                GNGGA gngga;
             };
 
-            // GPSデータの結果格納用
-            GNRMC gnrmc_data_;
-            GNGGA gngga_data_;
-            GNVTG gnvtg_data_;
+            void ProcessNmeaLine(const std::string &line);
+
+            GnssSnapshot Snapshot() const;
+
+        private:
+            mutable std::mutex mtx_;
+            GNRMC gnrmc_data_{};
+            GNGGA gngga_data_{};
+            GNVTG gnvtg_data_{};
+
+            std::vector<std::string> SplitString(const std::string &line);
 
             void ParseGnrmc(const std::string &nmea, GNRMC &gnrmc);
 
             void ParseGnvtg(const std::string &nmea, GNVTG &gnvtg);
 
             void ParseGngga(const std::string &nmea, GNGGA &gngga);
-
-            void ProcessNmeaLine(const std::string &line);
-
-        private:
-            GNRMC gnrmc_last_;
-
-            std::vector<std::string> SplitString(const std::string &line);
     };
 
 }   // namespace sensor_uart
