@@ -102,6 +102,8 @@ namespace sensor_uart{
         gngga.geoid_unit    = (fields.size() > 12 && !fields[12].empty()) ? fields[12][0] : '\0';
         gngga.dgps_age      = (fields.size() > 13 && !fields[13].empty()) ? std::stod(fields[13]) : std::numeric_limits<double>::quiet_NaN();
 
+        gngaa.dgps_id = '\0';
+        gngaa.checksum = 0;
         if (fields.size() > 14 && !fields[14].empty()) {
             size_t starPos = fields[14].find('*');
             if (starPos != std::string::npos) {
@@ -128,7 +130,10 @@ namespace sensor_uart{
         std::cout << "Geoid Unit: " << gngga.geoid_unit << "\n";
         std::cout << "DGPS Age: " << gngga.dgps_age << "\n";
         std::cout << "DGPS ID: " << gngga.dgps_id << "\n";
-        std::cout << "Checksum: " << gngga.checksum << "\n";
+        std::cout << "Checksum: "
+        << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
+        << static_cast<int>(gngga.checksum)
+        << std::dec << "\n";
     }
 
     void L76k::ProcessNmeaLine(const std::string &line){
