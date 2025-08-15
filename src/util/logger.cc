@@ -6,8 +6,6 @@ namespace {
     using clock_type = std::chrono::steady_clock;
 }
 
-Logger::Logger() = default;
-
 Logger::Logger(const std::string &config_path) {
     std::ifstream ifs(config_path);
     if (!ifs.is_open()) {

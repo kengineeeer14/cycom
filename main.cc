@@ -27,7 +27,7 @@ int main() {
         return 1;
     }
 
-    logger.Start(std::chrono::milliseconds(util::Logger::log_interval_ms_));
+    logger.Start(std::chrono::milliseconds(logger.log_interval_ms_));
 
     char buf[256];
     std::string nmea_line;
