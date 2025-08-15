@@ -102,8 +102,8 @@ namespace sensor_uart{
         gngga.geoid_unit    = (fields.size() > 12 && !fields[12].empty()) ? fields[12][0] : '\0';
         gngga.dgps_age      = (fields.size() > 13 && !fields[13].empty()) ? std::stod(fields[13]) : std::numeric_limits<double>::quiet_NaN();
 
-        gngaa.dgps_id = '\0';
-        gngaa.checksum = 0;
+        gngga.dgps_id = '\0';
+        gngga.checksum = 0;
         if (fields.size() > 14 && !fields[14].empty()) {
             size_t starPos = fields[14].find('*');
             if (starPos != std::string::npos) {
