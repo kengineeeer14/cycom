@@ -7,6 +7,18 @@ namespace {
 }
 
 Logger::Logger() = default;
+
+Logger::Logger(const std::string &config_path) {
+    std::ifstream ifs(config_path);
+    if (!ifs.is_open()) {
+        throw std::runtime_error("Failed to open config file");
+    }
+    nlohmann::json j;
+    ifs >> j;
+
+    log_interval_ms_ = j["logger"]["log_interval_ms"].get<unsigned int>();
+}
+
 Logger::~Logger() { Stop(); }
 
 void Logger::Start(std::chrono::milliseconds period, Callback cb) {

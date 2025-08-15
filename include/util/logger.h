@@ -11,7 +11,9 @@ class Logger {
 public:
     using Callback = std::function<void()>;
 
-    Logger();
+    int log_interval_ms_;
+
+    explicit Logger(const std::string& config_path);
     ~Logger();
 
     // コールバック指定版：cb が指定されていればそれを呼ぶ。なければ OnTick() を呼ぶ

@@ -16,6 +16,7 @@ int main() {
     gpio::GpioConfigure gpio_config;
     sensor_uart::UartConfigure uart_config(config_path);
     sensor_uart::L76k gps;
+    util::Logger logger(config_path);
 
     if (!gpio_config.SetupGpio()) {
         return 1;
@@ -26,8 +27,7 @@ int main() {
         return 1;
     }
 
-    util::Logger logger;
-    logger.Start(std::chrono::milliseconds(100));
+    logger.Start(std::chrono::milliseconds(util::Logger::log_interval_ms_));
 
     char buf[256];
     std::string nmea_line;
