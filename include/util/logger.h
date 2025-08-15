@@ -44,7 +44,7 @@ public:
 
 private:
     void WriteLogHeader();
-    std::string Logger::GenerateCsvFilePath();
+    std::string GenerateCsvFilePath();
     std::thread th_;
     std::atomic<bool> running_{false};
     std::chrono::milliseconds period_{0};
