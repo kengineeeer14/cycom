@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <mutex>
+#include <fstream>
 
 namespace util {
 namespace {
@@ -110,6 +111,21 @@ void Logger::WriteLogHeader() {
 void Logger::WriteCsv(const LogData &log_data){
     static std::mutex mtx;  // guard against concurrent writes
     std::lock_guard<std::mutex> lk(mtx);
+
+    // Ensure parent directory exists and open file
+    try {
+        std::filesystem::path p(csv_file_path_);
+        if (p.has_parent_path() && !p.parent_path().empty()) {
+            std::filesystem::create_directories(p.parent_path());
+        }
+    } catch (...) {
+        // Ignore directory creation failures; file open may still work in CWD
+    }
+
+    std::ofstream ofs(csv_file_path_, std::ios::app);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("Logger::WriteCsv: failed to open CSV file");
+    }
 
     // Row
     ofs
