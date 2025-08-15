@@ -17,6 +17,7 @@ set(SOURCES
     src/gpio/gpio_config.cc
     src/sensor/uart/uart_config.cc
     src/sensor/uart/gps/gps_l76k.cc
+    src/util/logger.cc
 )
 
 # 実行ファイルを作成
