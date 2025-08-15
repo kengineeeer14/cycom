@@ -128,7 +128,7 @@ namespace sensor_uart{
         }
     }
 
-    GnssSnapshot L76k::Snapshot() const {
+    L76k::GnssSnapshot L76k::Snapshot() const {
         std::lock_guard<std::mutex> lk(mtx_);
         return GnssSnapshot{gnrmc_data_, gnvtg_data_, gngga_data_};
     }
