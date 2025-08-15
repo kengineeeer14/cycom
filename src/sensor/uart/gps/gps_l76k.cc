@@ -115,14 +115,21 @@ namespace sensor_uart{
         }
     }
 
-    void L76k::ProcessNmeaLine(const std::string &line){
-           std::string nmea_line = line;
-        if (nmea_line.rfind("$GNRMC", 0) == 0) {
-            ParseGnrmc(nmea_line, gnrmc_data_);
-        } else if (nmea_line.rfind("$GNGGA", 0) == 0) {
-            ParseGngga(nmea_line, gngga_data_);
-        } else if (nmea_line.rfind("$GNVTG", 0) == 0) {
-            ParseGnvtg(nmea_line, gnvtg_data_);
-        } 
+    void L76k::ProcessNmeaLine(const std::string& line) {
+        if (line.rfind("$GNRMC", 0) == 0) {
+            std::lock_guard<std::mutex> lk(mtx_);
+            ParseGnrmc(line, gnrmc_data_);
+        } else if (line.rfind("$GNGGA", 0) == 0) {
+            std::lock_guard<std::mutex> lk(mtx_);
+            ParseGngga(line, gngga_data_);
+        } else if (line.rfind("$GNVTG", 0) == 0) {
+            std::lock_guard<std::mutex> lk(mtx_);
+            ParseGnvtg(line, gnvtg_data_);
+        }
+    }
+
+    GnssSnapshot L76k::Snapshot() const {
+        std::lock_guard<std::mutex> lk(mtx_);
+        return GnssSnapshot{gnrmc_data_, gnvtg_data_, gngga_data_};
     }
 }   // namespace sensor_uart

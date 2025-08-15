@@ -48,4 +48,8 @@ void Logger::OnTick() {
     std::cout << "100ms\n";
 }
 
+void Logger::WriteCsv(const LogData log_data){
+
+}
+
 } // namespace util

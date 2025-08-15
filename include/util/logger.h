@@ -15,7 +15,14 @@ class Logger {
 public:
     using Callback = std::function<void()>;
 
+    struct LogData {
+        GNRMC gnrmc;
+        GNVTG gnvtg;
+        GNGGA gngga;
+    };
+
     int log_interval_ms_;
+    std::string csv_file_path_;
 
     explicit Logger(const std::string& config_path);
     ~Logger();
@@ -28,8 +35,10 @@ public:
 
     void Stop();
 
-    // 周期処理（必要に応じて中身を編集）
+    // 周期処理
     void OnTick();
+
+    void WriteCsv(const LogData &log_data);
 
 private:
     std::thread th_;
