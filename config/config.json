@@ -3,7 +3,6 @@
     "baudrate": 9600
   },
   "logger": {
-    "log_interval_ms": 100,
-    "csv_file_path": "result.csv"
+    "log_interval_ms": 100
   }
 }

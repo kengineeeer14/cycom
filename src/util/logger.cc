@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <mutex>
 #include <fstream>
+#include <chrono>
+#include <sstream>
 
 namespace util {
 namespace {
@@ -19,9 +21,22 @@ Logger::Logger(const std::string &config_path) {
     ifs >> j;
 
     log_interval_ms_ = j["logger"]["log_interval_ms"].get<unsigned int>();
-    csv_file_path_ = j["logger"]["csv_file_path"].get<std::string>();
+
+    csv_file_path_ = GenerateCsvFilePath();
 
     WriteLogHeader();
+}
+
+std::string Logger::GenerateCsvFilePath() {
+    std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm tm = *std::localtime(&now_c);
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y%m%d_%H%M%S") << "_log.csv";
+    std::string timestamped_filename = oss.str();
+
+    return (std::filesystem::current_path() / "log" / timestamped_filename).string();
 }
 
 Logger::~Logger() { Stop(); }
