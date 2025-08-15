@@ -113,27 +113,6 @@ namespace sensor_uart{
                 }
             }
         }
-            // Print all fields
-        std::cout << "Hour: " << static_cast<int>(gngga.hour) << "\n";
-        std::cout << "Minute: " << static_cast<int>(gngga.minute) << "\n";
-        std::cout << "Second: " << gngga.second << "\n";
-        std::cout << "Latitude: " << gngga.latitude << "\n";
-        std::cout << "Latitude Direction: " << gngga.lat_dir << "\n";
-        std::cout << "Longitude: " << gngga.longitude << "\n";
-        std::cout << "Longitude Direction: " << gngga.lon_dir << "\n";
-        std::cout << "Quality: " << static_cast<int>(gngga.quality) << "\n";
-        std::cout << "Number of Satellites: " << static_cast<int>(gngga.num_satellites) << "\n";
-        std::cout << "HDOP: " << gngga.hdop << "\n";
-        std::cout << "Altitude: " << gngga.altitude << "\n";
-        std::cout << "Altitude Unit: " << gngga.altitude_unit << "\n";
-        std::cout << "Geoid Height: " << gngga.geoid_height << "\n";
-        std::cout << "Geoid Unit: " << gngga.geoid_unit << "\n";
-        std::cout << "DGPS Age: " << gngga.dgps_age << "\n";
-        std::cout << "DGPS ID: " << gngga.dgps_id << "\n";
-        std::cout << "Checksum: "
-        << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
-        << static_cast<int>(gngga.checksum)
-        << std::dec << "\n";
     }
 
     void L76k::ProcessNmeaLine(const std::string &line){
