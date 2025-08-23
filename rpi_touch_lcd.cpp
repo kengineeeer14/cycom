@@ -591,7 +591,7 @@ int main() {
         }
 
         // 3) タッチ初期化（割り込み or ポーリング）
-        gt911::Touch touch(addrs.empty() ? 0x5D : addrs[0]);
+        gt911::Touch touch(addr);
 
         // 4) メインループ（タッチ座標を点描／タッチ無しでもハートビート描画）
         int t = 0;
