@@ -445,7 +445,8 @@ public:
     // INT ピンに対してエッジイベントを要求し、失敗時はポーリングに切替。
     // 背景スレッドで irqLoop() を回す。
     Touch(uint8_t i2c_addr = 0x5D)
-    : i2c_("/dev/i2c-1", i2c_addr),
+    : i2c_addr_(i2c_addr),
+      i2c_("/dev/i2c-1", i2c_addr),
       rst_("gpiochip0", kGT911_RST_PIN, true, 1),
       int_in_("gpiochip0", kGT911_INT_PIN, false),
       use_events_(false),
@@ -494,10 +495,24 @@ public:
     }
 
 private:
-    // GT911 のハードリセット(簡易シーケンス)。
+    // GT911 のハードリセットとアドレス選択(INTピン駆動)
     void reset() {
-        rst_.set(0); usleep(10000);
-        rst_.set(1); usleep(50000);
+        // According to GT911 reset/address selection spec:
+        //  - INT held LOW during reset -> address 0x14
+        //  - INT held HIGH during reset -> address 0x5D
+        int desired_level = (i2c_addr_ == 0x5D) ? 1 : 0;
+        try {
+            // Temporarily request INT as output to force the level during reset.
+            GpioLine int_force("gpiochip0", kGT911_INT_PIN, true, desired_level);
+            // Reset pulse while holding INT at desired level
+            rst_.set(0); usleep(10000);
+            rst_.set(1); usleep(50000);
+            // int_force goes out of scope here, releasing the line
+        } catch (...) {
+            // Fallback: simple reset without INT control
+            rst_.set(0); usleep(10000);
+            rst_.set(1); usleep(50000);
+        }
     }
 
     // タッチ報告のX/Y最大値をレジスタに設定。LCDの実解像度と合わせる。
@@ -588,6 +603,7 @@ private:
     }
 
 private:
+    uint8_t   i2c_addr_;
     I2C       i2c_;
     GpioLine  rst_;
     GpioLine  int_in_;
