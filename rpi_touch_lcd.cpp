@@ -404,9 +404,6 @@ private:
 // =============================================================
 namespace gt911 {
 
-#ifndef DEBUG_TOUCH
-#define DEBUG_TOUCH 1
-#endif
 
 // レジスタ
 static constexpr uint16_t COMMAND_REG            = 0x8040;
@@ -576,10 +573,6 @@ private:
         int x = ((int)x_hi << 8) | x_lo;
         int y = ((int)y_hi << 8) | y_lo;
 
-        if (DEBUG_TOUCH) {
-            std::cerr << "[GT911] raw x=" << x << " y=" << y << "\n";
-        }
-
         // Apply horizontal mirror (off-by-one corrected) and clamp to panel bounds
         x = COORDINATE_X_MAX - 1 - x;
         if (x < 0) x = 0; else if (x >= COORDINATE_X_MAX) x = COORDINATE_X_MAX - 1;
@@ -587,10 +580,6 @@ private:
 
         last_x_.store(x);
         last_y_.store(y);
-
-        if (DEBUG_TOUCH) {
-            std::cerr << "[GT911] fixed x=" << last_x_.load() << " y=" << last_y_.load() << "\n";
-        }
 
         clearStatus();
     }
