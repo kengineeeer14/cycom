@@ -1,6 +1,6 @@
-#include "gpio/gpio_config.h"
 #include <gpiod.h>
 #include <iostream>
+#include "hal/gpio/gpio_config.h"
 
 namespace gpio {
 bool GpioConfigure::SetupGpio() {

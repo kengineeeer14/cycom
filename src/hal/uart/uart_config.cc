@@ -1,4 +1,4 @@
-#include "sensor/uart/uart_config.h"
+#include "hal/uart/uart_config.h"
 
 namespace sensor_uart{
     UartConfigure::UartConfigure(const std::string &config_path) {

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include "sensor/uart/gps/gps_l76k.h"
+#include "sensor/gps/gps_l76k.h"
 
 namespace sensor_uart{
 

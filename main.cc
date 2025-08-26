@@ -5,9 +5,9 @@
 #include <iomanip>
 #include <cmath>
 #include <string>
-#include "gpio/gpio_config.h"
-#include "sensor/uart/uart_config.h"
-#include "sensor/uart/gps/gps_l76k.h"
+#include "hal/gpio/gpio_config.h"
+#include "hal/uart/uart_config.h"
+#include "sensor/gps/gps_l76k.h"
 #include "util/logger.h"
 
 int main() {

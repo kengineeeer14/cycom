@@ -25,7 +25,6 @@
 #include <linux/i2c.h>
 #include <linux/spi/spidev.h>
 #include <stdexcept>
-#include <string>
 #include <sys/ioctl.h>
 #include <thread>
 #include <unistd.h>
