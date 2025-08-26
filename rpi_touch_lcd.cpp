@@ -405,7 +405,7 @@ private:
 namespace gt911 {
 
 #ifndef DEBUG_TOUCH
-#define DEBUG_TOUCH 0
+#define DEBUG_TOUCH 1
 #endif
 
 // レジスタ
