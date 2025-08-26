@@ -77,6 +77,16 @@ public:
             throw std::runtime_error("gpiod_line_request_rising_edge_events failed");
         }
     }
+    // 入力ラインを立ち下がりエッジでイベント待ちできるように設定する。
+    void requestFallingEdge() {
+        if (is_output_) {
+            throw std::runtime_error("line is output");
+        }
+        gpiod_line_release(line_);
+        if (gpiod_line_request_falling_edge_events(line_, "rpi-touch") < 0) {
+            throw std::runtime_error("gpiod_line_request_falling_edge_events failed");
+        }
+    }
     // 指定ミリ秒だけイベント(エッジ)を待つ。
     // >0: イベントあり, 0: タイムアウト, <0: エラー。
     int waitEvent(int timeout_ms) {
@@ -394,6 +404,10 @@ private:
 // =============================================================
 namespace gt911 {
 
+#ifndef DEBUG_TOUCH
+#define DEBUG_TOUCH 0
+#endif
+
 // レジスタ
 static constexpr uint16_t COMMAND_REG            = 0x8040;
 static constexpr uint16_t GT_CFG_VERSION_REG     = 0x8047;
@@ -428,7 +442,7 @@ static constexpr unsigned kGT911_RST_PIN = 1;
 class Touch {
 public:
     // I2C/GPIO を初期化し、GT911 をリセット→CFG→ランに移行。
-    // INT ピンに対して立ち上がりイベントを要求し、失敗時はポーリングに切替。
+    // INT ピンに対してエッジイベントを要求し、失敗時はポーリングに切替。
     // 背景スレッドで irqLoop() を回す。
     Touch(uint8_t i2c_addr = 0x5D)
     : i2c_("/dev/i2c-1", i2c_addr),
@@ -451,12 +465,17 @@ public:
         i2c_.write8(COMMAND_REG, 0x00);
         usleep(50000);
 
-        // 割り込みライン（立ち上がり）要求。失敗したらポーリングへフォールバック
+        // 割り込みライン要求（まず Falling、だめなら Rising）。失敗したらポーリングへ。
         try {
-            int_in_.requestRisingEdge();
+            int_in_.requestFallingEdge();
             use_events_ = true;
         } catch (...) {
-            use_events_ = false;
+            try {
+                int_in_.requestRisingEdge();
+                use_events_ = true;
+            } catch (...) {
+                use_events_ = false;
+            }
         }
 
         // スレッド開始（イベント or ポーリング）
@@ -493,6 +512,7 @@ private:
     // タッチがあれば handleTouch() で座標を更新するメインループ。
     void irqLoop() {
         while (running_) {
+            bool handled = false;
             if (use_events_) {
                 int r = int_in_.waitEvent(200); // 200ms timeout
                 if (r > 0) {
@@ -500,14 +520,16 @@ private:
                     try {
                         int_in_.readEvent(&ev);
                         handleTouch();
+                        handled = true;
                     } catch (...) {
-                        // ignore and continue
+                        // ignore
                     }
                 }
-            } else {
-                // Polling fallback: ~50Hz
+            }
+            if (!handled) {
+                // Poll as a fallback (also covers event timeouts)
                 handleTouch();
-                usleep(20000);
+                usleep(20000); // ~50Hz
             }
         }
     }
@@ -539,6 +561,10 @@ private:
         int x = ((int)x_hi << 8) | x_lo;
         int y = ((int)y_hi << 8) | y_lo;
 
+        if (DEBUG_TOUCH) {
+            std::cerr << "[GT911] raw x=" << x << " y=" << y << "\n";
+        }
+
         // Apply horizontal mirror (off-by-one corrected) and clamp to panel bounds
         x = COORDINATE_X_MAX - 1 - x;
         if (x < 0) x = 0; else if (x >= COORDINATE_X_MAX) x = COORDINATE_X_MAX - 1;
@@ -546,6 +572,10 @@ private:
 
         last_x_.store(x);
         last_y_.store(y);
+
+        if (DEBUG_TOUCH) {
+            std::cerr << "[GT911] fixed x=" << last_x_.load() << " y=" << last_y_.load() << "\n";
+        }
 
         clearStatus();
     }
