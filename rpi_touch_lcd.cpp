@@ -266,6 +266,11 @@ public:
         x0 = std::max(0, x0); y0 = std::max(0, y0);
         x1 = std::min(kWidth-1,  x1); y1 = std::min(kHeight-1, y1);
 
+        // If the rectangle is completely outside the screen after clipping, do nothing.
+        if (x0 > x1 || y0 > y1) {
+            return;
+        }
+
         setAddressWindow(x0, y0, x1, y1);
         dataMode(true);
 
@@ -534,8 +539,10 @@ private:
         int x = ((int)x_hi << 8) | x_lo;
         int y = ((int)y_hi << 8) | y_lo;
 
-        // Python版と同様に左右反転
-        x = COORDINATE_X_MAX - x;
+        // Apply horizontal mirror (off-by-one corrected) and clamp to panel bounds
+        x = COORDINATE_X_MAX - 1 - x;
+        if (x < 0) x = 0; else if (x >= COORDINATE_X_MAX) x = COORDINATE_X_MAX - 1;
+        if (y < 0) y = 0; else if (y >= COORDINATE_Y_MAX) y = COORDINATE_Y_MAX - 1;
 
         last_x_.store(x);
         last_y_.store(y);
@@ -598,9 +605,16 @@ int main() {
         while (true) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             auto [x, y] = touch.lastXY();
-            // タッチ点の可視化（青い点）
-            lcd.drawFilledRect(x, y, x + 5, y + 5, 0x001F);
-            std::cout << "Coordinate x=" << x << " y=" << y << "\n";
+            if (x >= 0 && y >= 0) {
+                // タッチ点の可視化（青い点）
+                lcd.drawFilledRect(x, y, x + 5, y + 5, 0x001F);
+                std::cout << "Coordinate x=" << x << " y=" << y << "\n";
+            } else {
+                // ハートビート（左→右に走る白い小矩形）
+                int bx = (t % st7796::kWidth);
+                lcd.drawFilledRect(bx, 0, std::min(bx + 10, st7796::kWidth - 1), 10, 0xFFFF);
+                t += 6;
+            }
         }
 
     } catch (const std::exception& e) {
