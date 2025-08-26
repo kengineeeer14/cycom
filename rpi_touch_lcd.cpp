@@ -598,16 +598,9 @@ int main() {
         while (true) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             auto [x, y] = touch.lastXY();
-            if (x >= 0 && y >= 0) {
-                // タッチ点の可視化（青い点）
-                lcd.drawFilledRect(x, y, x + 5, y + 5, 0x001F);
-                std::cout << "Coordinate x=" << x << " y=" << y << "\n";
-            } else {
-                // ハートビート（左→右に走る白い小矩形）
-                int bx = (t % st7796::kWidth);
-                lcd.drawFilledRect(bx, 0, std::min(bx + 10, st7796::kWidth - 1), 10, 0xFFFF);
-                t += 6;
-            }
+            // タッチ点の可視化（青い点）
+            lcd.drawFilledRect(x, y, x + 5, y + 5, 0x001F);
+            std::cout << "Coordinate x=" << x << " y=" << y << "\n";
         }
 
     } catch (const std::exception& e) {
