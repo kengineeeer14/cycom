@@ -610,7 +610,7 @@ private:
 int main() {
     try {
         // 1) GT911タッチコントローラのI2Cアドレスを設定
-        uint8_t addr{0x5D};
+        uint8_t addr{0x14};
 
         // 2) LCD初期化＆クリア
         st7796::Display lcd;
