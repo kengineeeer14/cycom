@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 
-namespace gpio {
+namespace hal {
 
 class GpioController {
 public:
@@ -17,6 +17,6 @@ private:
     const unsigned int line_uart_tx_{14};  // TX: 出力
 };
 
-}  // namespace gpio
+}  // namespace hal
 
 #endif  // GPIO_CONTROLLER_H

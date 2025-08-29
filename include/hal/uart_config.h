@@ -8,7 +8,7 @@
 #ifndef UART_CONFIG_H
 #define UART_CONFIG_H
 
-namespace sensor_uart{
+namespace hal{
     class UartConfigure{
         public:
             explicit UartConfigure(const std::string& config_path);
@@ -28,6 +28,6 @@ namespace sensor_uart{
             void ConvertBaudrateToSpeed(const unsigned int &baudrate,
                                         speed_t &baudrate_speed);
     };
-}   // namespace sensor_uart
+}   // namespace hal
 
 #endif // UART_CONFIG_H

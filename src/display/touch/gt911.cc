@@ -54,7 +54,7 @@ std::pair<int,int> Touch::lastXY() const {
 void Touch::reset() {
     int desired_level = (i2c_addr_ == 0x5D) ? 1 : 0;
     try {
-        gpio::GpioLine int_force("gpiochip0", kGT911_INT_PIN, true, desired_level);
+        hal::GpioLine int_force("gpiochip0", kGT911_INT_PIN, true, desired_level);
         rst_.Set(0); usleep(10000);
         rst_.Set(1); usleep(50000);
     } catch (...) {

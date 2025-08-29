@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <stdexcept>
 
+namespace hal{
+
 // I2C 通信を行うためのヘルパークラス。
 //   - /dev/i2c-* デバイスを open して使用する。
 //   - 16bit レジスタアドレス付きの read/write を提供。
@@ -32,5 +34,5 @@ private:
     int fd_;
     uint8_t addr_;
 };
-
+}   // namespace hal
 #endif  // I2C_CONTROLLER_H_

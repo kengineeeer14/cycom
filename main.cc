@@ -23,8 +23,8 @@ int main() {
     const std::string config_path = "config/config.json";
 
     // --- 既存初期化（GPIO / UART / GPS / Logger） ---
-    gpio::GpioController gpio_controller;
-    sensor_uart::UartConfigure uart_config(config_path);
+    hal::GpioController gpio_controller;
+    hal::UartConfigure uart_config(config_path);
     sensor_uart::L76k gps;
     util::Logger logger(config_path);
 

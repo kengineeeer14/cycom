@@ -1,7 +1,7 @@
 #include "hal/gpio_line.h"
 #include "util/time_unit.h"
 
-namespace gpio {
+namespace hal {
 
 gpiod_chip* GpioLine::OpenChipFlexible(const std::string& chip) {
     if (chip.rfind("/dev/", 0) == 0) {
@@ -64,4 +64,4 @@ GpioLine::~GpioLine() {
     if (chip_) gpiod_chip_close(chip_);
 }
 
-}  // namespace gpio
+}  // namespace hal

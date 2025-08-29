@@ -42,9 +42,9 @@ private:
 
 private:
     // 値メンバにして未完成型問題を回避
-    gpio::GpioLine dc_;
-    gpio::GpioLine rst_;
-    gpio::GpioLine bl_;
+    hal::GpioLine dc_;
+    hal::GpioLine rst_;
+    hal::GpioLine bl_;
     hal::SPI      spi_;
 };
 

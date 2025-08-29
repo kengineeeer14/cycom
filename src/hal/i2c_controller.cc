@@ -8,6 +8,8 @@
 #include <vector>
 #include <cstring>
 
+namespace hal{
+
 I2C::I2C(const char* dev, uint8_t addr) : fd_(-1), addr_(addr) {
     fd_ = ::open(dev, O_RDWR);
     if (fd_ < 0) throw std::runtime_error("open i2c failed");
@@ -72,3 +74,5 @@ void I2C::write8(uint16_t reg, uint8_t v) {
 I2C::~I2C() {
     if (fd_ >= 0) ::close(fd_);
 }
+
+} // namespace hal

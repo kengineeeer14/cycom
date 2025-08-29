@@ -1,6 +1,6 @@
 #include "hal/uart_config.h"
 
-namespace sensor_uart{
+namespace hal{
     UartConfigure::UartConfigure(const std::string &config_path) {
         std::ifstream ifs(config_path);
         if (!ifs.is_open()) {
@@ -61,4 +61,4 @@ namespace sensor_uart{
                 throw std::invalid_argument("設定したbaudrateはサポートされていません．");
         }
     }
-}   // namespace sensor_uart
+}   // namespace hal

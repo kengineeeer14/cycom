@@ -59,9 +59,9 @@ private:
 
 private:
     uint8_t   i2c_addr_;
-    I2C       i2c_;
-    gpio::GpioLine  rst_;
-    gpio::GpioLine  int_in_;
+    hal::I2C       i2c_;
+    hal::GpioLine  rst_;
+    hal::GpioLine  int_in_;
     bool      use_events_;
     std::atomic<bool> running_;
     std::thread       th_;

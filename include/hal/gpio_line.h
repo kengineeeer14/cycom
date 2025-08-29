@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <ctime>    // timespec
 
-namespace gpio {
+namespace hal {
 
 // 単一GPIOラインのRAIIラッパ（libgpiod v1）
 class GpioLine {
@@ -87,6 +87,6 @@ private:
     const char* consumer_ = "cycom";
 };
 
-}  // namespace gpio
+}  // namespace hal
 
 #endif  // CYCOM_HAL_GPIO_LINE_H_
