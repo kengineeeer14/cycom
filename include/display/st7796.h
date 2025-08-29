@@ -42,10 +42,10 @@ private:
 
 private:
     // 値メンバにして未完成型問題を回避
-    GpioLine dc_;
-    GpioLine rst_;
-    GpioLine bl_;
-    SPI      spi_;
+    gpio::GpioLine dc_;
+    gpio::GpioLine rst_;
+    gpio::GpioLine bl_;
+    hal::SPI      spi_;
 };
 
 }  // namespace st7796
