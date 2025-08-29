@@ -1,4 +1,4 @@
-#include "hal/spi_config.h"
+#include "hal/spi_controller.h"
 
 #include <stdexcept>
 #include <unistd.h>       // ::write, ::close

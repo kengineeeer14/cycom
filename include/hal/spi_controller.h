@@ -1,5 +1,5 @@
-#ifndef HAL_SPI_CONFIG_H_
-#define HAL_SPI_CONFIG_H_
+#ifndef HAL_SPI_CONTROLLER_H_
+#define HAL_SPI_CONTROLLER_H_
 
 #include <cstdint>
 #include <cstddef>
@@ -32,4 +32,4 @@ private:
 
 }  // namespace hal
 
-#endif  // HAL_SPI_CONFIG_H_
+#endif  // HAL_SPI_CONTROLLER_H_
