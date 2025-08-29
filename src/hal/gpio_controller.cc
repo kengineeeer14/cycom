@@ -1,9 +1,10 @@
-#include "gpio/gpio_config.h"
 #include <gpiod.h>
 #include <iostream>
+#include "hal/gpio_controller.h"
+
 
 namespace gpio {
-bool GpioConfigure::SetupGpio() {
+bool GpioController::SetupGpio() {
     gpiod_chip* chip = gpiod_chip_open(chip_name_.c_str());
     if (!chip) {
         std::cerr << "Failed to open gpiochip: " << chip_name_ << "\n";

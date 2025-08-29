@@ -8,7 +8,7 @@ mkdir -p build
 cd build
 
 # CMake実行
-cmake ..
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
 make -j$(nproc)
 
 # 実行ファイルができたか確認

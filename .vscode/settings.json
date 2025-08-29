@@ -1,8 +1,18 @@
-// .vscode/settings.json に追加
 {
-  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  // CMake Tools は今まで通り
   "cmake.configureOnOpen": true,
   "cmake.buildDirectory": "${workspaceFolder}/build",
+
+  // Microsoft の IntelliSense は止める
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "C_Cpp.errorSquiggles": "disabled",
+
+  // clangd に build/ 内の compile_commands.json を見に行かせる
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build",
+  ],
+
+  // 標準ヘッダを C++ として扱う（今の設定を活かす）
   "files.associations": {
     "iostream": "cpp",
     "cctype": "cpp",
@@ -70,6 +80,5 @@
     "cinttypes": "cpp",
     "typeindex": "cpp",
     "typeinfo": "cpp"
-  },
-  "C_Cpp.errorSquiggles": "enabled"
+  }
 }
