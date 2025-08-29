@@ -16,7 +16,7 @@ Display::Display()
 {
     reset();
     init();
-    bl_.set(1);  // バックライトON
+    bl_.Set(1);  // バックライトON
 }
 
 void Display::clear(uint16_t rgb565) {
@@ -64,7 +64,7 @@ void Display::blitRGB565(const uint8_t* buf, size_t len) {
 }
 
 void Display::dataMode(bool data) {
-    dc_.set(data ? 1 : 0);
+    dc_.Set(data ? 1 : 0);
 }
 
 void Display::cmd(uint8_t c) {
@@ -78,9 +78,9 @@ void Display::dat(uint8_t d) {
 }
 
 void Display::reset() {
-    rst_.set(1); usleep(10000);
-    rst_.set(0); usleep(10000);
-    rst_.set(1); usleep(10000);
+    rst_.Set(1); usleep(10000);
+    rst_.Set(0); usleep(10000);
+    rst_.Set(1); usleep(10000);
 }
 
 void Display::setAddressWindow(int xs, int ys, int xe, int ye) {

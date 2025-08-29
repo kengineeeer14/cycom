@@ -27,11 +27,11 @@ Touch::Touch(uint8_t i2c_addr)
 
     // 割り込み要求
     try {
-        int_in_.requestFallingEdge();
+        int_in_.RequestFallingEdge();
         use_events_ = true;
     } catch (...) {
         try {
-            int_in_.requestRisingEdge();
+            int_in_.RequestRisingEdge();
             use_events_ = true;
         } catch (...) {
             use_events_ = false;
@@ -55,11 +55,11 @@ void Touch::reset() {
     int desired_level = (i2c_addr_ == 0x5D) ? 1 : 0;
     try {
         gpio::GpioLine int_force("gpiochip0", kGT911_INT_PIN, true, desired_level);
-        rst_.set(0); usleep(10000);
-        rst_.set(1); usleep(50000);
+        rst_.Set(0); usleep(10000);
+        rst_.Set(1); usleep(50000);
     } catch (...) {
-        rst_.set(0); usleep(10000);
-        rst_.set(1); usleep(50000);
+        rst_.Set(0); usleep(10000);
+        rst_.Set(1); usleep(50000);
     }
 }
 
@@ -74,11 +74,11 @@ void Touch::irqLoop() {
     while (running_) {
         bool handled = false;
         if (use_events_) {
-            int r = int_in_.waitEvent(200);
+            int r = int_in_.WaitEvent(200);
             if (r > 0) {
                 gpiod_line_event ev{};
                 try {
-                    int_in_.readEvent(&ev);
+                    int_in_.ReadEvent(ev);
                     handleTouch();
                     handled = true;
                 } catch (...) {}
