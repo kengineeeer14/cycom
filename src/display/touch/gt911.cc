@@ -15,14 +15,14 @@ Touch::Touch(uint8_t i2c_addr)
     reset();
 
     // 動作モード一旦停止
-    i2c_.write8(COMMAND_REG, 0x02);
+    i2c_.Write8(COMMAND_REG, 0x02);
     usleep(10000);
 
     // 解像度設定
     configureResolution(COORDINATE_X_MAX, COORDINATE_Y_MAX);
 
     // 動作開始
-    i2c_.write8(COMMAND_REG, 0x00);
+    i2c_.Write8(COMMAND_REG, 0x00);
     usleep(50000);
 
     // 割り込み要求
@@ -64,10 +64,10 @@ void Touch::reset() {
 }
 
 void Touch::configureResolution(int x_max, int y_max) {
-    i2c_.write8(X_OUTPUT_MAX_LOW_REG,  x_max & 0xFF);
-    i2c_.write8(X_OUTPUT_MAX_HIGH_REG, (x_max >> 8) & 0x0F);
-    i2c_.write8(Y_OUTPUT_MAX_LOW_REG,  y_max & 0xFF);
-    i2c_.write8(Y_OUTPUT_MAX_HIGH_REG, (y_max >> 8) & 0x0F);
+    i2c_.Write8(X_OUTPUT_MAX_LOW_REG,  x_max & 0xFF);
+    i2c_.Write8(X_OUTPUT_MAX_HIGH_REG, (x_max >> 8) & 0x0F);
+    i2c_.Write8(Y_OUTPUT_MAX_LOW_REG,  y_max & 0xFF);
+    i2c_.Write8(Y_OUTPUT_MAX_HIGH_REG, (y_max >> 8) & 0x0F);
 }
 
 void Touch::irqLoop() {
@@ -94,7 +94,7 @@ void Touch::irqLoop() {
 void Touch::handleTouch() {
     uint8_t info = 0;
     try {
-        info = i2c_.read8(COORDINATE_INFO_REG);
+        info = i2c_.Read8(COORDINATE_INFO_REG);
     } catch (...) { return; }
 
     uint8_t touch_num = info & 0x0F;
@@ -107,10 +107,10 @@ void Touch::handleTouch() {
 
     uint8_t x_lo=0,x_hi=0,y_lo=0,y_hi=0;
     try {
-        x_lo = i2c_.read8(POINT_1_X_LOW_REG);
-        x_hi = i2c_.read8(POINT_1_X_HIGH_REG);
-        y_lo = i2c_.read8(POINT_1_Y_LOW_REG);
-        y_hi = i2c_.read8(POINT_1_Y_HIGH_REG);
+        x_lo = i2c_.Read8(POINT_1_X_LOW_REG);
+        x_hi = i2c_.Read8(POINT_1_X_HIGH_REG);
+        y_lo = i2c_.Read8(POINT_1_Y_LOW_REG);
+        y_hi = i2c_.Read8(POINT_1_Y_HIGH_REG);
     } catch (...) { return; }
 
     int x = ((int)x_hi << 8) | x_lo;
@@ -129,7 +129,7 @@ void Touch::handleTouch() {
 
 void Touch::clearStatus() {
     try {
-        i2c_.write8(COORDINATE_INFO_REG, 0x00);
+        i2c_.Write8(COORDINATE_INFO_REG, 0x00);
     } catch (...) {}
 }
 
