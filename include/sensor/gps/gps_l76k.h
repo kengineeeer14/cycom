@@ -8,7 +8,7 @@
 #ifndef GPS_L76K_H
 #define GPS_L76K_H
 
-namespace sensor_uart{
+namespace sensor{
     
     class L76k{
         public:
@@ -139,6 +139,6 @@ namespace sensor_uart{
             void ParseGngga(const std::string &nmea, GNGGA &gngga);
     };
 
-}   // namespace sensor_uart
+}   // namespace sensor
 
 #endif // GPS_L76K_H

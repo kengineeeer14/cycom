@@ -25,7 +25,7 @@ int main() {
     // --- 既存初期化（GPIO / UART / GPS / Logger） ---
     hal::GpioController gpio_controller;
     hal::UartConfigure uart_config(config_path);
-    sensor_uart::L76k gps;
+    sensor::L76k gps;
     util::Logger logger(config_path);
 
     if (!gpio_controller.SetupGpio()) {
@@ -41,7 +41,7 @@ int main() {
 
     // ロガー起動（既存のコールバック）
     logger.Start(std::chrono::milliseconds(logger.log_interval_ms_), [&] {
-        sensor_uart::L76k::GnssSnapshot snap = gps.Snapshot();
+        sensor::L76k::GnssSnapshot snap = gps.Snapshot();
         util::Logger::LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
         logger.WriteCsv(log_data);
     });

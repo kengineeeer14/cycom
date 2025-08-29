@@ -3,7 +3,7 @@
 #include <cmath>
 #include "sensor/gps/gps_l76k.h"
 
-namespace sensor_uart{
+namespace sensor{
 
     std::vector<std::string> L76k::SplitString(const std::string &line) {
         std::vector<std::string> fields;
@@ -132,4 +132,4 @@ namespace sensor_uart{
         std::lock_guard<std::mutex> lk(mtx_);
         return GnssSnapshot{gnrmc_data_, gnvtg_data_, gngga_data_};
     }
-}   // namespace sensor_uart
+}   // namespace sensor
