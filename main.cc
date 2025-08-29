@@ -5,8 +5,8 @@
 #include <iomanip>
 #include <cmath>
 #include <string>
-#include "hal/gpio/gpio_config.h"
-#include "hal/uart/uart_config.h"
+#include "hal/gpio_config.h"
+#include "hal/uart_config.h"
 #include "sensor/gps/gps_l76k.h"
 #include "util/logger.h"
 
