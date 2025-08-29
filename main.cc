@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <cmath>
 #include <string>
-#include "hal/gpio_config.h"
+#include "hal/gpio_controller.h"
 #include "hal/uart_config.h"
 #include "sensor/gps/gps_l76k.h"
 #include "util/logger.h"
@@ -13,12 +13,12 @@
 int main() {
     const std::string config_path = "config/config.json";
 
-    gpio::GpioConfigure gpio_config;
+    gpio::GpioController gpio_controller;
     sensor_uart::UartConfigure uart_config(config_path);
     sensor_uart::L76k gps;
     util::Logger logger(config_path);
 
-    if (!gpio_config.SetupGpio()) {
+    if (!gpio_controller.SetupGpio()) {
         return 1;
     }
 

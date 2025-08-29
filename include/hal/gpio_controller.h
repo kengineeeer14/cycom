@@ -1,5 +1,5 @@
-#ifndef GPIO_CONFIG_H
-#define GPIO_CONFIG_H
+#ifndef GPIO_CONTROLLER_H
+#define GPIO_CONTROLLER_H
 
 #include <gpiod.h>
 #include <string>
@@ -7,7 +7,7 @@
 
 namespace gpio {
 
-class GpioConfigure {
+class GpioController {
 public:
     bool SetupGpio();
 
@@ -19,4 +19,4 @@ private:
 
 }  // namespace gpio
 
-#endif  // GPIO_CONFIG_H
+#endif  // GPIO_CONTROLLER_H
