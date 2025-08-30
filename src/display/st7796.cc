@@ -38,8 +38,7 @@ void Display::DrawFilledRect(int &x0, int &y0, int &x1, int &y1, const uint16_t 
     x0 = std::max(0, x0); y0 = std::max(0, y0);
     x1 = std::min(kWidth  - 1, x1);
     y1 = std::min(kHeight - 1, y1);
-
-    if (x0 > x1 || y0 > y1) return;  // クリップ後に完全画面外
+    if (x0 > x1 || y0 > y1) return;
 
     SetAddressWindow(x0, y0, x1, y1);
     DataMode(true);
@@ -47,8 +46,8 @@ void Display::DrawFilledRect(int &x0, int &y0, int &x1, int &y1, const uint16_t 
     const int w = (x1 - x0 + 1);
     std::vector<uint8_t> line(w * 2);
     for (int i = 0; i < w; ++i) {
-        line[2 * i + 0] = static_cast<uint8_t>((rgb565 >> 8) & 0xFF);
-        line[2 * i + 1] = static_cast<uint8_t>( rgb565        & 0xFF);
+        line[2*i+0] = static_cast<uint8_t>((rgb565 >> 8) & 0xFF);
+        line[2*i+1] = static_cast<uint8_t>( rgb565        & 0xFF);
     }
     for (int y = y0; y <= y1; ++y) {
         SendChunked(line.data(), line.size());
@@ -129,7 +128,7 @@ void Display::Init() {
     Cmd(0x11); usleep(120000);
 
     // 画面のメモリアクセス制御 (MADCTL)
-    Cmd(0x36); Dat(0x08);
+    Cmd(0x36); Dat(0xC8);
 
     // ピクセルフォーマット設定（1ピクセル = 16ビット（RGB565）に設定。）
     Cmd(0x3A); Dat(0x55); // 0x55=16bit/px
