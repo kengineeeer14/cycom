@@ -3,7 +3,7 @@
 #include "hal/gpio_controller.h"
 
 
-namespace gpio {
+namespace hal {
 bool GpioController::SetupGpio() {
     gpiod_chip* chip = gpiod_chip_open(chip_name_.c_str());
     if (!chip) {
@@ -24,4 +24,4 @@ bool GpioController::SetupGpio() {
     gpiod_chip_close(chip);
     return true;
 }
-}  // namespace gpio
+}  // namespace hal

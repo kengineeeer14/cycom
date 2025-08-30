@@ -1,6 +1,7 @@
 #include "hal/gpio_line.h"
+#include "util/time_unit.h"
 
-namespace gpio {
+namespace hal {
 
 gpiod_chip* GpioLine::OpenChipFlexible(const std::string& chip) {
     if (chip.rfind("/dev/", 0) == 0) {
@@ -9,7 +10,7 @@ gpiod_chip* GpioLine::OpenChipFlexible(const std::string& chip) {
     return gpiod_chip_open_by_name(chip.c_str());
 }
 
-GpioLine::GpioLine(const std::string& chip, unsigned int offset, bool output, int initial)
+GpioLine::GpioLine(const std::string& chip,const unsigned int &offset,const  bool &output,const int &initial)
 : is_output_(output) {
     chip_ = OpenChipFlexible(chip);
     if (!chip_) throw std::runtime_error("gpiod_chip_open failed");
@@ -24,34 +25,34 @@ GpioLine::GpioLine(const std::string& chip, unsigned int offset, bool output, in
     }
 }
 
-void GpioLine::requestRisingEdge() {
+void GpioLine::RequestRisingEdge() {
     if (is_output_) throw std::runtime_error("line is output");
     gpiod_line_release(line_);
-    if (gpiod_line_request_rising_edge_events(line_, "cycom") < 0) {
+    if (gpiod_line_request_rising_edge_events(line_, consumer_) < 0) {
         throw std::runtime_error("gpiod_line_request_rising_edge_events failed");
     }
 }
 
-void GpioLine::requestFallingEdge() {
+void GpioLine::RequestFallingEdge() {
     if (is_output_) throw std::runtime_error("line is output");
     gpiod_line_release(line_);
-    if (gpiod_line_request_falling_edge_events(line_, "cycom") < 0) {
+    if (gpiod_line_request_falling_edge_events(line_, consumer_) < 0) {
         throw std::runtime_error("gpiod_line_request_falling_edge_events failed");
     }
 }
 
-int GpioLine::waitEvent(int timeout_ms) {
-    timespec ts{timeout_ms/1000, static_cast<long>((timeout_ms%1000)*1000000L)};
+int GpioLine::WaitEvent(const int &timeout_ms) {
+    timespec ts{static_cast<time_t>(timeout_ms * util::TimeUnit::kMs2Sec),static_cast<long>(util::TimeUnit::msWithinMs(timeout_ms)*util::TimeUnit::kMs2Ns)};
     return gpiod_line_event_wait(line_, &ts);
 }
 
-void GpioLine::readEvent(gpiod_line_event* ev) {
-    if (gpiod_line_event_read(line_, ev) < 0) {
+void GpioLine::ReadEvent(gpiod_line_event &ev) {
+    if (gpiod_line_event_read(line_, &ev) < 0) {
         throw std::runtime_error("gpiod_line_event_read failed");
     }
 }
 
-void GpioLine::set(int value) {
+void GpioLine::Set(const int &value) {
     if (!is_output_) throw std::runtime_error("line is not output");
     if (gpiod_line_set_value(line_, value) < 0) {
         throw std::runtime_error("gpiod_line_set_value failed");
@@ -63,4 +64,4 @@ GpioLine::~GpioLine() {
     if (chip_) gpiod_chip_close(chip_);
 }
 
-}  // namespace gpio
+}  // namespace hal

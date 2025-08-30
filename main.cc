@@ -1,4 +1,3 @@
-// main.cc (統合版)
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -15,7 +14,6 @@
 #include "sensor/gps/gps_l76k.h"
 #include "util/logger.h"
 
-// 追加: LCD/タッチ
 #include "display/st7796.h"
 #include "display/touch/gt911.h"
 
@@ -23,9 +21,9 @@ int main() {
     const std::string config_path = "config/config.json";
 
     // --- 既存初期化（GPIO / UART / GPS / Logger） ---
-    gpio::GpioController gpio_controller;
-    sensor_uart::UartConfigure uart_config(config_path);
-    sensor_uart::L76k gps;
+    hal::GpioController gpio_controller;
+    hal::UartConfigure uart_config(config_path);
+    sensor::L76k gps;
     util::Logger logger(config_path);
 
     if (!gpio_controller.SetupGpio()) {
@@ -41,29 +39,18 @@ int main() {
 
     // ロガー起動（既存のコールバック）
     logger.Start(std::chrono::milliseconds(logger.log_interval_ms_), [&] {
-        sensor_uart::L76k::GnssSnapshot snap = gps.Snapshot();
+        sensor::L76k::GnssSnapshot snap = gps.Snapshot();
         util::Logger::LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
         logger.WriteCsv(log_data);
     });
 
     // --- 追加: LCD 初期化＆テスト描画 ---
     st7796::Display lcd;
-    lcd.clear(0xFFFF); // 白で全消去
-
-    // 6色バーで表示確認
-    {
-        const uint16_t colors[6] = {0xF800, 0x07E0, 0x001F, 0xFFE0, 0x07FF, 0xF81F};
-        const int band = st7796::kHeight / 6;
-        for (int i = 0; i < 6; ++i) {
-            int y0 = i * band;
-            int y1 = (i == 5) ? (st7796::kHeight - 1) : (y0 + band - 1);
-            lcd.drawFilledRect(0, y0, st7796::kWidth - 1, y1, colors[i]);
-        }
-    }
+    lcd.Clear(0xFFFF); // 白で全消去
 
     // --- 追加: タッチ初期化 ---
     // 既知のGT911アドレス候補は 0x14 / 0x5D。まずは 0x14 を既定に。
-    // 必要ならここを 0x5D に変えて試してね。
+    // 必要ならここを 0x5D に変える．
     uint8_t gt911_addr = 0x14;
     gt911::Touch touch(gt911_addr);
 
@@ -93,24 +80,12 @@ int main() {
     try {
         int t = 0;
         while (true) {
+            // タッチ座標の取得
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            auto xy = touch.lastXY();
+            auto xy = touch.LastXY();
             int x = xy.first;
             int y = xy.second;
 
-            if (x >= 0 && y >= 0) {
-                // タッチ点を青で可視化（5x5）
-                int x1 = std::min(x + 5, st7796::kWidth - 1);
-                int y1 = std::min(y + 5, st7796::kHeight - 1);
-                lcd.drawFilledRect(x, y, x1, y1, 0x001F);
-                std::cout << "Coordinate x=" << x << " y=" << y << "\n";
-            } else {
-                // ハートビート（左→右に走る白い小矩形）
-                int bx0 = (t % st7796::kWidth);
-                int bx1 = std::min(bx0 + 10, st7796::kWidth - 1);
-                lcd.drawFilledRect(bx0, 0, bx1, 10, 0xFFFF);
-                t += 6;
-            }
         }
     } catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << "\n";
