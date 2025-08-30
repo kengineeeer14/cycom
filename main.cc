@@ -87,31 +87,40 @@ int main() {
     // --- メインスレッド: 50ms周期でタッチを描画 ---
 // --- メインスレッド: 数字+単位を表示 ---
 try {
+    // 参照渡しAPI向けの薄いラッパ（const値でも安全に渡せる）
+    auto FillRect = [&](int x0, int y0, int x1, int y1, uint16_t color) {
+        int _x0 = x0, _y0 = y0, _x1 = x1, _y1 = y1;
+        lcd.DrawFilledRect(_x0, _y0, _x1, _y1, color);
+    };
+
     // パネル定義
     const int PANEL_X = 20;
     const int PANEL_Y = 40;
     const int PANEL_W = 440;
     const int PANEL_H = 120;
 
-    int x0 = PANEL_X;
-    int y0 = PANEL_Y;
-    int x1 = PANEL_X + PANEL_W - 1;
-    int y1 = PANEL_Y + PANEL_H - 1;
-    lcd.DrawFilledRect(x0, y0, x1, y1, 0xFFFF);
+    // 背景パネルを一度塗る
+    FillRect(PANEL_X, PANEL_Y, PANEL_X + PANEL_W - 1, PANEL_Y + PANEL_H - 1, 0xFFFF);
 
-    // --- 単位を固定で表示 ---
+    // --- 単位を固定で表示（左寄せに変更） ---
     tr.SetFontSizePx(28); // 単位は小さめ
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
+
     const int UNIT_W = 120;
     const int UNIT_X = PANEL_X + PANEL_W - UNIT_W;
     const int UNIT_Y = PANEL_Y;
     const int UNIT_H = PANEL_H;
-    tr.DrawLabel(UNIT_X, UNIT_Y, UNIT_W, UNIT_H, "km/h", /*center=*/true);
 
-    // 数字エリア
+    // 左寄せ（center=false）で描く：センタ計算の誤差を排除
+    tr.DrawLabel(UNIT_X, UNIT_Y, UNIT_W, UNIT_H, "km/h", /*center=*/false);
+
+    // 単位エリアの左にほんの少し境界線（デバッグ可視化・任意）
+    // FillRect(UNIT_X - 1, PANEL_Y, UNIT_X - 1, PANEL_Y + PANEL_H - 1, 0x0000);
+
+    // 数字エリア（単位の左側だけを更新）
     const int NUM_X = PANEL_X + 10;
     const int NUM_Y = PANEL_Y + 10;
-    const int NUM_W = PANEL_W - UNIT_W - 20;
+    const int NUM_W = (UNIT_X - 5) - NUM_X; // ← 単位の直前まで確実に確保
     const int NUM_H = PANEL_H - 20;
 
     tr.SetFontSizePx(48);
@@ -130,28 +139,23 @@ try {
         std::string cur_text(buf);
 
         if (cur_text != prev_text) {
-            // 数字部分だけクリア
-            int x0 = NUM_X;
-            int y0 = NUM_Y;
-            int x1 = NUM_X + NUM_W - 1;
-            int y1 = NUM_Y + NUM_H - 1;
-            lcd.DrawFilledRect(x0, y0, x1, y1, 0xFFFF);
+            // 数字部分だけクリア（単位側には絶対にかからない）
+            FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
 
-            // 数字を描画
+            // 数字を描画（左寄せ）
             tr.SetWrapWidthPx(0);
             tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
 
             prev_text = cur_text;
         }
 
-        // デモ用：速度を変化させる
+        // デモ用：速度を変化
         demo_speed += 0.2;
         if (demo_speed > 45.0) demo_speed = 18.0;
     }
 } catch (const std::exception& e) {
-        std::cerr << "Fatal: " << e.what() << "\n";
-        // fallthrough
-    }
+    std::cerr << "Fatal: " << e.what() << "\n";
+}
 
     // 到達しないが一応
     if (uart_thread.joinable()) {
