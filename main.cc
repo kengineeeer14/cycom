@@ -54,10 +54,12 @@ int main() {
     {
         const uint16_t colors[6] = {0xF800, 0x07E0, 0x001F, 0xFFE0, 0x07FF, 0xF81F};
         const int band = st7796::kHeight / 6;
+        int x0{0};
+        int x1{st7796::kWidth - 1};
         for (int i = 0; i < 6; ++i) {
             int y0 = i * band;
             int y1 = (i == 5) ? (st7796::kHeight - 1) : (y0 + band - 1);
-            lcd.DrawFilledRect(0, y0, st7796::kWidth - 1, y1, colors[i]);
+            lcd.DrawFilledRect(x0, y0, x1, y1, colors[i]);
         }
     }
 
@@ -108,7 +110,9 @@ int main() {
                 // ハートビート（左→右に走る白い小矩形）
                 int bx0 = (t % st7796::kWidth);
                 int bx1 = std::min(bx0 + 10, st7796::kWidth - 1);
-                lcd.DrawFilledRect(bx0, 0, bx1, 10, 0xFFFF);
+                int by0{0};
+                int by1{10};
+                lcd.DrawFilledRect(bx0, by0, bx1, by1, 0xFFFF);
                 t += 6;
             }
         }
