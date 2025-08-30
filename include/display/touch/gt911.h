@@ -44,18 +44,58 @@ static constexpr unsigned kGT911_RST_PIN = 1;
 // =============================================================
 class Touch {
 public:
-    Touch(uint8_t i2c_addr = 0x5D);
+    /**
+     * @brief GT911タッチコントローラを初期化して、イベント(orポーリング)で読み取り続けるスレッドを立ち上げる
+     * 
+     * @param i2c_addr GT911 タッチコントローラの I2C アドレス
+     */
+    Touch(const uint8_t &i2c_addr = 0x5D);
+
+    /**
+     * @brief タッチ監視スレッドを安全に停止させる
+     * 
+     */
     ~Touch();
 
-    // 最新座標を返す（無効時 {-1,-1}）
-    std::pair<int,int> lastXY() const;
+    /**
+     * @brief 内部変数に格納されたタッチ座標を返す（無効時は{-1,-1}）
+     * 
+     * @return std::pair<int,int> タッチ座標
+     */
+    std::pair<int,int> LastXY() const;
 
 private:
-    void reset();
-    void configureResolution(int x_max, int y_max);
-    void irqLoop();
-    void handleTouch();
-    void clearStatus();
+    /**
+     * @brief GT911 タッチコントローラをリセットして、所望の I2C アドレスで再起動させる
+     * 
+     */
+    void Reset();
+
+    /**
+     * @brief GT911 に対して、画面の解像度（X, Y 最大座標値）を設定する
+     * 
+     * @param[in] x_max X軸方向の最大座標値（画面の横解像度に相当）
+     * @param[in] y_max Y軸方向の最大座標値（画面の縦解像度に相当）
+     */
+    void ConfigureResolution(const int &x_max, const int &y_max);
+
+    /**
+     * @brief タッチコントローラからの入力を監視し、イベントが来たら座標を処理する（内部変数に格納する）
+     * 
+     */
+    void IrqLoop();
+
+    /**
+     * @brief GT911 タッチコントローラからタッチ座標を読み取り、加工して保持する
+     * 
+     */
+    void HandleTouch();
+
+    /**
+     * @brief  GT911 タッチコントローラの「座標情報レジスタ」をクリアする
+     * 
+     */
+    void ClearStatus();
 
 private:
     uint8_t   i2c_addr_;

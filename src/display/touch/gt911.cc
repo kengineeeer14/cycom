@@ -4,7 +4,7 @@
 
 namespace gt911 {
 
-Touch::Touch(uint8_t i2c_addr)
+Touch::Touch(const uint8_t &i2c_addr)
     : i2c_addr_(i2c_addr),
       i2c_("/dev/i2c-1", i2c_addr),
       rst_("gpiochip0", kGT911_RST_PIN, true, 1),
@@ -12,14 +12,14 @@ Touch::Touch(uint8_t i2c_addr)
       use_events_(false),
       running_(true), last_x_(-1), last_y_(-1)
 {
-    reset();
+    Reset();
 
     // 動作モード一旦停止
     i2c_.Write8(COMMAND_REG, 0x02);
     usleep(10000);
 
     // 解像度設定
-    configureResolution(COORDINATE_X_MAX, COORDINATE_Y_MAX);
+    ConfigureResolution(COORDINATE_X_MAX, COORDINATE_Y_MAX);
 
     // 動作開始
     i2c_.Write8(COMMAND_REG, 0x00);
@@ -39,7 +39,7 @@ Touch::Touch(uint8_t i2c_addr)
     }
 
     // スレッド起動
-    th_ = std::thread([this]{ this->irqLoop(); });
+    th_ = std::thread([this]{ this->IrqLoop(); });
 }
 
 Touch::~Touch() {
@@ -47,11 +47,11 @@ Touch::~Touch() {
     if (th_.joinable()) th_.join();
 }
 
-std::pair<int,int> Touch::lastXY() const {
+std::pair<int,int> Touch::LastXY() const {
     return { last_x_.load(), last_y_.load() };
 }
 
-void Touch::reset() {
+void Touch::Reset() {
     int desired_level = (i2c_addr_ == 0x5D) ? 1 : 0;
     try {
         hal::GpioLine int_force("gpiochip0", kGT911_INT_PIN, true, desired_level);
@@ -63,14 +63,14 @@ void Touch::reset() {
     }
 }
 
-void Touch::configureResolution(int x_max, int y_max) {
+void Touch::ConfigureResolution(const int &x_max, const int &y_max) {
     i2c_.Write8(X_OUTPUT_MAX_LOW_REG,  x_max & 0xFF);
     i2c_.Write8(X_OUTPUT_MAX_HIGH_REG, (x_max >> 8) & 0x0F);
     i2c_.Write8(Y_OUTPUT_MAX_LOW_REG,  y_max & 0xFF);
     i2c_.Write8(Y_OUTPUT_MAX_HIGH_REG, (y_max >> 8) & 0x0F);
 }
 
-void Touch::irqLoop() {
+void Touch::IrqLoop() {
     while (running_) {
         bool handled = false;
         if (use_events_) {
@@ -79,19 +79,19 @@ void Touch::irqLoop() {
                 gpiod_line_event ev{};
                 try {
                     int_in_.ReadEvent(ev);
-                    handleTouch();
+                    HandleTouch();
                     handled = true;
                 } catch (...) {}
             }
         }
         if (!handled) {
-            handleTouch();
+            HandleTouch();
             usleep(20000);
         }
     }
 }
 
-void Touch::handleTouch() {
+void Touch::HandleTouch() {
     uint8_t info = 0;
     try {
         info = i2c_.Read8(COORDINATE_INFO_REG);
@@ -101,7 +101,7 @@ void Touch::handleTouch() {
     if (touch_num == 0) {
         last_x_.store(-1);
         last_y_.store(-1);
-        clearStatus();
+        ClearStatus();
         return;
     }
 
@@ -124,10 +124,10 @@ void Touch::handleTouch() {
     last_x_.store(x);
     last_y_.store(y);
 
-    clearStatus();
+    ClearStatus();
 }
 
-void Touch::clearStatus() {
+void Touch::ClearStatus() {
     try {
         i2c_.Write8(COORDINATE_INFO_REG, 0x00);
     } catch (...) {}

@@ -96,7 +96,7 @@ int main() {
         int t = 0;
         while (true) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            auto xy = touch.lastXY();
+            auto xy = touch.LastXY();
             int x = xy.first;
             int y = xy.second;
 
