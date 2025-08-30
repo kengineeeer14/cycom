@@ -63,6 +63,24 @@ void Display::BlitRGB565(const uint8_t* buf, const size_t &len) {
     SendChunked(buf, len);
 }
 
+void st7796::Display::DrawRGB565Line(const int &x, const int &y, const uint16_t* rgb565, const int &len) {
+    if (len <= 0) return;
+    // アドレスウィンドウを1ラインに絞る
+    SetAddressWindow(x, y, x + len - 1, y);
+    DataMode(true);
+
+    // ST7796 は 16bit を MSB→LSB の順で送る想定
+    // SendChunked(uint8_t* , size_t) がある前提で、バイト配列に詰め替える
+    std::vector<uint8_t> bytes;
+    bytes.resize(static_cast<size_t>(len) * 2);
+    for (int i = 0; i < len; ++i) {
+        uint16_t p = rgb565[i];
+        bytes[2*i + 0] = static_cast<uint8_t>((p >> 8) & 0xFF);
+        bytes[2*i + 1] = static_cast<uint8_t>( p       & 0xFF);
+    }
+    SendChunked(bytes.data(), bytes.size());
+}
+
 void Display::DataMode(bool data) {
     dc_.Set(data ? 1 : 0);
 }

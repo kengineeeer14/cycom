@@ -16,6 +16,7 @@
 
 #include "display/st7796.h"
 #include "display/touch/gt911.h"
+#include "display/text_renderer.h"
 
 int main() {
     const std::string config_path = "config/config.json";
@@ -50,6 +51,11 @@ int main() {
     st7796::Display lcd;
     lcd.Clear(0xFFFF); // 白で全消去
 
+    // ★ フォント描画のセットアップ
+    ui::TextRenderer tr(lcd, "assets/fonts/NotoSans-Regular.ttf"); // フォントパスは配置に合わせて
+    tr.SetFontSizePx(48);
+    tr.SetColors(ui::Color565::Black(), ui::Color565::White());
+
     // --- 追加: タッチ初期化 ---
     // 既知のGT911アドレス候補は 0x14 / 0x5D。まずは 0x14 を既定に。
     // 必要ならここを 0x5D に変える．
@@ -80,6 +86,13 @@ int main() {
 
     // --- メインスレッド: 50ms周期でタッチを描画 ---
     try {
+        const int PANEL_X = 20;
+        const int PANEL_Y = 40;
+        const int PANEL_W = 420;
+        const int PANEL_H = 120;
+        tr.SetWrapWidthPx(0); // 折返しなし
+        double demo_speed = 23.4; // デモ値（描画確認用）
+
         int t = 0;
         while (true) {
             // タッチ座標の取得
@@ -87,6 +100,11 @@ int main() {
             auto xy = touch.LastXY();
             int x = xy.first;
             int y = xy.second;
+
+            char buf[32];
+            std::snprintf(buf, sizeof(buf), "%.1f km/h", demo_speed);
+            tr.DrawLabel(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, buf, /*center=*/true);
+            demo_speed += 0.3; if (demo_speed > 45.0) demo_speed = 18.0;
 
         }
     } catch (const std::exception& e) {

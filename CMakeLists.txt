@@ -2,21 +2,28 @@ cmake_minimum_required(VERSION 3.10)
 project(cycom)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# C++17を使用
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# ヘッダファイルのディレクトリを指定
+# 文字: 推奨は /usr/include を明示しないこと（自動で入る）
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
-    /usr/include
 )
 
-# ソースファイルの自動収集（src以下の .cc を再帰的に）
+# ★ FreeType を見つける
+find_package(Freetype REQUIRED)
+
+# src/*.cc を自動収集
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.cc)
 
-# 実行ファイルを作成（ルートの main.cc と合わせる）
 add_executable(cycom main.cc ${SRC_FILES})
 
-# libgpiod ライブラリをリンク
-target_link_libraries(cycom gpiod pthread)
+# 既存ライブラリ + ★ FreeType をリンク
+target_link_libraries(cycom
+    gpiod
+    pthread
+    Freetype::Freetype   # ★ これを追加
+)
+
+# （任意）コンパイル時に FreeType のヘッダパスを明示したいなら：
+# target_include_directories(cycom PRIVATE ${FREETYPE_INCLUDE_DIRS})
