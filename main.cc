@@ -1,4 +1,3 @@
-// main.cc (統合版)
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -15,7 +14,6 @@
 #include "sensor/gps/gps_l76k.h"
 #include "util/logger.h"
 
-// 追加: LCD/タッチ
 #include "display/st7796.h"
 #include "display/touch/gt911.h"
 
@@ -82,18 +80,12 @@ int main() {
     try {
         int t = 0;
         while (true) {
+            // タッチ座標の取得
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             auto xy = touch.LastXY();
             int x = xy.first;
             int y = xy.second;
 
-            if (x >= 0 && y >= 0) {
-                // タッチ点を青で可視化（5x5）
-                int x1 = std::min(x + 5, st7796::kWidth - 1);
-                int y1 = std::min(y + 5, st7796::kHeight - 1);
-                lcd.DrawFilledRect(x, y, x1, y1, 0x001F);
-                std::cout << "Coordinate x=" << x << " y=" << y << "\n";
-            }
         }
     } catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << "\n";
