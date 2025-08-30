@@ -48,7 +48,7 @@ int main() {
 
     // --- 追加: LCD 初期化＆テスト描画 ---
     st7796::Display lcd;
-    lcd.clear(0xFFFF); // 白で全消去
+    lcd.Clear(0xFFFF); // 白で全消去
 
     // 6色バーで表示確認
     {
@@ -57,7 +57,7 @@ int main() {
         for (int i = 0; i < 6; ++i) {
             int y0 = i * band;
             int y1 = (i == 5) ? (st7796::kHeight - 1) : (y0 + band - 1);
-            lcd.drawFilledRect(0, y0, st7796::kWidth - 1, y1, colors[i]);
+            lcd.DrawFilledRect(0, y0, st7796::kWidth - 1, y1, colors[i]);
         }
     }
 
@@ -102,13 +102,13 @@ int main() {
                 // タッチ点を青で可視化（5x5）
                 int x1 = std::min(x + 5, st7796::kWidth - 1);
                 int y1 = std::min(y + 5, st7796::kHeight - 1);
-                lcd.drawFilledRect(x, y, x1, y1, 0x001F);
+                lcd.DrawFilledRect(x, y, x1, y1, 0x001F);
                 std::cout << "Coordinate x=" << x << " y=" << y << "\n";
             } else {
                 // ハートビート（左→右に走る白い小矩形）
                 int bx0 = (t % st7796::kWidth);
                 int bx1 = std::min(bx0 + 10, st7796::kWidth - 1);
-                lcd.drawFilledRect(bx0, 0, bx1, 10, 0xFFFF);
+                lcd.DrawFilledRect(bx0, 0, bx1, 10, 0xFFFF);
                 t += 6;
             }
         }
