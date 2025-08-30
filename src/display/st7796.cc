@@ -69,12 +69,12 @@ void Display::dataMode(bool data) {
 
 void Display::cmd(uint8_t c) {
     dataMode(false);
-    spi_.writeBytes(&c, 1);
+    spi_.WriteBytes(&c, 1);
 }
 
 void Display::dat(uint8_t d) {
     dataMode(true);
-    spi_.writeBytes(&d, 1);
+    spi_.WriteBytes(&d, 1);
 }
 
 void Display::reset() {
@@ -101,7 +101,7 @@ void Display::sendChunked(const uint8_t* data, size_t len) {
     size_t off = 0;
     while (off < len) {
         const size_t n = std::min(CHUNK, len - off);
-        spi_.writeBytes(data + off, n);
+        spi_.WriteBytes(data + off, n);
         off += n;
     }
 }

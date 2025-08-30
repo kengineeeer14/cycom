@@ -8,7 +8,7 @@
 
 namespace hal {
 
-SPI::SPI(const char* dev, uint32_t speed_hz, uint8_t mode, uint8_t bits)
+SPI::SPI(const char* dev, const uint32_t &speed_hz, const uint8_t &mode, const uint8_t &bits)
     : fd_(-1)
 {
     fd_ = ::open(dev, O_RDWR);
@@ -35,7 +35,7 @@ SPI& SPI::operator=(SPI&& other) noexcept {
     return *this;
 }
 
-void SPI::writeBytes(const uint8_t* data, size_t len) {
+void SPI::WriteBytes(const uint8_t* data, const size_t &len) {
     ssize_t w = ::write(fd_, data, len);
     if (w != static_cast<ssize_t>(len))
         throw std::runtime_error("SPI write failed");
