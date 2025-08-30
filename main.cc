@@ -103,7 +103,7 @@ int main() {
 
             char buf[32];
             std::snprintf(buf, sizeof(buf), "%.1f km/h", demo_speed);
-            tr.DrawLabel(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, buf, /*center=*/true);
+            tr.DrawLabel(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, buf, /*center=*/false);
             demo_speed += 0.3; if (demo_speed > 45.0) demo_speed = 18.0;
 
         }
