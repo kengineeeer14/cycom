@@ -128,7 +128,7 @@ void Display::Init() {
     Cmd(0x11); usleep(120000);
 
     // 画面のメモリアクセス制御 (MADCTL)
-    Cmd(0x36); Dat(0xC8);
+    Cmd(0x36); Dat(0x08);
 
     // ピクセルフォーマット設定（1ピクセル = 16ビット（RGB565）に設定。）
     Cmd(0x3A); Dat(0x55); // 0x55=16bit/px
