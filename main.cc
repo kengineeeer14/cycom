@@ -85,29 +85,70 @@ int main() {
     });
 
     // --- メインスレッド: 50ms周期でタッチを描画 ---
-    try {
-        const int PANEL_X = 20;
-        const int PANEL_Y = 40;
-        const int PANEL_W = 420;
-        const int PANEL_H = 120;
-        tr.SetWrapWidthPx(0); // 折返しなし
-        double demo_speed = 23.4; // デモ値（描画確認用）
+// --- メインスレッド: 数字+単位を表示 ---
+try {
+    // パネル定義
+    const int PANEL_X = 20;
+    const int PANEL_Y = 40;
+    const int PANEL_W = 440;
+    const int PANEL_H = 120;
 
-        int t = 0;
-        while (true) {
-            // タッチ座標の取得
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            auto xy = touch.LastXY();
-            int x = xy.first;
-            int y = xy.second;
+    int x0 = PANEL_X;
+    int y0 = PANEL_Y;
+    int x1 = PANEL_X + PANEL_W - 1;
+    int y1 = PANEL_Y + PANEL_H - 1;
+    lcd.DrawFilledRect(x0, y0, x1, y1, 0xFFFF);
 
-            char buf[32];
-            std::snprintf(buf, sizeof(buf), "%.1f km/h", demo_speed);
-            tr.DrawLabel(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, buf, /*center=*/false);
-            demo_speed += 0.3; if (demo_speed > 45.0) demo_speed = 18.0;
+    // --- 単位を固定で表示 ---
+    tr.SetFontSizePx(28); // 単位は小さめ
+    tr.SetColors(ui::Color565::Black(), ui::Color565::White());
+    const int UNIT_W = 120;
+    const int UNIT_X = PANEL_X + PANEL_W - UNIT_W;
+    const int UNIT_Y = PANEL_Y;
+    const int UNIT_H = PANEL_H;
+    tr.DrawLabel(UNIT_X, UNIT_Y, UNIT_W, UNIT_H, "km/h", /*center=*/true);
 
+    // 数字エリア
+    const int NUM_X = PANEL_X + 10;
+    const int NUM_Y = PANEL_Y + 10;
+    const int NUM_W = PANEL_W - UNIT_W - 20;
+    const int NUM_H = PANEL_H - 20;
+
+    tr.SetFontSizePx(48);
+    tr.SetColors(ui::Color565::Black(), ui::Color565::White());
+
+    const auto UPDATE_INTERVAL = std::chrono::milliseconds(300);
+
+    double demo_speed = 23.4; // デモ用値
+    std::string prev_text;
+
+    while (true) {
+        std::this_thread::sleep_for(UPDATE_INTERVAL);
+
+        char buf[16];
+        std::snprintf(buf, sizeof(buf), "%.1f", demo_speed);
+        std::string cur_text(buf);
+
+        if (cur_text != prev_text) {
+            // 数字部分だけクリア
+            int x0 = NUM_X;
+            int y0 = NUM_Y;
+            int x1 = NUM_X + NUM_W - 1;
+            int y1 = NUM_Y + NUM_H - 1;
+            lcd.DrawFilledRect(x0, y0, x1, y1, 0xFFFF);
+
+            // 数字を描画
+            tr.SetWrapWidthPx(0);
+            tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
+
+            prev_text = cur_text;
         }
-    } catch (const std::exception& e) {
+
+        // デモ用：速度を変化させる
+        demo_speed += 0.2;
+        if (demo_speed > 45.0) demo_speed = 18.0;
+    }
+} catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << "\n";
         // fallthrough
     }
