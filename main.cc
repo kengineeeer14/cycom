@@ -150,7 +150,7 @@ try {
         }
 
         // デモ用：速度を変化
-        demo_speed += 0.2;
+        demo_speed += 1.0;
         if (demo_speed > 45.0) demo_speed = 18.0;
     }
 } catch (const std::exception& e) {
