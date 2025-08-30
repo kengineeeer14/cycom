@@ -22,6 +22,8 @@ Logger::Logger(const std::string &config_path) {
 
     log_interval_ms_ = j["logger"]["log_interval_ms"].get<unsigned int>();
 
+    log_on_ = j["logger"]["log_on"].get<bool>();
+
     csv_file_path_ = GenerateCsvFilePath();
 
     WriteLogHeader();

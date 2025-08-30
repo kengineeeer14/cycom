@@ -24,6 +24,7 @@ public:
     };
 
     int log_interval_ms_;
+    bool log_on_;
     std::string csv_file_path_;
 
     explicit Logger(const std::string& config_path);

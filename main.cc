@@ -41,7 +41,9 @@ int main() {
     logger.Start(std::chrono::milliseconds(logger.log_interval_ms_), [&] {
         sensor::L76k::GnssSnapshot snap = gps.Snapshot();
         util::Logger::LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
-        logger.WriteCsv(log_data);
+        if (logger.log_on_){
+            logger.WriteCsv(log_data);
+        }
     });
 
     // --- 追加: LCD 初期化＆テスト描画 ---
