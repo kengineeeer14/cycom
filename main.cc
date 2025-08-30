@@ -52,7 +52,7 @@ int main() {
     lcd.Clear(0xFFFF); // 白で全消去
 
     // ★ フォント描画のセットアップ
-    ui::TextRenderer tr(lcd, "assets/fonts/NotoSans-Regular.ttf"); // フォントパスは配置に合わせて
+    ui::TextRenderer tr(lcd, "config/fonts/DejaVuSans.ttf"); // フォントパスは配置に合わせて
     tr.SetFontSizePx(48);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
 
