@@ -182,10 +182,9 @@ TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int p
                                     const std::string& utf8, bool center) {
     int x1{panel_x + panel_w - 1};
     int y1{panel_y + panel_h - 1};
-    // lcd_.DrawFilledRect(panel_x, panel_y, x1, y1, bg_.value);
     if (center) {
         auto m = MeasureText(utf8);
-        int x = panel_x + std::max(0, (panel_w - m.width_px) / 2);
+        int x = panel_x + std::max(0, (panel_w - m.width_px) / 2) - 100;
         int y = panel_y + std::max(0, (panel_h + m.baseline_px) / 2);
         return DrawText(x, y, utf8);
     } else {
