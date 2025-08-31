@@ -63,6 +63,7 @@ public:
     // rgb565: len個のピクセル(16bit, RGB565)
     void DrawRGB565Line(const int &x, const int &y, const uint16_t* rgb565, const int &len);
 
+    bool DrawBackgroundImage(const std::string& path);
 private:
     /**
      * @brief dataがtrueの時にはgpioラインに1を設定し，falseであれば0を設定する．

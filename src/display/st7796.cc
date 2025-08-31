@@ -1,10 +1,11 @@
 #include "display/st7796.h"
-
+#include "third_party/stb_image.h"
 #include <algorithm>
 #include <array>
 #include <stdexcept>
 #include <vector>
 #include <unistd.h>  // usleep
+#include <cmath>
 
 namespace st7796 {
 
@@ -78,6 +79,40 @@ void st7796::Display::DrawRGB565Line(const int &x, const int &y, const uint16_t*
         bytes[2*i + 1] = static_cast<uint8_t>( p       & 0xFF);
     }
     SendChunked(bytes.data(), bytes.size());
+}
+
+bool Display::DrawBackgroundImage(const std::string& path) {
+    int w, h, ch;
+    unsigned char* img = stbi_load(path.c_str(), &w, &h, &ch, 0);
+    if (!img) {
+        fprintf(stderr, "Failed to load background: %s\n", path.c_str());
+        return false;
+    }
+    if (ch < 3) { stbi_image_free(img); return false; }
+
+    std::vector<uint16_t> line(kWidth);
+
+    const double scale = std::max(double(kWidth) / w, double(kHeight) / h);
+    const double sw = kWidth / scale;
+    const double sh = kHeight / scale;
+    const double sx0 = (w - sw) * 0.5;
+    const double sy0 = (h - sh) * 0.5;
+
+    for (int y = 0; y < kHeight; ++y) {
+        double fy = sy0 + (y + 0.5) / scale;
+        int sy = std::clamp((int)std::floor(fy), 0, h - 1);
+        for (int x = 0; x < kWidth; ++x) {
+            double fx = sx0 + (x + 0.5) / scale;
+            int sx = std::clamp((int)std::floor(fx), 0, w - 1);
+            const unsigned char* p = img + (sy * w + sx) * ch;
+            uint16_t c = ((p[0] & 0xF8) << 8) | ((p[1] & 0xFC) << 3) | (p[2] >> 3);
+            line[x] = c;
+        }
+        DrawRGB565Line(0, y, line.data(), kWidth);
+    }
+
+    stbi_image_free(img);
+    return true;
 }
 
 void Display::DataMode(bool data) {
