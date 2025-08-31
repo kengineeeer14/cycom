@@ -122,8 +122,8 @@ try {
     // 数字エリア（レイアウトは従来どおり、UNIT_X を基準に幅を決定）
     const int NUM_X = PANEL_X + 10;
     const int NUM_Y = PANEL_Y + 10;
-    const int NUM_W = (UNIT_X - 5) - NUM_X;  // ← 単位領域の直前まで
-    const int NUM_H = PANEL_H - 20;
+    const int NUM_W = (UNIT_X - 100) - NUM_X;  // ← 単位領域の直前まで
+    const int NUM_H = PANEL_H - 100;
 
     tr.SetFontSizePx(48);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
