@@ -103,7 +103,7 @@ try {
     const int PANEL_H = 120;
 
     // 背景パネルを一度塗る
-    FillRect(PANEL_X, PANEL_Y, PANEL_X + PANEL_W - 1, PANEL_Y + PANEL_H - 1, 0xFFFF);
+    // FillRect(PANEL_X, PANEL_Y, PANEL_X + PANEL_W - 1, PANEL_Y + PANEL_H - 1, 0xFFFF);
 
     // --- 単位エリア（従来のレイアウトは維持／テキストは描かない） ---
     tr.SetFontSizePx(28);
