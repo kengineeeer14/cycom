@@ -102,8 +102,8 @@ try {
     // 背景パネルを一度塗る
     FillRect(PANEL_X, PANEL_Y, PANEL_X + PANEL_W - 1, PANEL_Y + PANEL_H - 1, 0xFFFF);
 
-    // --- 単位を固定で表示（左寄せに変更） ---
-    tr.SetFontSizePx(28); // 単位は小さめ
+    // --- 単位エリア（従来のレイアウトは維持／テキストは描かない） ---
+    tr.SetFontSizePx(28);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
 
     const int UNIT_W = 120;
@@ -111,24 +111,22 @@ try {
     const int UNIT_Y = PANEL_Y;
     const int UNIT_H = PANEL_H;
 
-    // 左寄せ（center=false）で描く：センタ計算の誤差を排除
-    tr.DrawLabel(UNIT_X, UNIT_Y, UNIT_W, UNIT_H, "km/h", /*center=*/false);
-
-    // 単位エリアの左にほんの少し境界線（デバッグ可視化・任意）
+    // 単位領域は背景で一度クリアしておく（テキストは描かない）
+    FillRect(UNIT_X, UNIT_Y, UNIT_X + UNIT_W - 1, UNIT_Y + UNIT_H - 1, 0xFFFF);
+    // 境界線をうっすら見せたい場合（任意）
     // FillRect(UNIT_X - 1, PANEL_Y, UNIT_X - 1, PANEL_Y + PANEL_H - 1, 0x0000);
 
-    // 数字エリア（単位の左側だけを更新）
+    // 数字エリア（レイアウトは従来どおり、UNIT_X を基準に幅を決定）
     const int NUM_X = PANEL_X + 10;
     const int NUM_Y = PANEL_Y + 10;
-    const int NUM_W = (UNIT_X - 5) - NUM_X; // ← 単位の直前まで確実に確保
+    const int NUM_W = (UNIT_X - 5) - NUM_X;  // ← 単位領域の直前まで
     const int NUM_H = PANEL_H - 20;
 
     tr.SetFontSizePx(48);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
 
     const auto UPDATE_INTERVAL = std::chrono::milliseconds(300);
-
-    double demo_speed = 23.4; // デモ用値
+    double demo_speed = 23.4; // デモ用
     std::string prev_text;
 
     while (true) {
@@ -139,13 +137,10 @@ try {
         std::string cur_text(buf);
 
         if (cur_text != prev_text) {
-            // 数字部分だけクリア（単位側には絶対にかからない）
+            // 数字部分だけ再描画（単位領域には触れない）
             FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
-
-            // 数字を描画（左寄せ）
             tr.SetWrapWidthPx(0);
             tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
-
             prev_text = cur_text;
         }
 
