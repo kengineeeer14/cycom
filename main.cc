@@ -125,7 +125,7 @@ try {
     tr.SetFontSizePx(48);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
 
-    const auto UPDATE_INTERVAL = std::chrono::milliseconds(300);
+    const auto UPDATE_INTERVAL = std::chrono::milliseconds(1000);
     double demo_speed = 23.4; // デモ用
     std::string prev_text;
 
