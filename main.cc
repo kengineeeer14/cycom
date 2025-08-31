@@ -117,8 +117,8 @@ try {
     // FillRect(UNIT_X - 1, PANEL_Y, UNIT_X - 1, PANEL_Y + PANEL_H - 1, 0x0000);
 
     // 数字エリア（レイアウトは従来どおり、UNIT_X を基準に幅を決定）
-    const int NUM_X = PANEL_X + 100;
-    const int NUM_Y = PANEL_Y + 400;
+    const int NUM_X = PANEL_X + 40;
+    const int NUM_Y = PANEL_Y + 300;
     const int NUM_W = (UNIT_X - 5) - NUM_X;  // ← 単位領域の直前まで
     const int NUM_H = PANEL_H - 20;
 
