@@ -102,9 +102,6 @@ try {
     const int PANEL_W = 440;
     const int PANEL_H = 120;
 
-    // 背景パネルを一度塗る
-    // FillRect(PANEL_X, PANEL_Y, PANEL_X + PANEL_W - 1, PANEL_Y + PANEL_H - 1, 0xFFFF);
-
     // --- 単位エリア（従来のレイアウトは維持／テキストは描かない） ---
     tr.SetFontSizePx(28);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
@@ -139,13 +136,13 @@ try {
         std::snprintf(buf, sizeof(buf), "%.1f", demo_speed);
         std::string cur_text(buf);
 
-        // if (cur_text != prev_text) {
-        //     // 数字部分だけ再描画（単位領域には触れない）
-        //     // FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
-        //     tr.SetWrapWidthPx(0);
-        //     tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
-        //     prev_text = cur_text;
-        // }
+        if (cur_text != prev_text) {
+            // 数字部分だけ再描画（単位領域には触れない）
+            // FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
+            tr.SetWrapWidthPx(0);
+            tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
+            prev_text = cur_text;
+        }
 
         // デモ用：速度を変化
         demo_speed += 1.0;
