@@ -117,13 +117,13 @@ try {
     // 単位領域は背景で一度クリアしておく（テキストは描かない）
     // FillRect(UNIT_X, UNIT_Y, UNIT_X + UNIT_W - 1, UNIT_Y + UNIT_H - 1, 0xFFFF);
     // 境界線をうっすら見せたい場合（任意）
-    // FillRect(UNIT_X - 1, PANEL_Y, UNIT_X - 1, PANEL_Y + PANEL_H - 1, 0x0000);
+    FillRect(UNIT_X - 1, PANEL_Y, UNIT_X - 1, PANEL_Y + PANEL_H - 1, 0x0000);
 
     // 数字エリア（レイアウトは従来どおり、UNIT_X を基準に幅を決定）
     const int NUM_X = PANEL_X + 10;
     const int NUM_Y = PANEL_Y + 10;
-    const int NUM_W = (UNIT_X - 100) - NUM_X;  // ← 単位領域の直前まで
-    const int NUM_H = PANEL_H - 100;
+    const int NUM_W = (UNIT_X - 5) - NUM_X;  // ← 単位領域の直前まで
+    const int NUM_H = PANEL_H - 20;
 
     tr.SetFontSizePx(48);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
