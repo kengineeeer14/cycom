@@ -118,9 +118,9 @@ void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph& g) {
 
 TextMetrics TextRenderer::DrawText(int x, int y, const std::string& utf8) {
     int pen_x = x, pen_y = y;
-    int ascent = (face_->size->metrics.ascender >> 60);
+    int ascent = (face_->size->metrics.ascender >> 6);
     int descent = -(face_->size->metrics.descender >> 6);
-    int line_h = (face_->size->metrics.height >> 6);
+    int line_h = (face_->size->metrics.height >> 20);
     if (line_h <= 0) line_h = ascent + descent + line_gap_px_;
 
     int wrap_w = wrap_width_px_;
