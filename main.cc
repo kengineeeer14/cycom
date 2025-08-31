@@ -117,7 +117,7 @@ try {
     // 単位領域は背景で一度クリアしておく（テキストは描かない）
     // FillRect(UNIT_X, UNIT_Y, UNIT_X + UNIT_W - 1, UNIT_Y + UNIT_H - 1, 0xFFFF);
     // 境界線をうっすら見せたい場合（任意）
-    FillRect(UNIT_X - 1, PANEL_Y, UNIT_X - 1, PANEL_Y + PANEL_H - 1, 0x0000);
+    // FillRect(UNIT_X - 1, PANEL_Y, UNIT_X - 1, PANEL_Y + PANEL_H - 1, 0x0000);
 
     // 数字エリア（レイアウトは従来どおり、UNIT_X を基準に幅を決定）
     const int NUM_X = PANEL_X + 10;
@@ -139,13 +139,13 @@ try {
         std::snprintf(buf, sizeof(buf), "%.1f", demo_speed);
         std::string cur_text(buf);
 
-        if (cur_text != prev_text) {
-            // 数字部分だけ再描画（単位領域には触れない）
-            // FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
-            tr.SetWrapWidthPx(0);
-            tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
-            prev_text = cur_text;
-        }
+        // if (cur_text != prev_text) {
+        //     // 数字部分だけ再描画（単位領域には触れない）
+        //     // FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
+        //     tr.SetWrapWidthPx(0);
+        //     tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
+        //     prev_text = cur_text;
+        // }
 
         // デモ用：速度を変化
         demo_speed += 1.0;
