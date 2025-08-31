@@ -141,7 +141,7 @@ try {
 
         if (cur_text != prev_text) {
             // 数字部分だけ再描画（単位領域には触れない）
-            FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
+            // FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
             tr.SetWrapWidthPx(0);
             tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
             prev_text = cur_text;
