@@ -50,7 +50,7 @@ int main() {
     // --- 追加: LCD 初期化＆テスト描画 ---
     st7796::Display lcd;
     // JPEG/PNG 版を追加したなら
-    if (!lcd.DrawBackgroundImage("background/cycom_background.jpg")) {
+    if (!lcd.DrawBackgroundImage("background/measure.jpg")) {
         lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
 }
 
