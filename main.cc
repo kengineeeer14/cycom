@@ -126,27 +126,21 @@ try {
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
 
     const auto UPDATE_INTERVAL = std::chrono::milliseconds(1000);
-    double demo_speed = 23.4; // デモ用
     std::string prev_text;
-
+    double gnvtg_speed_kmh{0.0};
     while (true) {
         std::this_thread::sleep_for(UPDATE_INTERVAL);
 
         char buf[16];
-        std::snprintf(buf, sizeof(buf), "%.1f", demo_speed);
+        gnvtg_speed_kmh = gps.GetGnvtgSpeed();
+        std::snprintf(buf, sizeof(buf), "%.1f", gnvtg_speed_kmh);
         std::string cur_text(buf);
 
         if (cur_text != prev_text) {
-            // 数字部分だけ再描画（単位領域には触れない）
-            // FillRect(NUM_X, NUM_Y, NUM_X + NUM_W - 1, NUM_Y + NUM_H - 1, 0xFFFF);
             tr.SetWrapWidthPx(0);
             tr.DrawLabel(NUM_X, NUM_Y, NUM_W, NUM_H, cur_text, /*center=*/false);
             prev_text = cur_text;
         }
-
-        // デモ用：速度を変化
-        demo_speed += 1.0;
-        if (demo_speed > 45.0) demo_speed = 18.0;
     }
 } catch (const std::exception& e) {
     std::cerr << "Fatal: " << e.what() << "\n";

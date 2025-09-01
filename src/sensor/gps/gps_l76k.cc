@@ -132,4 +132,8 @@ namespace sensor{
         std::lock_guard<std::mutex> lk(mtx_);
         return GnssSnapshot{gnrmc_data_, gnvtg_data_, gngga_data_};
     }
+
+    double L76k::GetGnvtgSpeed() {
+        return gnvtg_data_.speed_kmh;
+    }
 }   // namespace sensor
