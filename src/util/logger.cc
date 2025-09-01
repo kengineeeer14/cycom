@@ -25,8 +25,9 @@ Logger::Logger(const std::string &config_path) {
     log_on_ = j["logger"]["log_on"].get<bool>();
 
     csv_file_path_ = GenerateCsvFilePath();
-
-    WriteLogHeader();
+    if (log_on_){
+        WriteLogHeader();
+    }
 }
 
 std::string Logger::GenerateCsvFilePath() {
