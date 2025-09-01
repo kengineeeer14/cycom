@@ -49,10 +49,15 @@ int main() {
 
     // --- 追加: LCD 初期化＆テスト描画 ---
     st7796::Display lcd;
-    // JPEG/PNG 版を追加したなら
+
+    if (!lcd.DrawBackgroundImage("background/start.jpg")) {
+        lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    
     if (!lcd.DrawBackgroundImage("background/measure.jpg")) {
         lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
-}
+    }
 
     // ★ フォント描画のセットアップ
     ui::TextRenderer tr(lcd, "config/fonts/DejaVuSans.ttf"); // フォントパスは配置に合わせて
