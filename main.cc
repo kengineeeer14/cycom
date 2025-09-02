@@ -50,12 +50,12 @@ int main() {
     // --- 追加: LCD 初期化＆テスト描画 ---
     st7796::Display lcd;
 
-    if (!lcd.DrawBackgroundImage("background/start.jpg")) {
+    if (!lcd.DrawBackgroundImage("resource/background/start.jpg")) {
         lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
     }
     std::this_thread::sleep_for(std::chrono::seconds(5));
     
-    if (!lcd.DrawBackgroundImage("background/measure.jpg")) {
+    if (!lcd.DrawBackgroundImage("resource/background/measure.jpg")) {
         lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
     }
 
