@@ -60,9 +60,9 @@ int main() {
     }
 
     // ★ フォント描画のセットアップ
-    ui::TextRenderer tr(lcd, "config/fonts/DejaVuSans.ttf"); // フォントパスは配置に合わせて
+    user_interface::TextRenderer tr(lcd, "config/fonts/DejaVuSans.ttf"); // フォントパスは配置に合わせて
     tr.SetFontSizePx(48);
-    tr.SetColors(ui::Color565::Black(), ui::Color565::White());
+    tr.SetColors(user_interface::Color565::Black(), user_interface::Color565::White());
 
     // --- 追加: タッチ初期化 ---
     // 既知のGT911アドレス候補は 0x14 / 0x5D。まずは 0x14 を既定に。
@@ -109,7 +109,7 @@ try {
 
     // --- 単位エリア（従来のレイアウトは維持／テキストは描かない） ---
     tr.SetFontSizePx(28);
-    tr.SetColors(ui::Color565::Black(), ui::Color565::White());
+    tr.SetColors(user_interface::Color565::Black(), user_interface::Color565::White());
 
     const int UNIT_W = 120;
     const int UNIT_X = PANEL_X + PANEL_W - UNIT_W;
@@ -128,7 +128,7 @@ try {
     const int NUM_H = PANEL_H - 20;
 
     tr.SetFontSizePx(48);
-    tr.SetColors(ui::Color565::Black(), ui::Color565::White());
+    tr.SetColors(user_interface::Color565::Black(), user_interface::Color565::White());
 
     const auto UPDATE_INTERVAL = std::chrono::milliseconds(1000);
     std::string prev_text;

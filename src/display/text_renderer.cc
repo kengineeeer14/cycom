@@ -3,7 +3,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace ui {
+namespace user_interface {
 
 inline uint16_t TextRenderer::Blend565(uint16_t bg, uint16_t fg, uint8_t a) {
     auto ex = [](uint16_t c, int sh, int m)->int { return (c >> sh) & m; };
@@ -194,4 +194,4 @@ TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int p
     }
 }
 
-} // namespace ui
+} // namespace user_interface

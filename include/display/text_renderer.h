@@ -11,7 +11,7 @@
 
 #include "display/st7796.h"
 
-namespace ui {
+namespace user_interface {
 
 struct Color565 {
     uint16_t value;  // RGB565
@@ -83,6 +83,6 @@ private:
     std::unordered_map<GlyphKey, Glyph> cache_;
 };
 
-} // namespace ui
+} // namespace user_interface
 
 #endif // CYCOM_DISPLAY_TEXT_RENDERER_H_
