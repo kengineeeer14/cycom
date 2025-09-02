@@ -58,6 +58,12 @@ public:
      */
     void BlitRGB565(const uint8_t* buf, const size_t &len);
 
+    // 既存のヘッダに追記（publicで）
+    // 行yの(x .. x+len-1) に RGB565 の1ラインを描画
+    // rgb565: len個のピクセル(16bit, RGB565)
+    void DrawRGB565Line(const int &x, const int &y, const uint16_t* rgb565, const int &len);
+
+    bool DrawBackgroundImage(const std::string& path);
 private:
     /**
      * @brief dataがtrueの時にはgpioラインに1を設定し，falseであれば0を設定する．

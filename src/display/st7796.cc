@@ -1,10 +1,11 @@
 #include "display/st7796.h"
-
+#include "third_party/stb_image.h"
 #include <algorithm>
 #include <array>
 #include <stdexcept>
 #include <vector>
 #include <unistd.h>  // usleep
+#include <cmath>
 
 namespace st7796 {
 
@@ -38,8 +39,7 @@ void Display::DrawFilledRect(int &x0, int &y0, int &x1, int &y1, const uint16_t 
     x0 = std::max(0, x0); y0 = std::max(0, y0);
     x1 = std::min(kWidth  - 1, x1);
     y1 = std::min(kHeight - 1, y1);
-
-    if (x0 > x1 || y0 > y1) return;  // クリップ後に完全画面外
+    if (x0 > x1 || y0 > y1) return;
 
     SetAddressWindow(x0, y0, x1, y1);
     DataMode(true);
@@ -47,8 +47,8 @@ void Display::DrawFilledRect(int &x0, int &y0, int &x1, int &y1, const uint16_t 
     const int w = (x1 - x0 + 1);
     std::vector<uint8_t> line(w * 2);
     for (int i = 0; i < w; ++i) {
-        line[2 * i + 0] = static_cast<uint8_t>((rgb565 >> 8) & 0xFF);
-        line[2 * i + 1] = static_cast<uint8_t>( rgb565        & 0xFF);
+        line[2*i+0] = static_cast<uint8_t>((rgb565 >> 8) & 0xFF);
+        line[2*i+1] = static_cast<uint8_t>( rgb565        & 0xFF);
     }
     for (int y = y0; y <= y1; ++y) {
         SendChunked(line.data(), line.size());
@@ -61,6 +61,58 @@ void Display::BlitRGB565(const uint8_t* buf, const size_t &len) {
     SetAddressWindow(0, 0, kWidth - 1, kHeight - 1);
     DataMode(true);
     SendChunked(buf, len);
+}
+
+void st7796::Display::DrawRGB565Line(const int &x, const int &y, const uint16_t* rgb565, const int &len) {
+    if (len <= 0) return;
+    // アドレスウィンドウを1ラインに絞る
+    SetAddressWindow(x, y, x + len - 1, y);
+    DataMode(true);
+
+    // ST7796 は 16bit を MSB→LSB の順で送る想定
+    // SendChunked(uint8_t* , size_t) がある前提で、バイト配列に詰め替える
+    std::vector<uint8_t> bytes;
+    bytes.resize(static_cast<size_t>(len) * 2);
+    for (int i = 0; i < len; ++i) {
+        uint16_t p = rgb565[i];
+        bytes[2*i + 0] = static_cast<uint8_t>((p >> 8) & 0xFF);
+        bytes[2*i + 1] = static_cast<uint8_t>( p       & 0xFF);
+    }
+    SendChunked(bytes.data(), bytes.size());
+}
+
+bool Display::DrawBackgroundImage(const std::string& path) {
+    int w, h, ch;
+    unsigned char* img = stbi_load(path.c_str(), &w, &h, &ch, 0);
+    if (!img) {
+        fprintf(stderr, "Failed to load background: %s\n", path.c_str());
+        return false;
+    }
+    if (ch < 3) { stbi_image_free(img); return false; }
+
+    std::vector<uint16_t> line(kWidth);
+
+    const double scale = std::max(double(kWidth) / w, double(kHeight) / h);
+    const double sw = kWidth / scale;
+    const double sh = kHeight / scale;
+    const double sx0 = (w - sw) * 0.5;
+    const double sy0 = (h - sh) * 0.5;
+
+    for (int y = 0; y < kHeight; ++y) {
+        double fy = sy0 + (y + 0.5) / scale;
+        int sy = std::clamp((int)std::floor(fy), 0, h - 1);
+        for (int x = 0; x < kWidth; ++x) {
+            double fx = sx0 + (x + 0.5) / scale;
+            int sx = std::clamp((int)std::floor(fx), 0, w - 1);
+            const unsigned char* p = img + (sy * w + sx) * ch;
+            uint16_t c = ((p[0] & 0xF8) << 8) | ((p[1] & 0xFC) << 3) | (p[2] >> 3);
+            line[x] = c;
+        }
+        DrawRGB565Line(0, y, line.data(), kWidth);
+    }
+
+    stbi_image_free(img);
+    return true;
 }
 
 void Display::DataMode(bool data) {
@@ -110,11 +162,11 @@ void Display::Init() {
     // スリープ解除
     Cmd(0x11); usleep(120000);
 
-    // 画面のメモリアクセス制御 (MADCTL)
-    Cmd(0x36); Dat(0x08);
+    // 画面のメモリアクセス制御 (MADCTL) – 向きは好みで
+    Cmd(0x36); Dat(0x48);
 
-    // ピクセルフォーマット設定（1ピクセル = 16ビット（RGB565）に設定。）
-    Cmd(0x3A); Dat(0x55); // 0x55=16bit/px
+    // ピクセルフォーマット（16bpp = RGB565）
+    Cmd(0x3A); Dat(0x55);
 
     // 電源制御・フレームレート等のレジスタ設定(電圧制御やパネルドライブの細かいチューニング)
     Cmd(0xF0); Dat(0xC3);

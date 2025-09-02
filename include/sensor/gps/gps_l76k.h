@@ -124,6 +124,8 @@ namespace sensor{
 
             GnssSnapshot Snapshot() const;
 
+            double GetGnvtgSpeed();
+
         private:
             mutable std::mutex mtx_;
             GNRMC gnrmc_data_{};
