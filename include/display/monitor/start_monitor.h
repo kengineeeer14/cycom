@@ -3,6 +3,9 @@
 
 namespace user_interface {
 
+    class StartMonitor{
+
+    };
 
 } // namespace user_interface
 
