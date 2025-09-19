@@ -32,14 +32,48 @@ struct TextMetrics {
 
 class TextRenderer {
 public:
-    // font_path に .ttf / .otf を指定
+    /**
+     * @brief 内部変数の初期化とフォント，描画サイズの設定
+     * 
+     * @param[in] lcd テキストを描画する対象（st7796 lcdドライバのインスタンスなど）
+     * @param[in] font_path フォントファイルへのパス
+     */
     TextRenderer(st7796::Display& lcd, const std::string& font_path);
+
+    /**
+     * @brief フォントフェイスとFreeTypeライブラリの解放
+     * 
+     */
     ~TextRenderer();
 
-    void SetFontSizePx(int px);
-    void SetColors(Color565 fg, Color565 bg);
-    void SetLineGapPx(int px);
-    void SetWrapWidthPx(int px);  // 0 で折り返しなし
+    /**
+     * @brief 指定されたピクセルサイズ px をもとに、テキスト描画に使うフォントサイズを設定する．
+     * 
+     * @param[in] px フォントサイズ[ピクセル]
+     */
+    void SetFontSizePx(const int &px);
+
+    /**
+     * @brief 前景色と背景色を表す内部変数に色を設定する．
+     * 
+     * @param[in] fg 前景色
+     * @param[in] bg 背景色
+     */
+    void SetColors(const Color565 &fg, const Color565 &bg);
+
+    /**
+     * @brief 文字の行間のサイズを表す内部変数に値を設定する．
+     * 
+     * @param[in] px 行間のサイズ
+     */
+    void SetLineGapPx(const int &px);
+
+    /**
+     * @brief テキスト描画時の折り返し幅を表す内部変数に値を設定する．
+     * 
+     * @param[in] px テキスト描画時の折り返し幅．0で折り返しなし．
+     */
+    void SetWrapWidthPx(const int &px);
 
     // (x,y) はベースライン基準（左下寄り）
     TextMetrics DrawText(int x, int y, const std::string& utf8);
@@ -74,7 +108,8 @@ private:
     FT_Library ft_ = nullptr;
     FT_Face face_  = nullptr;
 
-    int font_size_px_ = 32;
+    int font_size_px_{32};
+    int min_font_size_{6};
     Color565 fg_ = Color565::Black();
     Color565 bg_ = Color565::White();
     int line_gap_px_ = 4;
