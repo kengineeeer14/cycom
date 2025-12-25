@@ -1,32 +1,33 @@
-This is a C++-based repository for a cycle computer. It is primarily responsible for ingesting sensor data, displaying it on a monitor, and logging the data. Please follow these guidelines when contributing:
 
-## Code Standards
+このリポジトリは、サイクルコンピュータ向けの C++ ベースのプロジェクトです。主な役割は、センサーデータの取り込み、モニタへの表示、そしてデータのログ記録です。コントリビューションの際は以下のガイドラインに従ってください。
 
-### Repository Structure
-- `CMakeLists.txt`: Top-level CMake configuration for building the project
-- `main.cc`: Application entry point
-- `src/`: C++ source files
-	- `core/`: Core application logic
-	- `display/`: Display drivers, rendering and touch controller integration
-	- `hal/`: Hardware abstraction layer (GPIO, I2C, SPI, UART)
-	- `sensor/`: Sensor integrations
-	- `third_party/`: Third-party source integrations
-	- `util/`: Utilities
-- `include/`: Public headers matching `src/` layout
-- `config/`: Configuration files
-- `resource/`: Static assets (background images used by the UI)
-- `scripts/`: Build and helper scripts
-- `tests/`: Test scaffolding and suites organized by subsystem
-- `build/`: Generated build artifacts (CMake cache, Ninja files, object dirs)
-- `doc/`: Project documentation
-- `try/`: Experimental prototypes and playground (This dir is independent of the project)
-- `log/`: Runtime logs
-- `README.md`: Project overview and quickstart
+## コード標準
 
-## Key Guidelines
-1. Follow C++ best practices and idiomatic patterns
-2. Basically, follow Google C++ style Guide <https://google.github.io/styleguide/cppguide.html>
-3. Maintain existing code structure and organization
-4. Use dependency injection patterns where appropriate
-<!-- 5. Follow doc.instruction.md when writing class design documents in Markdown -->
-<!-- 5. Write unit tests for new functionality. For writing tests, follow the instructions in test.instruction.md -->
+### リポジトリ構成
+- `CMakeLists.txt`: プロジェクトのビルド用トップレベル CMake 設定
+- `main.cc`: アプリケーションのエントリポイント
+- `src/`: C++ ソースファイル
+	- `core/`: コアアプリケーションロジック
+	- `display/`: ディスプレイドライバ、レンダリング、タッチコントローラ統合
+	- `hal/`: ハードウェア抽象化レイヤ（GPIO、I2C、SPI、UART）
+	- `sensor/`: センサー統合
+	- `third_party/`: サードパーティ統合コード
+	- `util/`: ユーティリティ
+- `include/`: `src/` の構成に対応した公開ヘッダー
+- `config/`: 設定ファイル
+- `resource/`: 静的アセット（UIで使用する背景画像）
+- `scripts/`: ビルドおよび補助スクリプト
+- `tests/`: サブシステム別に整理されたテスト足場とスイート
+- `build/`: 生成物（CMake キャッシュ、Ninja ファイル、オブジェクトディレクトリ）
+- `doc/`: プロジェクトドキュメント
+- `try/`: 実験用プロトタイプとプレイグラウンド（このディレクトリはプロジェクト本体とは独立）
+- `log/`: 実行時ログ
+- `README.md`: プロジェクト概要とクイックスタート
+
+## 重要なガイドライン
+1. C++ のベストプラクティスとイディオムに従う
+2. 基本的に Google C++ スタイルガイド <https://google.github.io/styleguide/cppguide.html> に従う
+3. 既存のコード構造と組織を維持する
+4. 必要に応じて依存性注入（Dependency Injection）パターンを用いる
+<!-- 5. Markdown でクラス設計ドキュメントを書く場合は doc.instruction.md に従う -->
+<!-- 5. 新機能にはユニットテストを書く。テストの作成方法は test.instruction.md に従う -->
