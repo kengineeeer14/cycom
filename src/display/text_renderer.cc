@@ -61,14 +61,23 @@ TextRenderer::~TextRenderer() {
     if (ft_) FT_Done_FreeType(ft_);
 }
 
-void TextRenderer::SetFontSizePx(int px) {
-    font_size_px_ = std::max(6, px);
+void TextRenderer::SetFontSizePx(const int &px) {
+    font_size_px_ = std::max(min_font_size_, px);
     FT_Set_Pixel_Sizes(face_, 0, font_size_px_);
 }
 
-void TextRenderer::SetColors(Color565 fg, Color565 bg) { fg_ = fg; bg_ = bg; }
-void TextRenderer::SetLineGapPx(int px) { line_gap_px_ = std::max(0, px); }
-void TextRenderer::SetWrapWidthPx(int px) { wrap_width_px_ = std::max(0, px); }
+void TextRenderer::SetColors(const Color565 &fg, const Color565 &bg){
+    fg_ = fg;
+    bg_ = bg;
+}
+
+void TextRenderer::SetLineGapPx(const int &px) {
+    line_gap_px_ = std::max(0, px);
+}
+
+void TextRenderer::SetWrapWidthPx(const int &px) {
+    wrap_width_px_ = std::max(0, px);
+}
 
 TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
     Glyph g;
