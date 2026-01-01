@@ -27,7 +27,8 @@
 ## 重要なガイドライン
 1. C++ のベストプラクティスとイディオムに従う
 2. 基本的に Google C++ スタイルガイド <https://google.github.io/styleguide/cppguide.html> に従う
-3. 既存のコード構造と組織を維持する
+3. 既存のコード構造を維持する
 4. 必要に応じて依存性注入（Dependency Injection）パターンを用いる
+5. 日本語を使用する
 <!-- 5. Markdown でクラス設計ドキュメントを書く場合は doc.instruction.md に従う -->
 <!-- 5. 新機能にはユニットテストを書く。テストの作成方法は test.instruction.md に従う -->
