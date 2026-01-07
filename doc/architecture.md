@@ -87,13 +87,13 @@ graph TB
     Logger --> LogFile
 
     %% スタイル定義
-    classDef mainClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef halClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
-    classDef sensorClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef displayClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef utilClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef hwClass fill:#eeeeee,stroke:#424242,stroke-width:2px
-    classDef resourceClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef mainClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px,color:#000
+    classDef halClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px,color:#000
+    classDef sensorClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef displayClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px,color:#000
+    classDef utilClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
+    classDef hwClass fill:#eeeeee,stroke:#424242,stroke-width:2px,color:#000
+    classDef resourceClass fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
 
     class Main,UartThread mainClass
     class GPIO,UART,SPI,I2C,GPIOLine halClass
