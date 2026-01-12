@@ -6,13 +6,15 @@
 #include <fstream>
 #include <chrono>
 #include <sstream>
+#include <nlohmann/json.hpp>
 
 namespace util {
 namespace {
     using clock_type = std::chrono::steady_clock;
 }
 
-Logger::Logger(const std::string &config_path) {
+Logger::Logger(const std::string &config_path, sensor::L76k& gps)
+    : gps_(gps) {
     std::ifstream ifs(config_path);
     if (!ifs.is_open()) {
         throw std::runtime_error("Failed to open config file");
@@ -21,13 +23,15 @@ Logger::Logger(const std::string &config_path) {
     ifs >> j;
 
     log_interval_ms_ = j["logger"]["log_interval_ms"].get<unsigned int>();
-
     log_on_ = j["logger"]["log_on"].get<bool>();
 
     csv_file_path_ = GenerateCsvFilePath();
-    if (log_on_){
+    if (log_on_) {
         WriteLogHeader();
     }
+    
+    // Touch クラスと同様、コンストラクタで自動的にスレッドを起動
+    Start();
 }
 
 std::string Logger::GenerateCsvFilePath() {
@@ -44,19 +48,10 @@ std::string Logger::GenerateCsvFilePath() {
 
 Logger::~Logger() { Stop(); }
 
-void Logger::Start(std::chrono::milliseconds period, Callback cb) {
-    Stop(); // stop existing thread if running
-    period_ = period;
-    cb_ = std::move(cb);
+void Logger::Start() {
+    Stop(); // 既存スレッドが動いていれば停止
     running_.store(true, std::memory_order_release);
-    th_ = std::thread([this]{
-        auto next = clock_type::now();
-        while (running_.load(std::memory_order_acquire)) {
-            if (cb_) cb_(); else OnTick();
-            next += period_;
-            std::this_thread::sleep_until(next);
-        }
-    });
+    th_ = std::thread([this]{ LoggingLoop(); });
 }
 
 void Logger::Stop() {
@@ -64,9 +59,21 @@ void Logger::Stop() {
     if (was_running && th_.joinable()) th_.join();
 }
 
-void Logger::OnTick() {
-    // Default periodic processing
-    std::cout << "100ms\n";
+void Logger::LoggingLoop() {
+    auto next = clock_type::now();
+    const auto period = std::chrono::milliseconds(log_interval_ms_);
+    
+    while (running_.load(std::memory_order_acquire)) {
+        // GPS データを取得してログに書き込む（Touch クラスのパターンと同様）
+        sensor::GnssSnapshot snap = gps_.Snapshot();
+        LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
+        if (log_on_) {
+            WriteCsv(log_data);
+        }
+        
+        next += period;
+        std::this_thread::sleep_until(next);
+    }
 }
 
 void Logger::WriteLogHeader() {

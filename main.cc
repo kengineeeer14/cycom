@@ -1,20 +1,16 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
-#include <csignal>
 
 #include <chrono>
 #include <thread>
 #include <iostream>
-#include <iomanip>
 #include <string>
-#include <algorithm>
 
 #include "hal/gpio_controller.h"
 #include "hal/uart_config.h"
 #include "sensor/gps/gps_l76k.h"
 #include "util/logger.h"
-#include "util/shutdown_flag.h"
 
 #include "display/st7796.h"
 #include "display/touch/gt911.h"
@@ -23,16 +19,10 @@
 int main() {
     const std::string config_path = "config/config.json";
 
-    // Ctrl+Cで終了するためのシグナルハンドラを設定
-    std::signal(SIGINT, [](int) { util::g_shutdown_requested.store(true); });
-    // killコマンドで終了するためのシグナルハンドラを設定
-    std::signal(SIGTERM, [](int) { util::g_shutdown_requested.store(true); });
-
     // --- 既存初期化（GPIO / UART / GPS / Logger） ---
     hal::GpioController gpio_controller;
     hal::UartConfigure uart_config(config_path);
     sensor::L76k gps;
-    util::Logger logger(config_path);
 
     if (!gpio_controller.SetupGpio()) {
         std::cerr << "GPIO setup failed.\n";
@@ -45,14 +35,8 @@ int main() {
         return 1;
     }
 
-    // [THREAD:LOGGER] ロガースレッド起動
-    logger.Start(std::chrono::milliseconds(logger.log_interval_ms_), [&] {
-        sensor::GnssSnapshot snap = gps.Snapshot();
-        util::Logger::LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
-        if (logger.log_on_){
-            logger.WriteCsv(log_data);
-        }
-    });
+    // Touch クラスと同様、Logger もコンストラクタで自動的にスレッドを起動
+    util::Logger logger(config_path, gps);
 
     // --- 追加: LCD 初期化＆テスト描画 ---
     st7796::Display lcd;
@@ -71,51 +55,36 @@ int main() {
     tr.SetFontSizePx(48);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
 
-    // [THREAD:TOUCH] タッチスレッド起動（コンストラクタ内）
+    // --- 追加: タッチ初期化 ---
     // 既知のGT911アドレス候補は 0x14 / 0x5D。まずは 0x14 を既定に。
     // 必要ならここを 0x5D に変える．
     uint8_t gt911_addr = 0x14;
     gt911::Touch touch(gt911_addr);
 
-    // [THREAD:UART] UARTスレッド起動
+    // --- UART読み取りを別スレッドで回す ---
     std::thread uart_thread([&gps, fd]() {
         char buf[256];
         std::string nmea_line;
-        while (!util::g_shutdown_requested.load()) {
-            // タイムアウト付きread（select使用）
-            fd_set readfds;
-            struct timeval tv;
-            tv.tv_sec = 0;
-            tv.tv_usec = 100000; // 100ms
-            FD_ZERO(&readfds);
-            FD_SET(fd, &readfds);
-            
-            int ret{select(fd + 1, &readfds, nullptr, nullptr, &tv)};
-            if (ret > 0) {
-                int n = ::read(fd, buf, sizeof(buf) - 1);
-                if (n > 0) {
-                    buf[n] = '\0';
-                    nmea_line.append(buf, n);
+        while (true) {
+            int n = ::read(fd, buf, sizeof(buf) - 1);
+            if (n > 0) {
+                buf[n] = '\0';
+                nmea_line.append(buf, n);
 
-                    // 1回のreadで複数文が来ても安全に処理
-                    size_t pos;
-                    while ((pos = nmea_line.find('\n')) != std::string::npos) {
-                        std::string line = nmea_line.substr(0, pos + 1); // 改行含めて取得
-                        gps.ProcessNmeaLine(line);
-                        nmea_line.erase(0, pos + 1);
-                    }
-                } else if (n < 0) {
-                    std::cerr << "UART read error\n";
-                    break;
+                // 1回のreadで複数文が来ても安全に処理
+                size_t pos;
+                while ((pos = nmea_line.find('\n')) != std::string::npos) {
+                    std::string line = nmea_line.substr(0, pos + 1); // 改行含めて取得
+                    gps.ProcessNmeaLine(line);
+                    nmea_line.erase(0, pos + 1);
                 }
-            } else if (ret < 0) {
-                std::cerr << "select() error\n";
-                break;
             }
+            // エラーハンドリングやタイムアウト等が必要ならここに追加
         }
     });
 
-    // [THREAD:MAIN] メインスレッドのメインループ（UI更新）
+    // --- メインスレッド: 50ms周期でタッチを描画 ---
+// --- メインスレッド: 数字+単位を表示 ---
 try {
     // 参照渡しAPI向けの薄いラッパ（const値でも安全に渡せる）
     auto FillRect = [&](int x0, int y0, int x1, int y1, uint16_t color) {
@@ -155,7 +124,7 @@ try {
     const auto UPDATE_INTERVAL = std::chrono::milliseconds(1000);
     std::string prev_text;
     double gnvtg_speed_kmh{0.0};
-    while (!util::g_shutdown_requested.load()) {
+    while (true) {
         std::this_thread::sleep_for(UPDATE_INTERVAL);
 
         char buf[16];
@@ -172,19 +141,6 @@ try {
 } catch (const std::exception& e) {
     std::cerr << "Fatal: " << e.what() << "\n";
 }
-
-    // --- 終了処理 ---
-    std::cout << "\nShutting down...\n";
-    
-    // ロガースレッドは自動停止（デストラクタ呼び出し）
-    // タッチスレッドも自動停止（デストラクタ呼び出し）
-    
-    // UARTスレッドの終了を待つ
-    if (uart_thread.joinable()) {
-        uart_thread.join();
-    }
-    
     ::close(fd);
-    std::cout << "Shutdown complete.\n";
     return 0;
 }
