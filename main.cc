@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
+#include <csignal>
 
 #include <chrono>
 #include <thread>
@@ -13,6 +14,7 @@
 #include "hal/uart_config.h"
 #include "sensor/gps/gps_l76k.h"
 #include "util/logger.h"
+#include "util/shutdown_flag.h"
 
 #include "display/st7796.h"
 #include "display/touch/gt911.h"
@@ -20,6 +22,10 @@
 
 int main() {
     const std::string config_path = "config/config.json";
+
+    // --- シグナルハンドラの設定 ---
+    std::signal(SIGINT, [](int) { util::g_shutdown_requested.store(true); });
+    std::signal(SIGTERM, [](int) { util::g_shutdown_requested.store(true); });
 
     // --- 既存初期化（GPIO / UART / GPS / Logger） ---
     hal::GpioController gpio_controller;
@@ -74,21 +80,37 @@ int main() {
     std::thread uart_thread([&gps, fd]() {
         char buf[256];
         std::string nmea_line;
-        while (true) {
-            int n = ::read(fd, buf, sizeof(buf) - 1);
-            if (n > 0) {
-                buf[n] = '\0';
-                nmea_line.append(buf, n);
+        while (!util::g_shutdown_requested.load()) {
+            // タイムアウト付きread（select使用）
+            fd_set readfds;
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000; // 100ms
+            FD_ZERO(&readfds);
+            FD_SET(fd, &readfds);
+            
+            int ret = select(fd + 1, &readfds, nullptr, nullptr, &tv);
+            if (ret > 0) {
+                int n = ::read(fd, buf, sizeof(buf) - 1);
+                if (n > 0) {
+                    buf[n] = '\0';
+                    nmea_line.append(buf, n);
 
-                // 1回のreadで複数文が来ても安全に処理
-                size_t pos;
-                while ((pos = nmea_line.find('\n')) != std::string::npos) {
-                    std::string line = nmea_line.substr(0, pos + 1); // 改行含めて取得
-                    gps.ProcessNmeaLine(line);
-                    nmea_line.erase(0, pos + 1);
+                    // 1回のreadで複数文が来ても安全に処理
+                    size_t pos;
+                    while ((pos = nmea_line.find('\n')) != std::string::npos) {
+                        std::string line = nmea_line.substr(0, pos + 1); // 改行含めて取得
+                        gps.ProcessNmeaLine(line);
+                        nmea_line.erase(0, pos + 1);
+                    }
+                } else if (n < 0) {
+                    std::cerr << "UART read error\n";
+                    break;
                 }
+            } else if (ret < 0) {
+                std::cerr << "select() error\n";
+                break;
             }
-            // エラーハンドリングやタイムアウト等が必要ならここに追加
         }
     });
 
@@ -133,7 +155,7 @@ try {
     const auto UPDATE_INTERVAL = std::chrono::milliseconds(1000);
     std::string prev_text;
     double gnvtg_speed_kmh{0.0};
-    while (true) {
+    while (!util::g_shutdown_requested.load()) {
         std::this_thread::sleep_for(UPDATE_INTERVAL);
 
         char buf[16];
@@ -151,11 +173,18 @@ try {
     std::cerr << "Fatal: " << e.what() << "\n";
 }
 
-    // 到達しないが一応
+    // --- 終了処理 ---
+    std::cout << "\nShutting down...\n";
+    
+    // ロガースレッドは自動停止（デストラクタ呼び出し）
+    // タッチスレッドも自動停止（デストラクタ呼び出し）
+    
+    // UARTスレッドの終了を待つ
     if (uart_thread.joinable()) {
-        // 実運用では終了シグナルを用意してからjoinする
-        uart_thread.detach();
+        uart_thread.join();
     }
+    
     ::close(fd);
+    std::cout << "Shutdown complete.\n";
     return 0;
 }
