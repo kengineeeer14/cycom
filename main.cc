@@ -23,8 +23,9 @@
 int main() {
     const std::string config_path = "config/config.json";
 
-    // --- シグナルハンドラの設定 ---
+    // Ctrl+Cで終了するためのシグナルハンドラを設定
     std::signal(SIGINT, [](int) { util::g_shutdown_requested.store(true); });
+    // killコマンドで終了するためのシグナルハンドラを設定
     std::signal(SIGTERM, [](int) { util::g_shutdown_requested.store(true); });
 
     // --- 既存初期化（GPIO / UART / GPS / Logger） ---
@@ -44,9 +45,9 @@ int main() {
         return 1;
     }
 
-    // ロガー起動（既存のコールバック）
+    // [THREAD:LOGGER] ロガースレッド起動
     logger.Start(std::chrono::milliseconds(logger.log_interval_ms_), [&] {
-        sensor::L76k::GnssSnapshot snap = gps.Snapshot();
+        sensor::GnssSnapshot snap = gps.Snapshot();
         util::Logger::LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
         if (logger.log_on_){
             logger.WriteCsv(log_data);
@@ -70,13 +71,13 @@ int main() {
     tr.SetFontSizePx(48);
     tr.SetColors(ui::Color565::Black(), ui::Color565::White());
 
-    // --- 追加: タッチ初期化 ---
+    // [THREAD:TOUCH] タッチスレッド起動（コンストラクタ内）
     // 既知のGT911アドレス候補は 0x14 / 0x5D。まずは 0x14 を既定に。
     // 必要ならここを 0x5D に変える．
     uint8_t gt911_addr = 0x14;
     gt911::Touch touch(gt911_addr);
 
-    // --- UART読み取りを別スレッドで回す ---
+    // [THREAD:UART] UARTスレッド起動
     std::thread uart_thread([&gps, fd]() {
         char buf[256];
         std::string nmea_line;
@@ -89,7 +90,7 @@ int main() {
             FD_ZERO(&readfds);
             FD_SET(fd, &readfds);
             
-            int ret = select(fd + 1, &readfds, nullptr, nullptr, &tv);
+            int ret{select(fd + 1, &readfds, nullptr, nullptr, &tv)};
             if (ret > 0) {
                 int n = ::read(fd, buf, sizeof(buf) - 1);
                 if (n > 0) {
@@ -114,8 +115,7 @@ int main() {
         }
     });
 
-    // --- メインスレッド: 50ms周期でタッチを描画 ---
-// --- メインスレッド: 数字+単位を表示 ---
+    // [THREAD:MAIN] メインスレッドのメインループ（UI更新）
 try {
     // 参照渡しAPI向けの薄いラッパ（const値でも安全に渡せる）
     auto FillRect = [&](int x0, int y0, int x1, int y1, uint16_t color) {

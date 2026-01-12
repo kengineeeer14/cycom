@@ -18,9 +18,9 @@ public:
     using Callback = std::function<void()>;
 
     struct LogData {
-        sensor::L76k::GNRMC gnrmc{};
-        sensor::L76k::GNVTG gnvtg{};
-        sensor::L76k::GNGGA gngga{};
+        sensor::GNRMC gnrmc{};
+        sensor::GNVTG gnvtg{};
+        sensor::GNGGA gngga{};
     };
 
     int log_interval_ms_;
