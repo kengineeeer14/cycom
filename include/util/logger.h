@@ -33,9 +33,6 @@ public:
     // コールバック指定版：cb が指定されていればそれを呼ぶ。なければ OnTick() を呼ぶ
     void Start(std::chrono::milliseconds period, Callback cb);
 
-    // メンバ関数 OnTick() を呼ぶシンプル版
-    void Start(std::chrono::milliseconds period);
-
     void Stop();
 
     // 周期処理

@@ -59,10 +59,6 @@ void Logger::Start(std::chrono::milliseconds period, Callback cb) {
     });
 }
 
-void Logger::Start(std::chrono::milliseconds period) {
-    Start(period, nullptr);
-}
-
 void Logger::Stop() {
     bool was_running = running_.exchange(false, std::memory_order_acq_rel);
     if (was_running && th_.joinable()) th_.join();
