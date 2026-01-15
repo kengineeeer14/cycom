@@ -59,16 +59,6 @@ int main() {
     // --- 追加: LCD 初期化＆描画 ---
     st7796::Display lcd;
 
-    // TODO : 画像描画は他のクラスに移す
-    if (!lcd.DrawBackgroundImage("resource/background/start.jpg")) {
-        lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
-    }
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    
-    if (!lcd.DrawBackgroundImage("resource/background/measure.jpg")) {
-        lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
-    }
-
     // --- 追加: タッチ初期化 ---
     // 既知のGT911アドレス候補は 0x14 / 0x5D。まずは 0x14 を既定に。
     // 必要ならここを 0x5D に変える．

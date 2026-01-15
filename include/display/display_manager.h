@@ -35,6 +35,11 @@ private:
     void Stop();
     
     /**
+     * @brief 初期画面を表示する（起動画面 → 計測画面）
+     */
+    void ShowInitialScreens();
+    
+    /**
      * @brief ディスプレイ更新ループ（1秒周期でGPS速度を画面表示）
      */
     void DisplayLoop();

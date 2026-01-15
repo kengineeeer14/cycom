@@ -7,6 +7,8 @@ namespace display {
 
 DisplayManager::DisplayManager(st7796::Display& lcd, sensor::L76k& gps)
     : lcd_(lcd), gps_(gps), tr_(lcd, "config/fonts/DejaVuSans.ttf") {
+    // 初期画面を表示
+    ShowInitialScreens();
     // Touch / Logger / SensorManager と同様、コンストラクタで自動的にスレッドを起動
     Start();
 }
@@ -25,6 +27,19 @@ void DisplayManager::Stop() {
     bool was_running = running_.exchange(false, std::memory_order_acq_rel);
     if (was_running && th_.joinable()) {
         th_.join();
+    }
+}
+
+void DisplayManager::ShowInitialScreens() {
+    // 起動画面を表示
+    if (!lcd_.DrawBackgroundImage("resource/background/start.jpg")) {
+        lcd_.Clear(0xFFFF);  // 失敗時は白でフォールバック
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    
+    // 計測画面を表示
+    if (!lcd_.DrawBackgroundImage("resource/background/measure.jpg")) {
+        lcd_.Clear(0xFFFF);  // 失敗時は白でフォールバック
     }
 }
 
