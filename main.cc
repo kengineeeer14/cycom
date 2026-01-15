@@ -36,10 +36,8 @@ int main() {
     std::signal(SIGINT, SignalHandler);
     std::signal(SIGTERM, SignalHandler);
 
-    // --- 既存初期化（GPIO / UART / GPS / Logger） ---
     hal::GpioController gpio_controller;
     hal::UartConfigure uart_config(config_path);
-    sensor::L76k gps;
 
     if (!gpio_controller.SetupGpio()) {
         std::cerr << "GPIO setup failed.\n";
@@ -52,15 +50,16 @@ int main() {
         return 1;
     }
 
-    // Touch クラスと同様、Logger もコンストラクタで自動的にスレッドを起動
+    sensor::L76k gps;
     util::Logger logger(config_path, gps);
 
     // --- Sensor スレッド起動 ---
     sensor::SensorManager sensor_manager(fd, gps);
 
-    // --- 追加: LCD 初期化＆テスト描画 ---
+    // --- 追加: LCD 初期化＆描画 ---
     st7796::Display lcd;
 
+    // TODO : 画像描画は他のクラスに移す
     if (!lcd.DrawBackgroundImage("resource/background/start.jpg")) {
         lcd.Clear(0xFFFF);  // 失敗時は白でフォールバック
     }

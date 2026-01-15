@@ -9,7 +9,6 @@ Touch::Touch(const uint8_t &i2c_addr)
       i2c_("/dev/i2c-1", i2c_addr),
       rst_("gpiochip0", kGT911_RST_PIN, true, 1),
       int_in_("gpiochip0", kGT911_INT_PIN, false),
-      use_events_(false),
       running_(true), last_x_(-1), last_y_(-1)
 {
     Reset();
@@ -25,17 +24,11 @@ Touch::Touch(const uint8_t &i2c_addr)
     i2c_.Write8(COMMAND_REG, 0x00);
     usleep(50000);
 
-    // 割り込み要求
+    // GPIO割り込み要求（必須）
     try {
         int_in_.RequestFallingEdge();
-        use_events_ = true;
     } catch (...) {
-        try {
-            int_in_.RequestRisingEdge();
-            use_events_ = true;
-        } catch (...) {
-            use_events_ = false;
-        }
+        int_in_.RequestRisingEdge();
     }
 
     // スレッド起動
@@ -72,22 +65,16 @@ void Touch::ConfigureResolution(const int &x_max, const int &y_max) {
 
 void Touch::IrqLoop() {
     while (running_) {
-        bool handled = false;
-        if (use_events_) {
-            int r = int_in_.WaitEvent(200);
-            if (r > 0) {
-                gpiod_line_event ev{};
-                try {
-                    int_in_.ReadEvent(ev);
-                    HandleTouch();
-                    handled = true;
-                } catch (...) {}
-            }
+        // GPIO割り込みイベントを待機（200msタイムアウト）
+        int r = int_in_.WaitEvent(200);
+        if (r > 0) {
+            gpiod_line_event ev{};
+            try {
+                int_in_.ReadEvent(ev);
+                HandleTouch();
+            } catch (...) {}
         }
-        if (!handled) {
-            HandleTouch();
-            usleep(20000);
-        }
+        // タイムアウト or エラー → 次のループで再度イベント待ち
     }
 }
 
