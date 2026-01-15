@@ -102,7 +102,6 @@ private:
     hal::I2C       i2c_;
     hal::GpioLine  rst_;
     hal::GpioLine  int_in_;
-    bool      use_events_;
     std::atomic<bool> running_;
     std::thread       th_;
     std::atomic<int>  last_x_, last_y_;

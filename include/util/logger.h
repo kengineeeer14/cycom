@@ -1,13 +1,8 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <chrono>
-#include <functional>
 #include <atomic>
 #include <thread>
-#include <fstream>
-#include <stdexcept>
-#include <nlohmann/json.hpp>
 #include <string> 
 #include "sensor/gps/gps_l76k.h"
 
@@ -15,41 +10,42 @@
 namespace util {
 class Logger {
 public:
-    using Callback = std::function<void()>;
-
     struct LogData {
-        sensor::L76k::GNRMC gnrmc{};
-        sensor::L76k::GNVTG gnvtg{};
-        sensor::L76k::GNGGA gngga{};
+        sensor::GNRMC gnrmc{};
+        sensor::GNVTG gnvtg{};
+        sensor::GNGGA gngga{};
     };
 
-    int log_interval_ms_;
-    bool log_on_;
-    std::string csv_file_path_;
-
-    explicit Logger(const std::string& config_path);
+    /**
+     * @brief Loggerを初期化し、ロギングスレッドを自動起動する（Touch クラスと同じパターン）
+     * 
+     * @param config_path 設定ファイルのパス
+     * @param gps GPS データソースへの参照
+     */
+    Logger(const std::string& config_path, sensor::L76k& gps);
+    
+    /**
+     * @brief ロギングスレッドを安全に停止させる
+     */
     ~Logger();
-
-    // コールバック指定版：cb が指定されていればそれを呼ぶ。なければ OnTick() を呼ぶ
-    void Start(std::chrono::milliseconds period, Callback cb);
-
-    // メンバ関数 OnTick() を呼ぶシンプル版
-    void Start(std::chrono::milliseconds period);
-
-    void Stop();
-
-    // 周期処理
-    void OnTick();
-
-    void WriteCsv(const LogData &log_data);
 
 private:
     void WriteLogHeader();
+    void WriteCsv(const LogData &log_data);
     std::string GenerateCsvFilePath();
+    
+    // Touch クラスと同様、内部でスレッドを管理
+    void Start();
+    void Stop();
+    void LoggingLoop();
+
+    sensor::L76k& gps_;
+    int log_interval_ms_;
+    bool log_on_;
+    std::string csv_file_path_;
+    
     std::thread th_;
     std::atomic<bool> running_{false};
-    std::chrono::milliseconds period_{0};
-    Callback cb_{};
 };
 } // namespace util
 

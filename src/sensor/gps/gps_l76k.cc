@@ -15,8 +15,10 @@ namespace sensor{
         return fields;
     }
 
-    void L76k::ParseGnrmc(const std::string &nmea, GNRMC &gnrmc) {
+    GNRMC L76k::ParseGnrmc(const std::string &nmea) {
         std::vector<std::string> fields = SplitString(nmea);
+
+        GNRMC gnrmc;
 
         // UTC時刻
         if (fields.size() > 1 && fields[1].size() >= 6) {
@@ -50,10 +52,13 @@ namespace sensor{
                 gnrmc.checksum = static_cast<uint8_t>(std::stoi(f13.substr(starPos + 1), nullptr, 16));
             }
         }
+        return gnrmc;
     }
 
-    void L76k::ParseGnvtg(const std::string &nmea, GNVTG &gnvtg) {
+    GNVTG L76k::ParseGnvtg(const std::string &nmea) {
         std::vector<std::string> fields = SplitString(nmea);
+
+        GNVTG gnvtg;
 
         gnvtg.true_track_deg           = (fields.size() > 1 && !fields[1].empty()) ? std::stod(fields[1]) : std::numeric_limits<double>::quiet_NaN();
         gnvtg.true_track_indicator     = (fields.size() > 2 && !fields[2].empty()) ? fields[2][0] : '\0';
@@ -75,10 +80,13 @@ namespace sensor{
                 gnvtg.checksum = static_cast<uint8_t>(std::stoi(f9.substr(starPos + 1), nullptr, 16));
             }
         }
+        return gnvtg;
     }
 
-    void L76k::ParseGngga(const std::string &nmea, GNGGA &gngga) {
+    GNGGA L76k::ParseGngga(const std::string &nmea) {
         std::vector<std::string> fields = SplitString(nmea);
+
+        GNGGA gngga;
 
         if (fields.size() > 1 && fields[1].size() >= 6) {
             gngga.hour   = std::stoi(fields[1].substr(0, 2));
@@ -113,22 +121,23 @@ namespace sensor{
                 }
             }
         }
+        return gngga;
     }
 
     void L76k::ProcessNmeaLine(const std::string& line) {
         if (line.rfind("$GNRMC", 0) == 0) {
             std::lock_guard<std::mutex> lk(mtx_);
-            ParseGnrmc(line, gnrmc_data_);
+            gnrmc_data_ = ParseGnrmc(line);
         } else if (line.rfind("$GNGGA", 0) == 0) {
             std::lock_guard<std::mutex> lk(mtx_);
-            ParseGngga(line, gngga_data_);
+            gngga_data_ = ParseGngga(line);
         } else if (line.rfind("$GNVTG", 0) == 0) {
             std::lock_guard<std::mutex> lk(mtx_);
-            ParseGnvtg(line, gnvtg_data_);
+            gnvtg_data_ = ParseGnvtg(line);
         }
     }
 
-    L76k::GnssSnapshot L76k::Snapshot() const {
+    GnssSnapshot L76k::Snapshot() const {
         std::lock_guard<std::mutex> lk(mtx_);
         return GnssSnapshot{gnrmc_data_, gnvtg_data_, gngga_data_};
     }
