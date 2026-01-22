@@ -45,7 +45,7 @@ bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) 
     return true;
 }
 
-TextRenderer::TextRenderer(st7796::Display& lcd, const std::string& font_path)
+TextRenderer::TextRenderer(driver::IDisplay& lcd, const std::string& font_path)
     : lcd_(lcd)
 {
     if (FT_Init_FreeType(&ft_) != 0) throw std::runtime_error("FT_Init_FreeType failed");

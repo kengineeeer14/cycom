@@ -3,7 +3,7 @@
 
 #include <atomic>
 #include <thread>
-#include "display/st7796.h"
+#include "driver/interface/i_display.h"
 #include "display/text_renderer.h"
 #include "sensor/gps/gps_l76k.h"
 
@@ -23,7 +23,7 @@ public:
      * @param lcd LCD ディスプレイへの参照
      * @param gps GPS データソースへの参照
      */
-    DisplayManager(st7796::Display& lcd, sensor::L76k& gps);
+    DisplayManager(driver::IDisplay& lcd, sensor::L76k& gps);
 
     /**
      * @brief ディスプレイ更新スレッドを安全に停止させる
@@ -44,7 +44,7 @@ private:
      */
     void DisplayLoop();
 
-    st7796::Display& lcd_;
+    driver::IDisplay& lcd_;
     sensor::L76k& gps_;
     ui::TextRenderer tr_;
     

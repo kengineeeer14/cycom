@@ -5,25 +5,64 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# 文字: 推奨は /usr/include を明示しないこと（自動で入る）
+# USE_HARDWAREフラグの設定（デフォルトはON、テスト時はOFF）
+option(USE_HARDWARE "Enable hardware support" ON)
+if(USE_HARDWARE)
+    add_definitions(-DUSE_HARDWARE)
+endif()
+
+# インクルードパス
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
 )
 
-# ★ FreeType を見つける
+# FreeTypeを見つける
 find_package(Freetype REQUIRED)
 
-# src/*.cc を自動収集
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.cc)
+# ソースファイルを収集
+file(GLOB_RECURSE HAL_IMPL_FILES CONFIGURE_DEPENDS 
+    ${PROJECT_SOURCE_DIR}/src/hal/impl/*.cc
+)
+file(GLOB_RECURSE DRIVER_IMPL_FILES CONFIGURE_DEPENDS 
+    ${PROJECT_SOURCE_DIR}/src/driver/impl/*.cc
+)
+file(GLOB_RECURSE UTIL_FILES CONFIGURE_DEPENDS 
+    ${PROJECT_SOURCE_DIR}/src/util/*.cc
+)
+file(GLOB_RECURSE CORE_FILES CONFIGURE_DEPENDS 
+    ${PROJECT_SOURCE_DIR}/src/core/*.cc
+)
+file(GLOB_RECURSE SENSOR_FILES CONFIGURE_DEPENDS 
+    ${PROJECT_SOURCE_DIR}/src/sensor/*.cc
+)
+file(GLOB_RECURSE DISPLAY_FILES CONFIGURE_DEPENDS 
+    ${PROJECT_SOURCE_DIR}/src/display/*.cc
+)
+file(GLOB_RECURSE THIRD_PARTY_FILES CONFIGURE_DEPENDS 
+    ${PROJECT_SOURCE_DIR}/src/third_party/*.cc
+)
 
-add_executable(cycom main.cc ${SRC_FILES})
+# 実行可能ファイル
+add_executable(cycom 
+    main.cc 
+    ${HAL_IMPL_FILES}
+    ${DRIVER_IMPL_FILES}
+    ${UTIL_FILES}
+    ${CORE_FILES}
+    ${SENSOR_FILES}
+    ${DISPLAY_FILES}
+    ${THIRD_PARTY_FILES}
+)
 
-# 既存ライブラリ + ★ FreeType をリンク
+# ライブラリをリンク
 target_link_libraries(cycom
     gpiod
     pthread
-    Freetype::Freetype   # ★ これを追加
+    Freetype::Freetype
 )
 
-# （任意）コンパイル時に FreeType のヘッダパスを明示したいなら：
-# target_include_directories(cycom PRIVATE ${FREETYPE_INCLUDE_DIRS})
+# テスト設定（後で実装）
+# enable_testing()
+# if(EXISTS "${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt")
+#     add_subdirectory(tests EXCLUDE_FROM_ALL)
+# endif()
