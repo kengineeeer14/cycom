@@ -1,0 +1,95 @@
+{
+  "name": "Cycle Computer Development",
+  "dockerComposeFile": "../docker/docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+
+  // VSCode設定
+  "customizations": {
+    "vscode": {
+      // 拡張機能の自動インストール
+      "extensions": [
+        // C/C++開発
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpptools-themes",
+        "ms-vscode.cmake-tools",
+        
+        // ドキュメント生成
+        "cschlosser.doxdocgen",
+        
+        // Git
+        "mhutchie.git-graph",
+        "github.vscode-pull-request-github",
+        
+        // Docker
+        "ms-azuretools.vscode-docker",
+        "ms-azuretools.vscode-containers",
+        
+        // ユーティリティ
+        "gruntfuggly.todo-tree",
+        "bierner.markdown-mermaid",
+        
+        // AI支援
+        "github.copilot",
+        "github.copilot-chat"
+      ],
+      
+      // エディタ設定
+      "settings": {
+        // CMake
+        "cmake.configureOnOpen": true,
+        "cmake.buildDirectory": "${workspaceFolder}/build",
+        
+        // C++ IntelliSense（clangdを使用）
+        "C_Cpp.intelliSenseEngine": "disabled",
+        "C_Cpp.errorSquiggles": "disabled",
+        
+        // clangd設定
+        "clangd.arguments": [
+          "--compile-commands-dir=${workspaceFolder}/build",
+          "--background-index",
+          "--clang-tidy",
+          "--header-insertion=iwyu"
+        ],
+        
+        // ファイル関連付け
+        "files.associations": {
+          "*.h": "cpp",
+          "*.cc": "cpp"
+        },
+        
+        // フォーマット
+        "editor.formatOnSave": false,
+        "[cpp]": {
+          "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+          "editor.formatOnSave": true
+        },
+        
+        // ターミナル
+        "terminal.integrated.defaultProfile.linux": "bash",
+        
+        // Git
+        "git.autofetch": true,
+        "git.confirmSync": false
+      }
+    }
+  },
+
+  // コンテナ起動時に実行するコマンド
+  "postStartCommand": "mkdir -p build log && sudo chown -R developer:developer build log",
+
+  // フォワードするポート（必要に応じて追加）
+  "forwardPorts": [],
+
+  // コンテナ内でのユーザー
+  "remoteUser": "developer",
+
+  // 機能の追加（オプション）
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    }
+  }
+}

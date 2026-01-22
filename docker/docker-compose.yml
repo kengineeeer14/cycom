@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        # ホストのUID/GIDと合わせる（権限問題を回避）
+        USERNAME: developer
+        USER_UID: 1000
+        USER_GID: 1000
+    
+    image: cycom-dev:latest
+    container_name: cycom-dev
+    
+    # コンテナを起動し続ける
+    command: sleep infinity
+    
+    # ボリュームマウント
+    volumes:
+      # プロジェクトディレクトリ全体
+      - .:/workspace:cached
+      # Git認証情報の共有（オプション）
+      - ~/.gitconfig:/home/developer/.gitconfig:ro
+      - ~/.ssh:/home/developer/.ssh:ro
+      # ビルドキャッシュの永続化（ビルド高速化）
+      - cycom-build-cache:/workspace/build
+    
+    # 作業ディレクトリ
+    working_dir: /workspace
+    
+    # 環境変数
+    environment:
+      - TZ=Asia/Tokyo
+      - LANG=ja_JP.UTF-8
+      - LC_ALL=ja_JP.UTF-8
+    
+    # ネットワーク設定
+    network_mode: host
+    
+    # リソース制限（オプション）
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '4'
+    #       memory: 4G
+
+# 名前付きボリューム
+volumes:
+  cycom-build-cache:
+    driver: local

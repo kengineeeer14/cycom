@@ -1,0 +1,43 @@
+# ビルド成果物
+build/
+*.o
+*.a
+*.so
+*.dylib
+cycom
+
+# ログファイル
+log/
+*.log
+
+# Git関連
+.git/
+.gitignore
+.gitattributes
+
+# IDE/エディタ設定（コンテナ内で再作成）
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# ドキュメント（ビルド時不要）
+doc/
+*.md
+!README.md
+
+# 一時ファイル
+tmp/
+temp/
+*.tmp
+
+# テスト成果物
+tests/build/
+
+# 例/実験用コード（本番イメージには不要な場合）
+try/
+example/
