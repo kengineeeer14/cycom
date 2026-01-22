@@ -48,23 +48,23 @@ int main() {
     // ========================================
     
     // GPIO: ディスプレイ制御用
-    auto display_dc = std::make_unique<hal::GpioImpl>("gpiochip0", 22, true, 1);
-    auto display_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 27, true, 1);
-    auto display_bl = std::make_unique<hal::GpioImpl>("gpiochip0", 18, true, 1);
+    std::unique_ptr<hal::GpioImpl> display_dc = std::make_unique<hal::GpioImpl>("gpiochip0", 22, true, 1);
+    std::unique_ptr<hal::GpioImpl> display_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 27, true, 1);
+    std::unique_ptr<hal::GpioImpl> display_bl = std::make_unique<hal::GpioImpl>("gpiochip0", 18, true, 1);
     
     // SPI: ディスプレイ通信用
-    auto spi = std::make_unique<hal::SpiImpl>("/dev/spidev0.0", 40000000, 0, 8);
+    std::unique_ptr<hal::SpiImpl> spi = std::make_unique<hal::SpiImpl>("/dev/spidev0.0", 40000000, 0, 8);
     
     // GPIO: タッチコントローラ用
-    auto touch_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 1, true, 1);
-    auto touch_int = std::make_unique<hal::GpioImpl>("gpiochip0", 4, false);
+    std::unique_ptr<hal::GpioImpl> touch_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 1, true, 1);
+    std::unique_ptr<hal::GpioImpl> touch_int = std::make_unique<hal::GpioImpl>("gpiochip0", 4, false);
     
     // I2C: タッチコントローラ通信用
     uint8_t gt911_addr = 0x5D;  // GT911のI2Cアドレス
-    auto i2c = std::make_unique<hal::I2cImpl>("/dev/i2c-1", gt911_addr);
+    std::unique_ptr<hal::I2cImpl> i2c = std::make_unique<hal::I2cImpl>("/dev/i2c-1", gt911_addr);
     
     // UART: GPS通信用
-    auto uart = std::make_unique<hal::UartImpl>("/dev/ttyS0", 9600);
+    std::unique_ptr<hal::UartImpl> uart = std::make_unique<hal::UartImpl>("/dev/ttyS0", 9600);
     int uart_fd = uart->GetFileDescriptor();
     if (uart_fd < 0) {
         std::cerr << "UART open failed.\n";
@@ -76,15 +76,15 @@ int main() {
     // ========================================
     
     // ディスプレイドライバ
-    auto display = std::make_unique<driver::ST7796>(
+    std::unique_ptr<driver::ST7796> display = std::make_unique<driver::ST7796>(
         spi.get(),
         display_dc.get(),
         display_rst.get(),
         display_bl.get()
     );
     
-    // タッチドライバ
-    auto touch = std::make_unique<driver::GT911>(
+    // タッチドライバ（Touchスレッドを起動）
+    std::unique_ptr<driver::GT911> touch = std::make_unique<driver::GT911>(
         i2c.get(),
         touch_rst.get(),
         touch_int.get(),
@@ -98,27 +98,28 @@ int main() {
     // アプリケーション層
     // ========================================
     
-    // ロガー
+    // ロガー（Loggerスレッドを起動）
     util::Logger logger(config_path, gps);
     
-    // センサーマネージャー
+    // センサーマネージャー（Sensorスレッドを起動）
     sensor::SensorManager sensor_manager(uart_fd, gps);
     
-    // ディスプレイマネージャー（一時的に既存実装を使用）
-    // 注: DisplayManagerは既存実装なので後で修正が必要
-    // display::DisplayManager display_manager(*display, gps);
+    // ディスプレイマネージャー（Displayスレッドを起動）
+    display::DisplayManager display_manager(*display, gps);
 
-    // メインループ
+    // ========================================
+    // メインループ（終了シグナル待機のみ）
+    // ========================================
+    // 
+    // 各スレッドの役割:
+    // - Sensorスレッド:  GPS L76K からのデータ受信とパース（100msタイムアウト）
+    // - Loggerスレッド:  GPSデータのCSV記録（log_interval_ms 周期）
+    // - Displayスレッド: UI更新（1秒周期）
+    // - Touchスレッド:   タッチ入力監視（イベント駆動）
+    // 
+    std::cout << "All threads started. Press Ctrl+C to exit.\n";
+    
     while (!g_shutdown_requested.load()) {
-        // 簡易的な表示更新（DisplayManagerがないため一時的な実装）
-        display->Clear(0xFFFF);  // 黒でクリア
-        
-        // タッチ確認
-        auto touch_point = touch->GetTouchPoint();
-        if (touch_point.touched) {
-            std::cout << "Touch: (" << touch_point.x << ", " << touch_point.y << ")\n";
-        }
-        
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
