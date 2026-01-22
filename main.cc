@@ -111,7 +111,7 @@ int main() {
     // メインループ
     while (!g_shutdown_requested.load()) {
         // 簡易的な表示更新（DisplayManagerがないため一時的な実装）
-        display->Clear(0x0000);  // 黒でクリア
+        display->Clear(0xFFFF);  // 黒でクリア
         
         // タッチ確認
         auto touch_point = touch->GetTouchPoint();
