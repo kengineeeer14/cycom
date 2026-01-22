@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "display/st7796.h"
+#include "driver/interface/i_display.h"
 
 namespace ui {
 
@@ -33,7 +33,7 @@ struct TextMetrics {
 class TextRenderer {
 public:
     // font_path に .ttf / .otf を指定
-    TextRenderer(st7796::Display& lcd, const std::string& font_path);
+    TextRenderer(driver::IDisplay& lcd, const std::string& font_path);
     ~TextRenderer();
 
     void SetFontSizePx(int px);
@@ -70,7 +70,7 @@ private:
     static inline uint16_t Blend565(uint16_t bg, uint16_t fg, uint8_t a);
 
 private:
-    st7796::Display& lcd_;
+    driver::IDisplay& lcd_;
     FT_Library ft_ = nullptr;
     FT_Face face_  = nullptr;
 

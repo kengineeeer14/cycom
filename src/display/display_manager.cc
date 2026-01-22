@@ -5,7 +5,7 @@
 
 namespace display {
 
-DisplayManager::DisplayManager(st7796::Display& lcd, sensor::L76k& gps)
+DisplayManager::DisplayManager(driver::IDisplay& lcd, sensor::L76k& gps)
     : lcd_(lcd), gps_(gps), tr_(lcd, "config/fonts/DejaVuSans.ttf") {
     // 初期画面を表示
     ShowInitialScreens();

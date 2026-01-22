@@ -8,16 +8,23 @@
 #include <string>
 #include <csignal>
 #include <atomic>
+#include <memory>
 
-#include "hal/gpio_controller.h"
-#include "hal/uart_config.h"
+// HAL層実装
+#include "hal/impl/gpio_impl.h"
+#include "hal/impl/spi_impl.h"
+#include "hal/impl/i2c_impl.h"
+#include "hal/impl/uart_impl.h"
+
+// ドライバ層実装
+#include "driver/impl/st7796.h"
+#include "driver/impl/gt911.h"
+
+// アプリケーション層（一時的に既存コードを使用）
 #include "sensor/gps/gps_l76k.h"
 #include "sensor/sensor_manager.h"
 #include "util/logger.h"
-
-#include "display/st7796.h"
 #include "display/display_manager.h"
-#include "display/touch/gt911.h"
 
 namespace {
     std::atomic<bool> g_shutdown_requested{false};
@@ -36,45 +43,85 @@ int main() {
     std::signal(SIGINT, SignalHandler);
     std::signal(SIGTERM, SignalHandler);
 
-    hal::GpioController gpio_controller;
-    hal::UartConfigure uart_config(config_path);
-
-    if (!gpio_controller.SetupGpio()) {
-        std::cerr << "GPIO setup failed.\n";
-        return 1;
-    }
-
-    int fd = uart_config.SetupUart();
-    if (fd < 0) {
+    // ========================================
+    // HAL層のインスタンス生成（依存性注入の準備）
+    // ========================================
+    
+    // GPIO: ディスプレイ制御用
+    auto display_dc = std::make_unique<hal::GpioImpl>("gpiochip0", 22, true, 1);
+    auto display_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 27, true, 1);
+    auto display_bl = std::make_unique<hal::GpioImpl>("gpiochip0", 18, true, 1);
+    
+    // SPI: ディスプレイ通信用
+    auto spi = std::make_unique<hal::SpiImpl>("/dev/spidev0.0", 40000000, 0, 8);
+    
+    // GPIO: タッチコントローラ用
+    auto touch_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 1, true, 1);
+    auto touch_int = std::make_unique<hal::GpioImpl>("gpiochip0", 4, false);
+    
+    // I2C: タッチコントローラ通信用
+    uint8_t gt911_addr = 0x5D;  // GT911のI2Cアドレス
+    auto i2c = std::make_unique<hal::I2cImpl>("/dev/i2c-1", gt911_addr);
+    
+    // UART: GPS通信用
+    auto uart = std::make_unique<hal::UartImpl>("/dev/ttyS0", 9600);
+    int uart_fd = uart->GetFileDescriptor();
+    if (uart_fd < 0) {
         std::cerr << "UART open failed.\n";
         return 1;
     }
 
+    // ========================================
+    // ドライバ層のインスタンス生成（HAL層を注入）
+    // ========================================
+    
+    // ディスプレイドライバ
+    auto display = std::make_unique<driver::ST7796>(
+        spi.get(),
+        display_dc.get(),
+        display_rst.get(),
+        display_bl.get()
+    );
+    
+    // タッチドライバ
+    auto touch = std::make_unique<driver::GT911>(
+        i2c.get(),
+        touch_rst.get(),
+        touch_int.get(),
+        gt911_addr
+    );
+    
+    // GPSドライバ（既存実装を使用）
     sensor::L76k gps;
+    
+    // ========================================
+    // アプリケーション層
+    // ========================================
+    
+    // ロガー
     util::Logger logger(config_path, gps);
+    
+    // センサーマネージャー
+    sensor::SensorManager sensor_manager(uart_fd, gps);
+    
+    // ディスプレイマネージャー（一時的に既存実装を使用）
+    // 注: DisplayManagerは既存実装なので後で修正が必要
+    // display::DisplayManager display_manager(*display, gps);
 
-    // --- Sensor スレッド起動 ---
-    sensor::SensorManager sensor_manager(fd, gps);
-
-    // --- 追加: LCD 初期化＆描画 ---
-    st7796::Display lcd;
-
-    // --- 追加: タッチ初期化 ---
-    // 既知のGT911アドレス候補は 0x14 / 0x5D。まずは 0x14 を既定に。
-    // 必要ならここを 0x5D に変える．
-    uint8_t gt911_addr = 0x14;
-    // --- Touch スレッド起動 ---
-    gt911::Touch touch(gt911_addr);
-
-    // --- Display スレッド起動 ---
-    display::DisplayManager display_manager(lcd, gps);
-
+    // メインループ
     while (!g_shutdown_requested.load()) {
-        // CPUの無駄な消費を防ぐために少し待機
+        // 簡易的な表示更新（DisplayManagerがないため一時的な実装）
+        display->Clear(0x0000);  // 黒でクリア
+        
+        // タッチ確認
+        auto touch_point = touch->GetTouchPoint();
+        if (touch_point.touched) {
+            std::cout << "Touch: (" << touch_point.x << ", " << touch_point.y << ")\n";
+        }
+        
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+    
     std::cout << "Shutting down...\n";
-
-    ::close(fd);
     return 0;
 }
