@@ -20,11 +20,12 @@
 #include "driver/impl/st7796.h"
 #include "driver/impl/gt911.h"
 
-// アプリケーション層（一時的に既存コードを使用）
+// アプリケーション層
 #include "sensor/gps/gps_l76k.h"
 #include "sensor/sensor_manager.h"
 #include "util/logger.h"
 #include "display/display_manager.h"
+#include "display/touch/touch_manager.h"
 
 namespace {
     std::atomic<bool> g_shutdown_requested{false};
@@ -83,7 +84,7 @@ int main() {
         display_bl.get()
     );
     
-    // タッチドライバ（Touchスレッドを起動）
+    // タッチドライバ（スレッドなし、同期的なインターフェース）
     std::unique_ptr<driver::GT911> touch = std::make_unique<driver::GT911>(
         i2c.get(),
         touch_rst.get(),
@@ -94,7 +95,7 @@ int main() {
     // GPSドライバ（既存実装を使用）
     sensor::L76k gps;
     
-    // ========================================
+    // ====================================
     // アプリケーション層
     // ========================================
     
@@ -106,6 +107,9 @@ int main() {
     
     // ディスプレイマネージャー（Displayスレッドを起動）
     display::DisplayManager display_manager(*display, gps);
+    
+    // タッチマネージャー（Touchスレッドを起動）
+    display::TouchManager touch_manager(*touch);
 
     // ========================================
     // メインループ（終了シグナル待機のみ）
@@ -115,7 +119,7 @@ int main() {
     // - Sensorスレッド:  GPS L76K からのデータ受信とパース（100msタイムアウト）
     // - Loggerスレッド:  GPSデータのCSV記録（log_interval_ms 周期）
     // - Displayスレッド: UI更新（1秒周期）
-    // - Touchスレッド:   タッチ入力監視（イベント駆動）
+    // - Touchスレッド:   タッチ入力監視（50msポーリング）
     // 
     std::cout << "All threads started. Press Ctrl+C to exit.\n";
     

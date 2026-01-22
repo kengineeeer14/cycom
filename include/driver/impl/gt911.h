@@ -1,9 +1,7 @@
 #ifndef CYCOM_DRIVER_IMPL_GT911_H_
 #define CYCOM_DRIVER_IMPL_GT911_H_
 
-#include <atomic>
 #include <cstdint>
-#include <thread>
 #include "driver/interface/i_touch.h"
 #include "hal/interface/i_i2c.h"
 #include "hal/interface/i_gpio.h"
@@ -41,19 +39,13 @@ public:
 private:
     void Reset();
     void ConfigureResolution(int x_max, int y_max);
-    void IrqLoop();
-    void HandleTouch();
+    void ReadTouchData(TouchPoint& point);
     void ClearStatus();
 
     hal::II2c* i2c_;
     hal::IGpio* rst_;
     hal::IGpio* int_pin_;
     uint8_t i2c_addr_;
-
-    std::thread th_;
-    std::atomic<bool> running_{false};
-    std::atomic<int> last_x_{-1};
-    std::atomic<int> last_y_{-1};
 
     // GT911レジスタアドレス
     static constexpr uint16_t COMMAND_REG = 0x8040;

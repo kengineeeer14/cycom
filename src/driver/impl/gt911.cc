@@ -5,7 +5,7 @@
 namespace driver {
 
 GT911::GT911(hal::II2c* i2c, hal::IGpio* rst, hal::IGpio* int_pin, uint8_t i2c_addr)
-    : i2c_(i2c), rst_(rst), int_pin_(int_pin), i2c_addr_(i2c_addr), running_(true) {
+    : i2c_(i2c), rst_(rst), int_pin_(int_pin), i2c_addr_(i2c_addr) {
     if (!i2c_ || !rst_ || !int_pin_) {
         throw std::invalid_argument("GT911: null pointer provided");
     }
@@ -24,37 +24,25 @@ GT911::GT911(hal::II2c* i2c, hal::IGpio* rst, hal::IGpio* int_pin, uint8_t i2c_a
     uint8_t start_cmd = 0x00;
     i2c_->Write16(i2c_addr_, COMMAND_REG, &start_cmd, 1);
     usleep(50000);
-
-    // GPIO割り込み要求
-    try {
-        int_pin_->RequestFallingEdge();
-    } catch (...) {
-        try {
-            int_pin_->RequestRisingEdge();
-        } catch (...) {
-            // 割り込み設定失敗時はポーリングモードで動作
-        }
-    }
-
-    // タッチ監視スレッド起動
-    th_ = std::thread([this] { this->IrqLoop(); });
 }
 
 GT911::~GT911() {
-    running_ = false;
-    if (th_.joinable()) th_.join();
+    // デストラクタは特に処理なし
 }
 
 TouchPoint GT911::GetTouchPoint() {
     TouchPoint point;
-    point.x = last_x_.load();
-    point.y = last_y_.load();
-    point.touched = (point.x >= 0 && point.y >= 0);
+    point.touched = false;
+    point.x = -1;
+    point.y = -1;
+    
+    ReadTouchData(point);
     return point;
 }
 
 bool GT911::IsTouched() {
-    return (last_x_.load() >= 0 && last_y_.load() >= 0);
+    TouchPoint point = GetTouchPoint();
+    return point.touched;
 }
 
 void GT911::Reset() {
@@ -86,25 +74,7 @@ void GT911::ConfigureResolution(int x_max, int y_max) {
     i2c_->Write16(i2c_addr_, Y_OUTPUT_MAX_HIGH_REG, &y_hi, 1);
 }
 
-void GT911::IrqLoop() {
-    while (running_) {
-        // GPIO割り込みイベントを待機（200ms = 0.2秒タイムアウト）
-        bool event_occurred = false;
-        try {
-            event_occurred = int_pin_->WaitForEvent(1);  // 1秒タイムアウト
-        } catch (...) {
-            // エラー時は短時間スリープしてリトライ
-            usleep(100000);
-            continue;
-        }
-
-        if (event_occurred) {
-            HandleTouch();
-        }
-    }
-}
-
-void GT911::HandleTouch() {
+void GT911::ReadTouchData(TouchPoint& point) {
     uint8_t info = 0;
     if (!i2c_->Read16(i2c_addr_, COORDINATE_INFO_REG, &info, 1)) {
         return;
@@ -112,8 +82,6 @@ void GT911::HandleTouch() {
 
     uint8_t touch_num = info & 0x0F;
     if (touch_num == 0) {
-        last_x_.store(-1);
-        last_y_.store(-1);
         ClearStatus();
         return;
     }
@@ -133,8 +101,9 @@ void GT911::HandleTouch() {
     if (y < 0) y = 0;
     else if (y >= kCoordinateYMax) y = kCoordinateYMax - 1;
 
-    last_x_.store(x);
-    last_y_.store(y);
+    point.x = x;
+    point.y = y;
+    point.touched = true;
 
     ClearStatus();
 }
