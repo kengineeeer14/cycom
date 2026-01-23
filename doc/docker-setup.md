@@ -117,10 +117,12 @@ valgrind --leak-check=full ./build/cycom
 
 ## 📁 ボリュームとマウント
 
-- **プロジェクトディレクトリ**: `.` → `/workspace`
+- **プロジェクトディレクトリ**: `..` (docker-compose.yml基準) → `/workspace`
+  - プロジェクトルート全体がコンテナ内の`/workspace`にマウントされます
 - **Git設定**: `~/.gitconfig` → `/home/developer/.gitconfig` (読み取り専用)
 - **SSH鍵**: `~/.ssh` → `/home/developer/.ssh` (読み取り専用)
-- **ビルドキャッシュ**: Docker名前付きボリューム`cycom-build-cache`
+- **ビルドキャッシュ**: Docker名前付きボリューム`cycom-build-cache` → `/workspace/build`
+  - ビルド成果物を永続化し、コンテナ再作成時もキャッシュを保持
 
 ## ⚙️ カスタマイズ
 
