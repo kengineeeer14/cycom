@@ -1,0 +1,45 @@
+# Google C++ Style Guide準拠のclang-format設定
+BasedOnStyle: Google
+
+# インデント
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -2
+
+# ブレース
+BreakBeforeBraces: Attach
+Cpp11BracedListStyle: true
+
+# 改行
+ColumnLimit: 100
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+
+# 名前空間
+NamespaceIndentation: None
+CompactNamespaces: false
+
+# ポインタと参照
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# include文の並び替え
+SortIncludes: CaseInsensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # プロジェクトヘッダー
+  - Regex:           '^".*"'
+    Priority:        1
+  # システムヘッダー（C++標準ライブラリ）
+  - Regex:           '^<.*>'
+    Priority:        2
+
+# その他
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignTrailingComments: true
+SpaceAfterCStyleCast: false
+SpaceBeforeParens: ControlStatements
