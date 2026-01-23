@@ -1,37 +1,51 @@
 #include "hal/impl/uart_impl.h"
 
-#ifdef USE_HARDWARE
-#include <termios.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <stdexcept>
-#endif
+#include <termios.h>
+#include <unistd.h>
 
 namespace hal {
-
-#ifdef USE_HARDWARE
 
 // ボーレート変換ヘルパー
 static speed_t ConvertBaudrate(unsigned int baudrate) {
     switch (baudrate) {
-        case 0: return B0;
-        case 50: return B50;
-        case 75: return B75;
-        case 110: return B110;
-        case 134: return B134;
-        case 150: return B150;
-        case 200: return B200;
-        case 300: return B300;
-        case 600: return B600;
-        case 1200: return B1200;
-        case 1800: return B1800;
-        case 2400: return B2400;
-        case 4800: return B4800;
-        case 9600: return B9600;
-        case 19200: return B19200;
-        case 38400: return B38400;
-        case 57600: return B57600;
-        case 115200: return B115200;
+        case 0:
+            return B0;
+        case 50:
+            return B50;
+        case 75:
+            return B75;
+        case 110:
+            return B110;
+        case 134:
+            return B134;
+        case 150:
+            return B150;
+        case 200:
+            return B200;
+        case 300:
+            return B300;
+        case 600:
+            return B600;
+        case 1200:
+            return B1200;
+        case 1800:
+            return B1800;
+        case 2400:
+            return B2400;
+        case 4800:
+            return B4800;
+        case 9600:
+            return B9600;
+        case 19200:
+            return B19200;
+        case 38400:
+            return B38400;
+        case 57600:
+            return B57600;
+        case 115200:
+            return B115200;
         default:
             throw std::invalid_argument("Unsupported baudrate");
     }
@@ -57,8 +71,8 @@ UartImpl::UartImpl(const std::string& port, unsigned int baudrate) : fd_(-1) {
     options.c_cflag &= ~PARENB;           // パリティなし
     options.c_cflag &= ~CSTOPB;           // ストップビット1
     options.c_cflag &= ~CSIZE;
-    options.c_cflag |= CS8;               // データビット8
-    options.c_lflag = 0;                  // 非カノニカルモード
+    options.c_cflag |= CS8;  // データビット8
+    options.c_lflag = 0;     // 非カノニカルモード
     options.c_oflag = 0;
     options.c_iflag = 0;
 
@@ -89,32 +103,5 @@ UartImpl::~UartImpl() {
         ::close(fd_);
     }
 }
-
-#else
-
-// モック実装（開発環境用）
-UartImpl::UartImpl(const std::string& port, unsigned int baudrate) : fd_(1) {}
-
-int UartImpl::GetFileDescriptor() {
-    return fd_;
-}
-
-ssize_t UartImpl::Read(uint8_t* buffer, size_t len) {
-    // モック: 何も読まない
-    return 0;
-}
-
-ssize_t UartImpl::Write(const uint8_t* data, size_t len) {
-    // モック: 常に成功
-    return static_cast<ssize_t>(len);
-}
-
-bool UartImpl::IsOpen() {
-    return fd_ > 0;
-}
-
-UartImpl::~UartImpl() {}
-
-#endif
 
 }  // namespace hal

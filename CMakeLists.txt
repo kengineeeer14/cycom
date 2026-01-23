@@ -20,9 +20,17 @@ include_directories(
 find_package(Freetype REQUIRED)
 
 # ソースファイルを収集
-file(GLOB_RECURSE HAL_IMPL_FILES CONFIGURE_DEPENDS 
-    ${PROJECT_SOURCE_DIR}/src/hal/impl/*.cc
-)
+# HAL実装は本番/モックを切り替え
+if(USE_HARDWARE)
+    file(GLOB_RECURSE HAL_IMPL_FILES CONFIGURE_DEPENDS 
+        ${PROJECT_SOURCE_DIR}/src/hal/impl/*.cc
+    )
+else()
+    file(GLOB_RECURSE HAL_IMPL_FILES CONFIGURE_DEPENDS 
+        ${PROJECT_SOURCE_DIR}/tests/mocks/hal/impl/*.cc
+    )
+endif()
+
 file(GLOB_RECURSE DRIVER_IMPL_FILES CONFIGURE_DEPENDS 
     ${PROJECT_SOURCE_DIR}/src/driver/impl/*.cc
 )
