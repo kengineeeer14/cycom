@@ -1,23 +1,20 @@
 #include "hal/impl/i2c_impl.h"
 
-#ifdef USE_HARDWARE
+#include <cstring>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
-#include <vector>
-#include <cstring>
 #include <stdexcept>
-#endif
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <vector>
 
 namespace hal {
 
-#ifdef USE_HARDWARE
-
 I2cImpl::I2cImpl(const char* dev, uint8_t addr) : fd_(-1), addr_(addr) {
     fd_ = ::open(dev, O_RDWR);
-    if (fd_ < 0) throw std::runtime_error("open i2c failed");
+    if (fd_ < 0)
+        throw std::runtime_error("open i2c failed");
     if (ioctl(fd_, I2C_SLAVE, addr_) < 0) {
         ::close(fd_);
         throw std::runtime_error("I2C_SLAVE failed");
@@ -38,7 +35,7 @@ bool I2cImpl::ReadBytes(uint8_t addr, uint8_t reg, uint8_t* buffer, size_t len) 
     msgs[0].flags = 0;
     msgs[0].len = 1;
     msgs[0].buf = &reg;
-    
+
     msgs[1].addr = addr;
     msgs[1].flags = I2C_M_RD;
     msgs[1].len = static_cast<__u16>(len);
@@ -70,17 +67,14 @@ bool I2cImpl::WriteBytes(uint8_t addr, uint8_t reg, const uint8_t* data, size_t 
 }
 
 bool I2cImpl::Read16(uint8_t addr, uint16_t reg, uint8_t* buffer, size_t len) {
-    uint8_t addrbuf[2] = {
-        static_cast<uint8_t>(reg >> 8),
-        static_cast<uint8_t>(reg & 0xFF)
-    };
+    uint8_t addrbuf[2] = {static_cast<uint8_t>(reg >> 8), static_cast<uint8_t>(reg & 0xFF)};
 
     i2c_msg msgs[2]{};
     msgs[0].addr = addr;
     msgs[0].flags = 0;
     msgs[0].len = 2;
     msgs[0].buf = addrbuf;
-    
+
     msgs[1].addr = addr;
     msgs[1].flags = I2C_M_RD;
     msgs[1].len = static_cast<__u16>(len);
@@ -113,43 +107,8 @@ bool I2cImpl::Write16(uint8_t addr, uint16_t reg, const uint8_t* data, size_t le
 }
 
 I2cImpl::~I2cImpl() {
-    if (fd_ >= 0) ::close(fd_);
+    if (fd_ >= 0)
+        ::close(fd_);
 }
-
-#else
-
-// モック実装（開発環境用）
-I2cImpl::I2cImpl(const char* dev, uint8_t addr) : fd_(1), addr_(addr) {}
-
-bool I2cImpl::WriteByte(uint8_t addr, uint8_t reg, uint8_t value) {
-    return true;
-}
-
-bool I2cImpl::ReadByte(uint8_t addr, uint8_t reg, uint8_t& value) {
-    value = 0;
-    return true;
-}
-
-bool I2cImpl::ReadBytes(uint8_t addr, uint8_t reg, uint8_t* buffer, size_t len) {
-    for (size_t i = 0; i < len; ++i) buffer[i] = 0;
-    return true;
-}
-
-bool I2cImpl::WriteBytes(uint8_t addr, uint8_t reg, const uint8_t* data, size_t len) {
-    return true;
-}
-
-bool I2cImpl::Read16(uint8_t addr, uint16_t reg, uint8_t* buffer, size_t len) {
-    for (size_t i = 0; i < len; ++i) buffer[i] = 0;
-    return true;
-}
-
-bool I2cImpl::Write16(uint8_t addr, uint16_t reg, const uint8_t* data, size_t len) {
-    return true;
-}
-
-I2cImpl::~I2cImpl() {}
-
-#endif
 
 }  // namespace hal
