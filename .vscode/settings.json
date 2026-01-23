@@ -80,5 +80,25 @@
     "cinttypes": "cpp",
     "typeindex": "cpp",
     "typeinfo": "cpp"
+  },
+
+  // C++ TestMate の設定
+  "testMate.cpp.test.executables": "build/tests/*_test",
+  "testMate.cpp.debug.configTemplate": {
+    "type": "cppdbg",
+    "MIMode": "gdb",
+    "program": "${exec}",
+    "args": "${argsArray}",
+    "cwd": "${workspaceFolder}",
+    "env": "${envObj}",
+    "environment": [],
+    "externalConsole": false,
+    "setupCommands": [
+      {
+        "description": "Enable pretty-printing for gdb",
+        "text": "-enable-pretty-printing",
+        "ignoreFailures": true
+      }
+    ]
   }
 }

@@ -27,9 +27,9 @@ class TextRendererTest : public ::testing::Test {
 // Blend565のユニットテスト
 TEST_F(TextRendererTest, Blend565_FullyOpaque) {
     // アルファ = 255（完全不透明）の場合、前景色がそのまま返る
-    uint16_t bg = 0xF800;  // 赤（RGB565）
-    uint16_t fg = 0x07E0;  // 緑（RGB565）
-    uint16_t result = text_renderer.Blend565(bg, fg, 255);
+    const uint16_t bg{0xF800};  // 赤（RGB565）
+    const uint16_t fg{0x07E0};  // 緑（RGB565）
+    const uint16_t result{text_renderer.Blend565(bg, fg, 255)};
     EXPECT_EQ(result, fg);
 }
 

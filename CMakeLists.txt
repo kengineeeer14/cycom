@@ -5,6 +5,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# デバッグビルドの設定
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+# デバッグシンボルと最適化の設定
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+
 # USE_HARDWAREフラグの設定（デフォルトはON、テスト時はOFF）
 option(USE_HARDWARE "Enable hardware support" ON)
 if(USE_HARDWARE)
