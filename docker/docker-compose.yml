@@ -20,7 +20,7 @@ services:
     # ボリュームマウント
     volumes:
       # プロジェクトディレクトリ全体
-      - .:/workspace:cached
+      - ..:/workspace:cached
       # Git認証情報の共有（オプション）
       - ~/.gitconfig:/home/developer/.gitconfig:ro
       - ~/.ssh:/home/developer/.ssh:ro
