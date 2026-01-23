@@ -6,7 +6,7 @@
 
 namespace ui {
 
-inline uint16_t TextRenderer::Blend565(uint16_t bg, uint16_t fg, uint8_t a) {
+uint16_t TextRenderer::Blend565(uint16_t bg, uint16_t fg, uint8_t a) {
     auto ex = [](uint16_t c, int sh, int m) -> int { return (c >> sh) & m; };
     int br = ex(bg, 11, 0x1F), bgc = ex(bg, 5, 0x3F), bb = ex(bg, 0, 0x1F);
     int fr = ex(fg, 11, 0x1F), fgc = ex(fg, 5, 0x3F), fb = ex(fg, 0, 0x1F);

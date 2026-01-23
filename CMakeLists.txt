@@ -69,8 +69,8 @@ target_link_libraries(cycom
     Freetype::Freetype
 )
 
-# テスト設定（後で実装）
-# enable_testing()
-# if(EXISTS "${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt")
-#     add_subdirectory(tests EXCLUDE_FROM_ALL)
-# endif()
+# テスト設定
+enable_testing()
+if(EXISTS "${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt")
+    add_subdirectory(tests)
+endif()
