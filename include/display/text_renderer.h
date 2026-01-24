@@ -34,6 +34,11 @@ class TextRenderer {
     // テスト用フレンドクラス
     friend class TextRendererTest;
     friend class TextRendererTest_Blend565_FullyOpaque_Test;
+    friend class TextRendererTest_Blend565_FullyTransparent_Test;
+    friend class TextRendererTest_Blend565_HalfTransparent_Test;
+    friend class TextRendererTest_Blend565_SameColor_Test;
+    friend class TextRendererTest_Blend565_MaxColorComponents_Test;
+    friend class TextRendererTest_Blend565_PrimaryColors_Test;
     friend class TextRendererTest_ExtractColorComponentTest_Test;
 
   public:
