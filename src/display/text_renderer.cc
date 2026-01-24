@@ -7,20 +7,23 @@
 namespace ui {
 
 uint16_t TextRenderer::Blend565(uint16_t bg, uint16_t fg, uint8_t a) {
-    auto ex = [](uint16_t c, int sh, int m) -> int { return (c >> sh) & m; };
-    int br = ex(bg, 11, 0x1F), bgc = ex(bg, 5, 0x3F), bb = ex(bg, 0, 0x1F);
-    int fr = ex(fg, 11, 0x1F), fgc = ex(fg, 5, 0x3F), fb = ex(fg, 0, 0x1F);
-    int inv = 255 - a;
-    int r = (fr * a + br * inv) / 255;
-    int g = (fgc * a + bgc * inv) / 255;
-    int b = (fb * a + bb * inv) / 255;
+    const int br{ExtractColorComponent(bg, 11, 0x1F)};
+    const int bgc{ExtractColorComponent(bg, 5, 0x3F)};
+    const int bb{ExtractColorComponent(bg, 0, 0x1F)};
+    const int fr{ExtractColorComponent(fg, 11, 0x1F)};
+    const int fgc{ExtractColorComponent(fg, 5, 0x3F)};
+    const int fb{ExtractColorComponent(fg, 0, 0x1F)};
+    const int inv{255 - a};
+    const int r{(fr * a + br * inv) / 255};
+    const int g{(fgc * a + bgc * inv) / 255};
+    const int b{(fb * a + bb * inv) / 255};
     return static_cast<uint16_t>((r << 11) | (g << 5) | b);
 }
 
 bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) {
     if (i >= s.size())
         return false;
-    unsigned char c0 = static_cast<unsigned char>(s[i++]);
+    const unsigned char c0{static_cast<unsigned char>(s[i++])};
     if (c0 < 0x80) {
         cp = c0;
         return true;
@@ -28,24 +31,24 @@ bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) 
     if ((c0 >> 5) == 0x6) {  // 2B
         if (i >= s.size())
             return false;
-        unsigned char c1 = static_cast<unsigned char>(s[i++]);
+        const unsigned char c1{static_cast<unsigned char>(s[i++])};
         cp = ((c0 & 0x1F) << 6) | (c1 & 0x3F);
         return true;
     }
     if ((c0 >> 4) == 0xE) {  // 3B
         if (i + 1 > s.size())
             return false;
-        unsigned char c1 = static_cast<unsigned char>(s[i++]);
-        unsigned char c2 = static_cast<unsigned char>(s[i++]);
+        const unsigned char c1{static_cast<unsigned char>(s[i++])};
+        const unsigned char c2{static_cast<unsigned char>(s[i++])};
         cp = ((c0 & 0x0F) << 12) | ((c1 & 0x3F) << 6) | (c2 & 0x3F);
         return true;
     }
     if ((c0 >> 3) == 0x1E) {  // 4B
         if (i + 2 > s.size())
             return false;
-        unsigned char c1 = static_cast<unsigned char>(s[i++]);
-        unsigned char c2 = static_cast<unsigned char>(s[i++]);
-        unsigned char c3 = static_cast<unsigned char>(s[i++]);
+        const unsigned char c1{static_cast<unsigned char>(s[i++])};
+        const unsigned char c2{static_cast<unsigned char>(s[i++])};
+        const unsigned char c3{static_cast<unsigned char>(s[i++])};
         cp = ((c0 & 0x07) << 18) | ((c1 & 0x3F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
         return true;
     }
@@ -220,6 +223,10 @@ TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int p
         int y = panel_y + (font_size_px_ + 4);
         return DrawText(x, y, utf8);
     }
+}
+
+int TextRenderer::ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask) {
+    return (color >> shift) & mask;
 }
 
 }  // namespace ui

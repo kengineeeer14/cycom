@@ -12,7 +12,6 @@ class TextRendererTest : public ::testing::Test {
   protected:
     void SetUp() override {
         // フォントファイルがない場合はスキップ
-        const std::string font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
         if (access(font_path.c_str(), F_OK) != 0) {
             GTEST_SKIP() << "Font file not found: " << font_path;
         }
@@ -20,8 +19,9 @@ class TextRendererTest : public ::testing::Test {
 
     void TearDown() override {}
 
+    const std::string font_path{"config/fonts/DejaVuSans.ttf"};
     driver::MockDisplay mock_display;
-    TextRenderer text_renderer{mock_display, "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"};
+    TextRenderer text_renderer{mock_display, font_path};
 };
 
 // Blend565のユニットテスト

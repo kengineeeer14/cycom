@@ -71,7 +71,7 @@ class TextRenderer {
 
     static bool NextCodepoint(const std::string& s, size_t& i, uint32_t& cp);
     void blitGlyph(int dst_x, int dst_y, const Glyph& g);
-    static uint16_t Blend565(uint16_t bg, uint16_t fg, uint8_t a);
+    uint16_t Blend565(uint16_t bg, uint16_t fg, uint8_t a);
 
   private:
     driver::IDisplay& lcd_;
@@ -85,6 +85,8 @@ class TextRenderer {
     int wrap_width_px_ = 0;
 
     std::unordered_map<GlyphKey, Glyph> cache_;
+
+    int ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask);
 };
 
 }  // namespace ui
