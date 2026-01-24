@@ -34,6 +34,7 @@ class TextRenderer {
     // テスト用フレンドクラス
     friend class TextRendererTest;
     friend class TextRendererTest_Blend565_FullyOpaque_Test;
+    friend class TextRendererTest_ExtractColorComponentTest_Test;
 
   public:
     // font_path に .ttf / .otf を指定
