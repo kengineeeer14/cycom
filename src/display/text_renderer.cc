@@ -6,18 +6,22 @@
 
 namespace ui {
 
-uint16_t TextRenderer::Blend565(uint16_t bg, uint16_t fg, uint8_t a) {
-    const int br{ExtractColorComponent(bg, 11, 0x1F)};
-    const int bgc{ExtractColorComponent(bg, 5, 0x3F)};
-    const int bb{ExtractColorComponent(bg, 0, 0x1F)};
-    const int fr{ExtractColorComponent(fg, 11, 0x1F)};
-    const int fgc{ExtractColorComponent(fg, 5, 0x3F)};
-    const int fb{ExtractColorComponent(fg, 0, 0x1F)};
-    const int inv{255 - a};
-    const int r{(fr * a + br * inv) / 255};
-    const int g{(fgc * a + bgc * inv) / 255};
-    const int b{(fb * a + bb * inv) / 255};
-    return static_cast<uint16_t>((r << 11) | (g << 5) | b);
+uint16_t TextRenderer::Blend565(const uint16_t& background, const uint16_t& foreground,
+                                const uint8_t& alpha) {
+    // RGB565形式（16ビット）から、各色成分（R:5bit、G:6bit、B:5bit）を取り出す．
+    const int background_red{ExtractColorComponent(background, 11, 0x1F)};
+    const int background_green{ExtractColorComponent(background, 5, 0x3F)};
+    const int background_blue{ExtractColorComponent(background, 0, 0x1F)};
+    const int foreground_red{ExtractColorComponent(foreground, 11, 0x1F)};
+    const int foreground_green{ExtractColorComponent(foreground, 5, 0x3F)};
+    const int foreground_blue{ExtractColorComponent(foreground, 0, 0x1F)};
+
+    // アルファ値 alpha (0-255) に基づいて、前景色と背景色を合成する．
+    const int inverse_alpha{255 - alpha};
+    const int blended_red{(foreground_red * alpha + background_red * inverse_alpha) / 255};
+    const int blended_green{(foreground_green * alpha + background_green * inverse_alpha) / 255};
+    const int blended_blue{(foreground_blue * alpha + background_blue * inverse_alpha) / 255};
+    return static_cast<uint16_t>((blended_red << 11) | (blended_green << 5) | blended_blue);
 }
 
 bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) {
@@ -225,6 +229,14 @@ TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int p
     }
 }
 
+/**
+ * @brief RGB565形式の色から，指定された色成分（赤・緑・青）を抽出する
+ *
+ * @param[in] color RGB565形式の色
+ * @param[in] shift 色成分のビットシフト量
+ * @param[in] mask 色成分のマスク
+ * @return int 抽出された色成分の値
+ */
 int TextRenderer::ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask) {
     return (color >> shift) & mask;
 }

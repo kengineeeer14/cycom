@@ -72,7 +72,16 @@ class TextRenderer {
 
     static bool NextCodepoint(const std::string& s, size_t& i, uint32_t& cp);
     void blitGlyph(int dst_x, int dst_y, const Glyph& g);
-    uint16_t Blend565(uint16_t bg, uint16_t fg, uint8_t a);
+
+    /**
+     * @brief RGB565形式の2色をアルファブレンディング（α合成）する
+     *
+     * @param[in] background 背景色（RGB565形式）
+     * @param[in] foreground 前景色（RGB565形式）
+     * @param[in] alpha アルファ値（0-255）
+     * @return uint16_t ブレンド後の色（RGB565形式）
+     */
+    uint16_t Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha);
 
   private:
     driver::IDisplay& lcd_;
