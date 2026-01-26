@@ -6,59 +6,7 @@
 
 namespace ui {
 
-uint16_t TextRenderer::Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha) {
-    // RGB565形式（16ビット）から、各色成分（R:5bit、G:6bit、B:5bit）を取り出す．
-    const int background_red{ExtractColorComponent(background, kRedShift, kRedMask)};
-    const int background_green{ExtractColorComponent(background, kGreenShift, kGreenMask)};
-    const int background_blue{ExtractColorComponent(background, kBlueShift, kBlueMask)};
-    const int foreground_red{ExtractColorComponent(foreground, kRedShift, kRedMask)};
-    const int foreground_green{ExtractColorComponent(foreground, kGreenShift, kGreenMask)};
-    const int foreground_blue{ExtractColorComponent(foreground, kBlueShift, kBlueMask)};
-
-    // アルファ値 alpha (0-255) に基づいて、前景色と背景色を合成する．
-    const int inverse_alpha{kAlphaMax - alpha};
-    const int blended_red{(foreground_red * alpha + background_red * inverse_alpha) / kAlphaMax};
-    const int blended_green{(foreground_green * alpha + background_green * inverse_alpha) / kAlphaMax};
-    const int blended_blue{(foreground_blue * alpha + background_blue * inverse_alpha) / kAlphaMax};
-    return static_cast<uint16_t>((blended_red << kRedShift) | (blended_green << kGreenShift) | blended_blue);
-}
-
-bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) {
-    if (i >= s.size())
-        return false;
-    const unsigned char c0{static_cast<unsigned char>(s[i++])};
-    if (c0 < 0x80) {
-        cp = c0;
-        return true;
-    }
-    if ((c0 >> 5) == 0x6) {  // 2B
-        if (i >= s.size())
-            return false;
-        const unsigned char c1{static_cast<unsigned char>(s[i++])};
-        cp = ((c0 & 0x1F) << 6) | (c1 & 0x3F);
-        return true;
-    }
-    if ((c0 >> 4) == 0xE) {  // 3B
-        if (i + 1 > s.size())
-            return false;
-        const unsigned char c1{static_cast<unsigned char>(s[i++])};
-        const unsigned char c2{static_cast<unsigned char>(s[i++])};
-        cp = ((c0 & 0x0F) << 12) | ((c1 & 0x3F) << 6) | (c2 & 0x3F);
-        return true;
-    }
-    if ((c0 >> 3) == 0x1E) {  // 4B
-        if (i + 2 > s.size())
-            return false;
-        const unsigned char c1{static_cast<unsigned char>(s[i++])};
-        const unsigned char c2{static_cast<unsigned char>(s[i++])};
-        const unsigned char c3{static_cast<unsigned char>(s[i++])};
-        cp = ((c0 & 0x07) << 18) | ((c1 & 0x3F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
-        return true;
-    }
-    cp = '?';
-    return true;
-}
-
+// コンストラクタ/デストラクタ
 TextRenderer::TextRenderer(driver::IDisplay& lcd, const std::string& font_path) : lcd_(lcd) {
     if (FT_Init_FreeType(&ft_) != 0)
         throw std::runtime_error("FT_Init_FreeType failed");
@@ -77,68 +25,19 @@ TextRenderer::~TextRenderer() {
         FT_Done_FreeType(ft_);
 }
 
-void TextRenderer::SetFontSizePx(int px) {
-    font_size_px_ = std::max(6, px);
-    FT_Set_Pixel_Sizes(face_, 0, font_size_px_);
-}
-
-void TextRenderer::SetColors(Color565 fg, Color565 bg) {
-    fg_ = fg;
-    bg_ = bg;
-}
-void TextRenderer::SetLineGapPx(int px) {
-    line_gap_px_ = std::max(0, px);
-}
-void TextRenderer::SetWrapWidthPx(int px) {
-    wrap_width_px_ = std::max(0, px);
-}
-
-TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
-    Glyph g;
-    if (FT_Load_Char(face_, cp, FT_LOAD_RENDER) != 0)
-        return g;
-    FT_GlyphSlot slot = face_->glyph;
-    const FT_Bitmap& bmp = slot->bitmap;
-
-    g.width = bmp.width;
-    g.height = bmp.rows;
-    g.left = slot->bitmap_left;
-    g.top = slot->bitmap_top;
-    g.advance = (slot->advance.x >> 6);
-    g.pitch = bmp.pitch;
-
-    if (g.width > 0 && g.height > 0) {
-        g.alpha.resize(g.height * g.pitch);
-        std::memcpy(g.alpha.data(), bmp.buffer, g.alpha.size());
-    }
-    return g;
-}
-
-const TextRenderer::Glyph* TextRenderer::getGlyph(uint32_t cp) {
-    GlyphKey key = MakeKey(font_size_px_, cp);
-    auto it = cache_.find(key);
-    if (it != cache_.end())
-        return &it->second;
-    Glyph g = loadGlyph(cp);
-    auto [pos, _] = cache_.emplace(key, std::move(g));
-    return &pos->second;
-}
-
-void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph& g) {
-    if (g.width <= 0 || g.height <= 0)
-        return;
-    int x0 = dst_x + g.left;
-    int y0 = dst_y - g.top;
-
-    // 1ラインずつα合成して送る
-    std::vector<uint16_t> line(g.width);
-    for (int y = 0; y < g.height; ++y) {
-        const uint8_t* src = g.alpha.data() + y * g.pitch;
-        for (int x = 0; x < g.width; ++x) {
-            uint8_t a = src[x];
-            line[x] = Blend565(bg_.value, fg_.value, a);
-        }
-        lcd_.DrawRGB565Line(x0, y0 + y, line.data(), g.width);
+// public メンバ関数
+TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center) {
+    int x1{panel_x + panel_w - 1};
+    int y1{panel_y + panel_h - 1};
+    if (center) {
+        auto m = MeasureText(utf8);
+        int x = panel_x + std::max(0, (panel_w - m.width_px) / 2);
+        int y = panel_y + std::max(0, (panel_h + m.baseline_px) / 2);
+        return DrawText(x, y, utf8);
+    } else {
+        int x = panel_x + 4;
+        int y = panel_y + (font_size_px_ + 4);
+        return DrawText(x, y, utf8);
     }
 }
 
@@ -212,18 +111,57 @@ TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string& utf8) con
     return TextMetrics{max_w, line_h, ascent};
 }
 
-TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center) {
-    int x1{panel_x + panel_w - 1};
-    int y1{panel_y + panel_h - 1};
-    if (center) {
-        auto m = MeasureText(utf8);
-        int x = panel_x + std::max(0, (panel_w - m.width_px) / 2);
-        int y = panel_y + std::max(0, (panel_h + m.baseline_px) / 2);
-        return DrawText(x, y, utf8);
-    } else {
-        int x = panel_x + 4;
-        int y = panel_y + (font_size_px_ + 4);
-        return DrawText(x, y, utf8);
+void TextRenderer::SetColors(Color565 fg, Color565 bg) {
+    fg_ = fg;
+    bg_ = bg;
+}
+
+void TextRenderer::SetFontSizePx(int px) {
+    font_size_px_ = std::max(6, px);
+    FT_Set_Pixel_Sizes(face_, 0, font_size_px_);
+}
+
+void TextRenderer::SetLineGapPx(int px) {
+    line_gap_px_ = std::max(0, px);
+}
+
+void TextRenderer::SetWrapWidthPx(int px) {
+    wrap_width_px_ = std::max(0, px);
+}
+
+// private メンバ関数
+uint16_t TextRenderer::Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha) {
+    // RGB565形式（16ビット）から、各色成分（R:5bit、G:6bit、B:5bit）を取り出す．
+    const int background_red{ExtractColorComponent(background, kRedShift, kRedMask)};
+    const int background_green{ExtractColorComponent(background, kGreenShift, kGreenMask)};
+    const int background_blue{ExtractColorComponent(background, kBlueShift, kBlueMask)};
+    const int foreground_red{ExtractColorComponent(foreground, kRedShift, kRedMask)};
+    const int foreground_green{ExtractColorComponent(foreground, kGreenShift, kGreenMask)};
+    const int foreground_blue{ExtractColorComponent(foreground, kBlueShift, kBlueMask)};
+
+    // アルファ値 alpha (0-255) に基づいて、前景色と背景色を合成する．
+    const int inverse_alpha{kAlphaMax - alpha};
+    const int blended_red{(foreground_red * alpha + background_red * inverse_alpha) / kAlphaMax};
+    const int blended_green{(foreground_green * alpha + background_green * inverse_alpha) / kAlphaMax};
+    const int blended_blue{(foreground_blue * alpha + background_blue * inverse_alpha) / kAlphaMax};
+    return static_cast<uint16_t>((blended_red << kRedShift) | (blended_green << kGreenShift) | blended_blue);
+}
+
+void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph& g) {
+    if (g.width <= 0 || g.height <= 0)
+        return;
+    int x0 = dst_x + g.left;
+    int y0 = dst_y - g.top;
+
+    // 1ラインずつα合成して送る
+    std::vector<uint16_t> line(g.width);
+    for (int y = 0; y < g.height; ++y) {
+        const uint8_t* src = g.alpha.data() + y * g.pitch;
+        for (int x = 0; x < g.width; ++x) {
+            uint8_t a = src[x];
+            line[x] = Blend565(bg_.value, fg_.value, a);
+        }
+        lcd_.DrawRGB565Line(x0, y0 + y, line.data(), g.width);
     }
 }
 
@@ -237,6 +175,73 @@ TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int 
  */
 int TextRenderer::ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask) {
     return (color >> shift) & mask;
+}
+
+const TextRenderer::Glyph* TextRenderer::getGlyph(uint32_t cp) {
+    GlyphKey key = MakeKey(font_size_px_, cp);
+    auto it = cache_.find(key);
+    if (it != cache_.end())
+        return &it->second;
+    Glyph g = loadGlyph(cp);
+    auto [pos, _] = cache_.emplace(key, std::move(g));
+    return &pos->second;
+}
+
+TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
+    Glyph g;
+    if (FT_Load_Char(face_, cp, FT_LOAD_RENDER) != 0)
+        return g;
+    FT_GlyphSlot slot = face_->glyph;
+    const FT_Bitmap& bmp = slot->bitmap;
+
+    g.width = bmp.width;
+    g.height = bmp.rows;
+    g.left = slot->bitmap_left;
+    g.top = slot->bitmap_top;
+    g.advance = (slot->advance.x >> 6);
+    g.pitch = bmp.pitch;
+
+    if (g.width > 0 && g.height > 0) {
+        g.alpha.resize(g.height * g.pitch);
+        std::memcpy(g.alpha.data(), bmp.buffer, g.alpha.size());
+    }
+    return g;
+}
+
+bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) {
+    if (i >= s.size())
+        return false;
+    const unsigned char c0{static_cast<unsigned char>(s[i++])};
+    if (c0 < 0x80) {
+        cp = c0;
+        return true;
+    }
+    if ((c0 >> 5) == 0x6) {  // 2B
+        if (i >= s.size())
+            return false;
+        const unsigned char c1{static_cast<unsigned char>(s[i++])};
+        cp = ((c0 & 0x1F) << 6) | (c1 & 0x3F);
+        return true;
+    }
+    if ((c0 >> 4) == 0xE) {  // 3B
+        if (i + 1 > s.size())
+            return false;
+        const unsigned char c1{static_cast<unsigned char>(s[i++])};
+        const unsigned char c2{static_cast<unsigned char>(s[i++])};
+        cp = ((c0 & 0x0F) << 12) | ((c1 & 0x3F) << 6) | (c2 & 0x3F);
+        return true;
+    }
+    if ((c0 >> 3) == 0x1E) {  // 4B
+        if (i + 2 > s.size())
+            return false;
+        const unsigned char c1{static_cast<unsigned char>(s[i++])};
+        const unsigned char c2{static_cast<unsigned char>(s[i++])};
+        const unsigned char c3{static_cast<unsigned char>(s[i++])};
+        cp = ((c0 & 0x07) << 18) | ((c1 & 0x3F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
+        return true;
+    }
+    cp = '?';
+    return true;
 }
 
 }  // namespace ui

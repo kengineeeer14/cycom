@@ -48,17 +48,16 @@ class TextRenderer {
     TextRenderer(driver::IDisplay& lcd, const std::string& font_path);
     ~TextRenderer();
 
-    void SetFontSizePx(int px);
-    void SetColors(Color565 fg, Color565 bg);
-    void SetLineGapPx(int px);
-    void SetWrapWidthPx(int px);  // 0 で折り返しなし
-
+    // メンバ関数
+    // パネル塗り→中央寄せ描画
+    TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center = true);
     // (x,y) はベースライン基準（左下寄り）
     TextMetrics DrawText(int x, int y, const std::string& utf8);
     TextMetrics MeasureText(const std::string& utf8) const;
-
-    // パネル塗り→中央寄せ描画
-    TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center = true);
+    void SetColors(Color565 fg, Color565 bg);
+    void SetFontSizePx(int px);
+    void SetLineGapPx(int px);
+    void SetWrapWidthPx(int px);  // 0 で折り返しなし
 
   private:
     // 型・エイリアス
@@ -72,22 +71,16 @@ class TextRenderer {
     using GlyphKey = uint64_t;
 
     // 定数
-    static constexpr int kRedShift{11};
-    static constexpr int kGreenShift{5};
-    static constexpr int kBlueShift{0};
-    static constexpr int kRedMask{0x1F};
-    static constexpr int kGreenMask{0x3F};
-    static constexpr int kBlueMask{0x1F};
     static constexpr int kAlphaMax{255};
+    static constexpr int kBlueShift{0};
+    static constexpr int kBlueMask{0x1F};
+    static constexpr int kGreenShift{5};
+    static constexpr int kGreenMask{0x3F};
+    static constexpr int kRedShift{11};
+    static constexpr int kRedMask{0x1F};
 
     // メンバ関数
     static GlyphKey MakeKey(int size_px, uint32_t cp) { return (static_cast<uint64_t>(size_px) << 21) | (cp & 0x1FFFFF); }
-
-    Glyph loadGlyph(uint32_t cp);
-    const Glyph* getGlyph(uint32_t cp);
-
-    static bool NextCodepoint(const std::string& s, size_t& i, uint32_t& cp);
-    void blitGlyph(int dst_x, int dst_y, const Glyph& g);
 
     /**
      * @brief RGB565形式の2色をアルファブレンディング（α合成）する
@@ -98,21 +91,22 @@ class TextRenderer {
      * @return uint16_t ブレンド後の色（RGB565形式）
      */
     uint16_t Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha);
-
+    void blitGlyph(int dst_x, int dst_y, const Glyph& g);
     int ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask);
+    const Glyph* getGlyph(uint32_t cp);
+    Glyph loadGlyph(uint32_t cp);
+    static bool NextCodepoint(const std::string& s, size_t& i, uint32_t& cp);
 
     // メンバ変数
-    driver::IDisplay& lcd_;
-    FT_Library ft_ = nullptr;
-    FT_Face face_ = nullptr;
-
-    int font_size_px_ = 32;
-    Color565 fg_ = Color565::Black();
     Color565 bg_ = Color565::White();
+    std::unordered_map<GlyphKey, Glyph> cache_;
+    FT_Face face_ = nullptr;
+    Color565 fg_ = Color565::Black();
+    int font_size_px_ = 32;
+    FT_Library ft_ = nullptr;
+    driver::IDisplay& lcd_;
     int line_gap_px_ = 4;
     int wrap_width_px_ = 0;
-
-    std::unordered_map<GlyphKey, Glyph> cache_;
 };
 
 }  // namespace ui

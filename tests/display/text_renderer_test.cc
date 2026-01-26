@@ -57,18 +57,6 @@ TEST_F(TextRendererTest, Blend565_HalfTransparent) {
     EXPECT_EQ(result_blue, ((0xFFFF >> TextRenderer::kBlueShift) & TextRenderer::kBlueMask) / 2);     // B成分の半分
 }
 
-TEST_F(TextRendererTest, Blend565_SameColor) {
-    // 背景色と前景色が同じ場合、アルファ値に関わらず同じ色が返る
-    const uint16_t color{0x07E0};  // 緑（RGB565）
-    const uint16_t result_opaque{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax)};
-    const uint16_t result_transparent{text_renderer.Blend565(color, color, 0)};
-    const uint16_t result_half{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax / 2)};
-
-    EXPECT_EQ(result_opaque, color);
-    EXPECT_EQ(result_transparent, color);
-    EXPECT_EQ(result_half, color);
-}
-
 TEST_F(TextRendererTest, Blend565_MaxColorComponents) {
     // RGB565の各成分が最大値の場合
     const uint16_t white{0xFFFF};  // R=31, G=63, B=31
@@ -122,6 +110,18 @@ TEST_F(TextRendererTest, Blend565_PrimaryColors) {
     EXPECT_EQ(br_red, ((0xF800 >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 4);         // 赤成分の25%
     EXPECT_EQ(br_green, 0);                                                                        // 緑成分はゼロ
     EXPECT_EQ(br_blue, ((0x001F >> TextRenderer::kBlueShift) & TextRenderer::kBlueMask) * 3 / 4);  // 青成分の75%
+}
+
+TEST_F(TextRendererTest, Blend565_SameColor) {
+    // 背景色と前景色が同じ場合、アルファ値に関わらず同じ色が返る
+    const uint16_t color{0x07E0};  // 緑（RGB565）
+    const uint16_t result_opaque{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax)};
+    const uint16_t result_transparent{text_renderer.Blend565(color, color, 0)};
+    const uint16_t result_half{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax / 2)};
+
+    EXPECT_EQ(result_opaque, color);
+    EXPECT_EQ(result_transparent, color);
+    EXPECT_EQ(result_half, color);
 }
 
 // ExtractColorComponentのユニットテスト
