@@ -45,15 +45,15 @@ class TextRenderer {
 
     // コンストラクタ/デストラクタ
     // font_path に .ttf / .otf を指定
-    TextRenderer(driver::IDisplay& lcd, const std::string& font_path);
+    TextRenderer(driver::IDisplay &lcd, const std::string &font_path);
     ~TextRenderer();
 
     // メンバ関数
     // パネル塗り→中央寄せ描画
-    TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center = true);
+    TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string &utf8, bool center = true);
     // (x,y) はベースライン基準（左下寄り）
-    TextMetrics DrawText(int x, int y, const std::string& utf8);
-    TextMetrics MeasureText(const std::string& utf8) const;
+    TextMetrics DrawText(int x, int y, const std::string &utf8);
+    TextMetrics MeasureText(const std::string &utf8) const;
     void SetColors(Color565 fg, Color565 bg);
     void SetFontSizePx(int px);
     void SetLineGapPx(int px);
@@ -79,6 +79,28 @@ class TextRenderer {
     static constexpr int kRedShift{11};
     static constexpr int kRedMask{0x1F};
 
+    // UTF-8デコード用定数
+    static constexpr unsigned char kUtf8AsciiMax{0x80};          // ASCII文字の最大値+1
+    static constexpr unsigned char kUtf8TwoBytePrefix{0x6};      // 2バイト文字の先頭パターン (110xxxxx >> 5)
+    static constexpr unsigned char kUtf8ThreeBytePrefix{0xE};    // 3バイト文字の先頭パターン (1110xxxx >> 4)
+    static constexpr unsigned char kUtf8FourBytePrefix{0x1E};    // 4バイト文字の先頭パターン (11110xxx >> 3)
+    static constexpr unsigned char kUtf8TwoByteMask{0x1F};       // 2バイト文字の先頭バイトマスク
+    static constexpr unsigned char kUtf8ThreeByteMask{0x0F};     // 3バイト文字の先頭バイトマスク
+    static constexpr unsigned char kUtf8FourByteMask{0x07};      // 4バイト文字の先頭バイトマスク
+    static constexpr unsigned char kUtf8ContinuationMask{0x3F};  // 継続バイトのマスク
+
+    // UTF-8デコード用シフト量
+    static constexpr int kUtf8TwoByteShift{5};            // 2バイト文字判定用のシフト量
+    static constexpr int kUtf8ThreeByteShift{4};          // 3バイト文字判定用のシフト量
+    static constexpr int kUtf8FourByteShift{3};           // 4バイト文字判定用のシフト量
+    static constexpr int kUtf8ContinuationShift{6};       // 継続バイトのシフト量
+    static constexpr int kUtf8TwoByteLeadingShift{6};     // 2バイト文字の先頭バイトのシフト量
+    static constexpr int kUtf8ThreeByteLeadingShift{12};  // 3バイト文字の先頭バイトのシフト量
+    static constexpr int kUtf8ThreeByte2ndByteShift{6};   // 3バイト文字の2番目のバイトのシフト量
+    static constexpr int kUtf8FourByteLeadingShift{18};   // 4バイト文字の先頭バイトのシフト量
+    static constexpr int kUtf8FourByte2ndByteShift{12};   // 4バイト文字の2番目のバイトのシフト量
+    static constexpr int kUtf8FourByte3rdByteShift{6};    // 4バイト文字の3番目のバイトのシフト量
+
     // メンバ関数
     static GlyphKey MakeKey(int size_px, uint32_t cp) { return (static_cast<uint64_t>(size_px) << 21) | (cp & 0x1FFFFF); }
 
@@ -90,12 +112,21 @@ class TextRenderer {
      * @param[in] alpha アルファ値（0-255）
      * @return uint16_t ブレンド後の色（RGB565形式）
      */
-    uint16_t Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha);
-    void blitGlyph(int dst_x, int dst_y, const Glyph& g);
-    int ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask);
-    const Glyph* getGlyph(uint32_t cp);
+    uint16_t Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha);
+    void blitGlyph(int dst_x, int dst_y, const Glyph &g);
+    int ExtractColorComponent(const uint16_t &color, const int &shift, const int &mask);
+    const Glyph *getGlyph(uint32_t cp);
     Glyph loadGlyph(uint32_t cp);
-    static bool NextCodepoint(const std::string& s, size_t& i, uint32_t& cp);
+
+    /**
+     * @brief UTF-8 文字列から次のコードポイントを取得する
+     *
+     * @param[in] utf8_str UTF-8 文字列
+     * @param[out] index 現在のインデックス（呼び出し後に次の位置に更新される）
+     * @param[out] codepoint 取得したコードポイント
+     * @return bool 成功した場合 true、失敗した場合 false
+     */
+    static bool NextCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint);
 
     // メンバ変数
     Color565 bg_ = Color565::White();
@@ -104,7 +135,7 @@ class TextRenderer {
     Color565 fg_ = Color565::Black();
     int font_size_px_ = 32;
     FT_Library ft_ = nullptr;
-    driver::IDisplay& lcd_;
+    driver::IDisplay &lcd_;
     int line_gap_px_ = 4;
     int wrap_width_px_ = 0;
 };

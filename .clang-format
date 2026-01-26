@@ -24,7 +24,7 @@ CompactNamespaces: false
 
 # ポインタと参照
 DerivePointerAlignment: false
-PointerAlignment: Left
+PointerAlignment: Right
 
 # include文の並び替え
 SortIncludes: CaseInsensitive

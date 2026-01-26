@@ -7,7 +7,7 @@
 namespace ui {
 
 // コンストラクタ/デストラクタ
-TextRenderer::TextRenderer(driver::IDisplay& lcd, const std::string& font_path) : lcd_(lcd) {
+TextRenderer::TextRenderer(driver::IDisplay &lcd, const std::string &font_path) : lcd_(lcd) {
     if (FT_Init_FreeType(&ft_) != 0)
         throw std::runtime_error("FT_Init_FreeType failed");
     if (FT_New_Face(ft_, font_path.c_str(), 0, &face_) != 0) {
@@ -26,7 +26,7 @@ TextRenderer::~TextRenderer() {
 }
 
 // public メンバ関数
-TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center) {
+TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string &utf8, bool center) {
     int x1{panel_x + panel_w - 1};
     int y1{panel_y + panel_h - 1};
     if (center) {
@@ -41,7 +41,7 @@ TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int 
     }
 }
 
-TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string& utf8) {
+TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string &utf8) {
     int pen_x = x, pen_y = y;
     int ascent = (face_->size->metrics.ascender >> 6);
     int descent = -(face_->size->metrics.descender >> 6);
@@ -67,7 +67,7 @@ TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string
             continue;
         }
 
-        const Glyph* g = getGlyph(cp);
+        const Glyph *g = getGlyph(cp);
         int adv = (g ? g->advance : font_size_px_ / 2);
         if (wrap_w > 0 && (pen_x - x + adv) > wrap_w) {
             max_w = std::max(max_w, cur_w);
@@ -88,7 +88,7 @@ TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string
     return TextMetrics{max_w, total_h, ascent};
 }
 
-TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string& utf8) const {
+TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8) const {
     int cur_w = 0, max_w = 0;
     int ascent = (face_->size->metrics.ascender >> 6);
     int line_h = (face_->size->metrics.height >> 6);
@@ -130,7 +130,7 @@ void TextRenderer::SetWrapWidthPx(int px) {
 }
 
 // private メンバ関数
-uint16_t TextRenderer::Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha) {
+uint16_t TextRenderer::Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha) {
     // RGB565形式（16ビット）から、各色成分（R:5bit、G:6bit、B:5bit）を取り出す．
     const int background_red{ExtractColorComponent(background, kRedShift, kRedMask)};
     const int background_green{ExtractColorComponent(background, kGreenShift, kGreenMask)};
@@ -147,7 +147,7 @@ uint16_t TextRenderer::Blend565(const uint16_t& background, const uint16_t& fore
     return static_cast<uint16_t>((blended_red << kRedShift) | (blended_green << kGreenShift) | blended_blue);
 }
 
-void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph& g) {
+void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph &g) {
     if (g.width <= 0 || g.height <= 0)
         return;
     int x0 = dst_x + g.left;
@@ -156,7 +156,7 @@ void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph& g) {
     // 1ラインずつα合成して送る
     std::vector<uint16_t> line(g.width);
     for (int y = 0; y < g.height; ++y) {
-        const uint8_t* src = g.alpha.data() + y * g.pitch;
+        const uint8_t *src = g.alpha.data() + y * g.pitch;
         for (int x = 0; x < g.width; ++x) {
             uint8_t a = src[x];
             line[x] = Blend565(bg_.value, fg_.value, a);
@@ -173,11 +173,11 @@ void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph& g) {
  * @param[in] mask 色成分のマスク
  * @return int 抽出された色成分の値
  */
-int TextRenderer::ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask) {
+int TextRenderer::ExtractColorComponent(const uint16_t &color, const int &shift, const int &mask) {
     return (color >> shift) & mask;
 }
 
-const TextRenderer::Glyph* TextRenderer::getGlyph(uint32_t cp) {
+const TextRenderer::Glyph *TextRenderer::getGlyph(uint32_t cp) {
     GlyphKey key = MakeKey(font_size_px_, cp);
     auto it = cache_.find(key);
     if (it != cache_.end())
@@ -192,7 +192,7 @@ TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
     if (FT_Load_Char(face_, cp, FT_LOAD_RENDER) != 0)
         return g;
     FT_GlyphSlot slot = face_->glyph;
-    const FT_Bitmap& bmp = slot->bitmap;
+    const FT_Bitmap &bmp = slot->bitmap;
 
     g.width = bmp.width;
     g.height = bmp.rows;
@@ -208,40 +208,52 @@ TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
     return g;
 }
 
-bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) {
-    if (i >= s.size())
-        return false;
-    const unsigned char c0{static_cast<unsigned char>(s[i++])};
-    if (c0 < 0x80) {
-        cp = c0;
-        return true;
+bool TextRenderer::NextCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint) {
+    bool is_valid{false};
+
+    if (index >= utf8_str.size()) {
+        is_valid = false;  // 文字列の終端に達した場合は次のコードポイントは取得できない
+    } else {
+        const unsigned char first_byte{static_cast<unsigned char>(utf8_str[index++])};
+        if (first_byte < kUtf8AsciiMax) {  // 1バイト文字 (ASCII)
+            codepoint = first_byte;
+            is_valid = true;
+        } else if ((first_byte >> kUtf8TwoByteShift) == kUtf8TwoBytePrefix) {  // 2バイト文字
+            if (index >= utf8_str.size()) {
+                is_valid = false;
+            } else {
+                const unsigned char second_byte{static_cast<unsigned char>(utf8_str[index++])};
+                codepoint = ((first_byte & kUtf8TwoByteMask) << kUtf8TwoByteLeadingShift) | (second_byte & kUtf8ContinuationMask);
+                is_valid = true;
+            }
+        } else if ((first_byte >> kUtf8ThreeByteShift) == kUtf8ThreeBytePrefix) {  // 3バイト文字
+            if (index + 1 > utf8_str.size()) {
+                is_valid = false;
+            } else {
+                const unsigned char second_byte{static_cast<unsigned char>(utf8_str[index++])};
+                const unsigned char third_byte{static_cast<unsigned char>(utf8_str[index++])};
+                codepoint =
+                    ((first_byte & kUtf8ThreeByteMask) << kUtf8ThreeByteLeadingShift) | ((second_byte & kUtf8ContinuationMask) << kUtf8ThreeByte2ndByteShift) | (third_byte & kUtf8ContinuationMask);
+                is_valid = true;
+            }
+        } else if ((first_byte >> kUtf8FourByteShift) == kUtf8FourBytePrefix) {  // 4バイト文字
+            if (index + 2 > utf8_str.size()) {
+                is_valid = false;
+            } else {
+                const unsigned char second_byte{static_cast<unsigned char>(utf8_str[index++])};
+                const unsigned char third_byte{static_cast<unsigned char>(utf8_str[index++])};
+                const unsigned char fourth_byte{static_cast<unsigned char>(utf8_str[index++])};
+                codepoint = ((first_byte & kUtf8FourByteMask) << kUtf8FourByteLeadingShift) | ((second_byte & kUtf8ContinuationMask) << kUtf8FourByte2ndByteShift) |
+                            ((third_byte & kUtf8ContinuationMask) << kUtf8FourByte3rdByteShift) | (fourth_byte & kUtf8ContinuationMask);
+                is_valid = true;
+            }
+        } else {
+            codepoint = '?';
+            is_valid = true;
+        }
     }
-    if ((c0 >> 5) == 0x6) {  // 2B
-        if (i >= s.size())
-            return false;
-        const unsigned char c1{static_cast<unsigned char>(s[i++])};
-        cp = ((c0 & 0x1F) << 6) | (c1 & 0x3F);
-        return true;
-    }
-    if ((c0 >> 4) == 0xE) {  // 3B
-        if (i + 1 > s.size())
-            return false;
-        const unsigned char c1{static_cast<unsigned char>(s[i++])};
-        const unsigned char c2{static_cast<unsigned char>(s[i++])};
-        cp = ((c0 & 0x0F) << 12) | ((c1 & 0x3F) << 6) | (c2 & 0x3F);
-        return true;
-    }
-    if ((c0 >> 3) == 0x1E) {  // 4B
-        if (i + 2 > s.size())
-            return false;
-        const unsigned char c1{static_cast<unsigned char>(s[i++])};
-        const unsigned char c2{static_cast<unsigned char>(s[i++])};
-        const unsigned char c3{static_cast<unsigned char>(s[i++])};
-        cp = ((c0 & 0x07) << 18) | ((c1 & 0x3F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
-        return true;
-    }
-    cp = '?';
-    return true;
+
+    return is_valid;
 }
 
 }  // namespace ui
