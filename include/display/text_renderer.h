@@ -24,12 +24,6 @@ struct Color565 {
     static Color565 Gray() { return {0x7BEF}; }
 };
 
-struct TextMetrics {
-    int width_px;
-    int height_px;
-    int baseline_px;
-};
-
 class TextRenderer {
     // テスト用フレンドクラス
     friend class TextRendererTest;
@@ -42,6 +36,14 @@ class TextRenderer {
     friend class TextRendererTest_ExtractColorComponentTest_Test;
 
   public:
+    // 型・エイリアス
+    struct TextMetrics {
+        int width_px;
+        int height_px;
+        int baseline_px;
+    };
+
+    // コンストラクタ/デストラクタ
     // font_path に .ttf / .otf を指定
     TextRenderer(driver::IDisplay& lcd, const std::string& font_path);
     ~TextRenderer();
@@ -59,6 +61,7 @@ class TextRenderer {
     TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center = true);
 
   private:
+    // 型・エイリアス
     struct Glyph {
         int width = 0, height = 0;
         int left = 0, top = 0;       // bitmap_left/top
@@ -67,6 +70,17 @@ class TextRenderer {
         std::vector<uint8_t> alpha;  // 8bit alpha bitmap
     };
     using GlyphKey = uint64_t;
+
+    // 定数
+    static constexpr int kRedShift{11};
+    static constexpr int kGreenShift{5};
+    static constexpr int kBlueShift{0};
+    static constexpr int kRedMask{0x1F};
+    static constexpr int kGreenMask{0x3F};
+    static constexpr int kBlueMask{0x1F};
+    static constexpr int kAlphaMax{255};
+
+    // メンバ関数
     static GlyphKey MakeKey(int size_px, uint32_t cp) { return (static_cast<uint64_t>(size_px) << 21) | (cp & 0x1FFFFF); }
 
     Glyph loadGlyph(uint32_t cp);
@@ -85,7 +99,9 @@ class TextRenderer {
      */
     uint16_t Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha);
 
-  private:
+    int ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask);
+
+    // メンバ変数
     driver::IDisplay& lcd_;
     FT_Library ft_ = nullptr;
     FT_Face face_ = nullptr;
@@ -97,17 +113,6 @@ class TextRenderer {
     int wrap_width_px_ = 0;
 
     std::unordered_map<GlyphKey, Glyph> cache_;
-
-    // RGB565カラーフォーマット関連の定数
-    static constexpr int kRedShift{11};
-    static constexpr int kGreenShift{5};
-    static constexpr int kBlueShift{0};
-    static constexpr int kRedMask{0x1F};
-    static constexpr int kGreenMask{0x3F};
-    static constexpr int kBlueMask{0x1F};
-    static constexpr int kAlphaMax{255};
-
-    int ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask);
 };
 
 }  // namespace ui

@@ -142,7 +142,7 @@ void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph& g) {
     }
 }
 
-TextMetrics TextRenderer::DrawText(int x, int y, const std::string& utf8) {
+TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string& utf8) {
     int pen_x = x, pen_y = y;
     int ascent = (face_->size->metrics.ascender >> 6);
     int descent = -(face_->size->metrics.descender >> 6);
@@ -189,7 +189,7 @@ TextMetrics TextRenderer::DrawText(int x, int y, const std::string& utf8) {
     return TextMetrics{max_w, total_h, ascent};
 }
 
-TextMetrics TextRenderer::MeasureText(const std::string& utf8) const {
+TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string& utf8) const {
     int cur_w = 0, max_w = 0;
     int ascent = (face_->size->metrics.ascender >> 6);
     int line_h = (face_->size->metrics.height >> 6);
@@ -212,7 +212,7 @@ TextMetrics TextRenderer::MeasureText(const std::string& utf8) const {
     return TextMetrics{max_w, line_h, ascent};
 }
 
-TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center) {
+TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center) {
     int x1{panel_x + panel_w - 1};
     int y1{panel_y + panel_h - 1};
     if (center) {
