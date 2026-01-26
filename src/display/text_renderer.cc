@@ -6,22 +6,21 @@
 
 namespace ui {
 
-uint16_t TextRenderer::Blend565(const uint16_t& background, const uint16_t& foreground,
-                                const uint8_t& alpha) {
+uint16_t TextRenderer::Blend565(const uint16_t& background, const uint16_t& foreground, const uint8_t& alpha) {
     // RGB565形式（16ビット）から、各色成分（R:5bit、G:6bit、B:5bit）を取り出す．
-    const int background_red{ExtractColorComponent(background, 11, 0x1F)};
-    const int background_green{ExtractColorComponent(background, 5, 0x3F)};
-    const int background_blue{ExtractColorComponent(background, 0, 0x1F)};
-    const int foreground_red{ExtractColorComponent(foreground, 11, 0x1F)};
-    const int foreground_green{ExtractColorComponent(foreground, 5, 0x3F)};
-    const int foreground_blue{ExtractColorComponent(foreground, 0, 0x1F)};
+    const int background_red{ExtractColorComponent(background, kRedShift, kRedMask)};
+    const int background_green{ExtractColorComponent(background, kGreenShift, kGreenMask)};
+    const int background_blue{ExtractColorComponent(background, kBlueShift, kBlueMask)};
+    const int foreground_red{ExtractColorComponent(foreground, kRedShift, kRedMask)};
+    const int foreground_green{ExtractColorComponent(foreground, kGreenShift, kGreenMask)};
+    const int foreground_blue{ExtractColorComponent(foreground, kBlueShift, kBlueMask)};
 
     // アルファ値 alpha (0-255) に基づいて、前景色と背景色を合成する．
-    const int inverse_alpha{255 - alpha};
-    const int blended_red{(foreground_red * alpha + background_red * inverse_alpha) / 255};
-    const int blended_green{(foreground_green * alpha + background_green * inverse_alpha) / 255};
-    const int blended_blue{(foreground_blue * alpha + background_blue * inverse_alpha) / 255};
-    return static_cast<uint16_t>((blended_red << 11) | (blended_green << 5) | blended_blue);
+    const int inverse_alpha{kAlphaMax - alpha};
+    const int blended_red{(foreground_red * alpha + background_red * inverse_alpha) / kAlphaMax};
+    const int blended_green{(foreground_green * alpha + background_green * inverse_alpha) / kAlphaMax};
+    const int blended_blue{(foreground_blue * alpha + background_blue * inverse_alpha) / kAlphaMax};
+    return static_cast<uint16_t>((blended_red << kRedShift) | (blended_green << kGreenShift) | blended_blue);
 }
 
 bool TextRenderer::NextCodepoint(const std::string& s, size_t& i, uint32_t& cp) {
@@ -213,8 +212,7 @@ TextMetrics TextRenderer::MeasureText(const std::string& utf8) const {
     return TextMetrics{max_w, line_h, ascent};
 }
 
-TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h,
-                                    const std::string& utf8, bool center) {
+TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center) {
     int x1{panel_x + panel_w - 1};
     int y1{panel_y + panel_h - 1};
     if (center) {

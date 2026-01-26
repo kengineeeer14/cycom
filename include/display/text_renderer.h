@@ -56,8 +56,7 @@ class TextRenderer {
     TextMetrics MeasureText(const std::string& utf8) const;
 
     // パネル塗り→中央寄せ描画
-    TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h,
-                          const std::string& utf8, bool center = true);
+    TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string& utf8, bool center = true);
 
   private:
     struct Glyph {
@@ -68,9 +67,7 @@ class TextRenderer {
         std::vector<uint8_t> alpha;  // 8bit alpha bitmap
     };
     using GlyphKey = uint64_t;
-    static GlyphKey MakeKey(int size_px, uint32_t cp) {
-        return (static_cast<uint64_t>(size_px) << 21) | (cp & 0x1FFFFF);
-    }
+    static GlyphKey MakeKey(int size_px, uint32_t cp) { return (static_cast<uint64_t>(size_px) << 21) | (cp & 0x1FFFFF); }
 
     Glyph loadGlyph(uint32_t cp);
     const Glyph* getGlyph(uint32_t cp);
@@ -100,6 +97,15 @@ class TextRenderer {
     int wrap_width_px_ = 0;
 
     std::unordered_map<GlyphKey, Glyph> cache_;
+
+    // RGB565カラーフォーマット関連の定数
+    static constexpr int kRedShift{11};
+    static constexpr int kGreenShift{5};
+    static constexpr int kBlueShift{0};
+    static constexpr int kRedMask{0x1F};
+    static constexpr int kGreenMask{0x3F};
+    static constexpr int kBlueMask{0x1F};
+    static constexpr int kAlphaMax{255};
 
     int ExtractColorComponent(const uint16_t& color, const int& shift, const int& mask);
 };

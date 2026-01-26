@@ -28,7 +28,7 @@ TEST_F(TextRendererTest, Blend565_FullyOpaque) {
     // アルファ = 255（完全不透明）の場合、前景色がそのまま返る
     const uint16_t background{0xF800};  // 赤（RGB565）
     const uint16_t foreground{0x07E0};  // 緑（RGB565）
-    const uint16_t result{text_renderer.Blend565(background, foreground, 255)};
+    const uint16_t result{text_renderer.Blend565(background, foreground, TextRenderer::kAlphaMax)};
     EXPECT_EQ(result, foreground);
 }
 
@@ -44,25 +44,25 @@ TEST_F(TextRendererTest, Blend565_HalfTransparent) {
     // アルファ = 128（半透明）の場合、背景色と前景色が50:50で合成される
     const uint16_t background{0x0000};  // 黒（RGB565）
     const uint16_t foreground{0xFFFF};  // 白（RGB565）
-    const uint16_t result{text_renderer.Blend565(background, foreground, 128)};
+    const uint16_t result{text_renderer.Blend565(background, foreground, TextRenderer::kAlphaMax / 2)};
 
     // 各色成分が約半分になることを確認
-    const int result_red{text_renderer.ExtractColorComponent(result, 11, 0x1F)};
-    const int result_green{text_renderer.ExtractColorComponent(result, 5, 0x3F)};
-    const int result_blue{text_renderer.ExtractColorComponent(result, 0, 0x1F)};
+    const int result_red{text_renderer.ExtractColorComponent(result, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int result_green{text_renderer.ExtractColorComponent(result, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int result_blue{text_renderer.ExtractColorComponent(result, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
     // 白(0xFFFF)の50%で合成
-    EXPECT_EQ(result_red, ((0xFFFF >> 11) & 0x1F) / 2);   // R成分の半分
-    EXPECT_EQ(result_green, ((0xFFFF >> 5) & 0x3F) / 2);  // G成分の半分
-    EXPECT_EQ(result_blue, ((0xFFFF >> 0) & 0x1F) / 2);   // B成分の半分
+    EXPECT_EQ(result_red, ((0xFFFF >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 2);        // R成分の半分
+    EXPECT_EQ(result_green, ((0xFFFF >> TextRenderer::kGreenShift) & TextRenderer::kGreenMask) / 2);  // G成分の半分
+    EXPECT_EQ(result_blue, ((0xFFFF >> TextRenderer::kBlueShift) & TextRenderer::kBlueMask) / 2);     // B成分の半分
 }
 
 TEST_F(TextRendererTest, Blend565_SameColor) {
     // 背景色と前景色が同じ場合、アルファ値に関わらず同じ色が返る
     const uint16_t color{0x07E0};  // 緑（RGB565）
-    const uint16_t result_opaque{text_renderer.Blend565(color, color, 255)};
+    const uint16_t result_opaque{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax)};
     const uint16_t result_transparent{text_renderer.Blend565(color, color, 0)};
-    const uint16_t result_half{text_renderer.Blend565(color, color, 128)};
+    const uint16_t result_half{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax / 2)};
 
     EXPECT_EQ(result_opaque, color);
     EXPECT_EQ(result_transparent, color);
@@ -75,16 +75,16 @@ TEST_F(TextRendererTest, Blend565_MaxColorComponents) {
     const uint16_t black{0x0000};  // R=0, G=0, B=0
 
     // alpha=64（約25%）でブレンド
-    const uint16_t result{text_renderer.Blend565(black, white, 64)};
+    const uint16_t result{text_renderer.Blend565(black, white, TextRenderer::kAlphaMax / 4)};
 
-    const int result_red{text_renderer.ExtractColorComponent(result, 11, 0x1F)};
-    const int result_green{text_renderer.ExtractColorComponent(result, 5, 0x3F)};
-    const int result_blue{text_renderer.ExtractColorComponent(result, 0, 0x1F)};
+    const int result_red{text_renderer.ExtractColorComponent(result, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int result_green{text_renderer.ExtractColorComponent(result, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int result_blue{text_renderer.ExtractColorComponent(result, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
     // 白(0xFFFF)の25%で合成
-    EXPECT_EQ(result_red, ((0xFFFF >> 11) & 0x1F) / 4);   // R成分の25%
-    EXPECT_EQ(result_green, ((0xFFFF >> 5) & 0x3F) / 4);  // G成分の25%
-    EXPECT_EQ(result_blue, ((0xFFFF >> 0) & 0x1F) / 4);   // B成分の25%
+    EXPECT_EQ(result_red, ((0xFFFF >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 4);        // R成分の25%
+    EXPECT_EQ(result_green, ((0xFFFF >> TextRenderer::kGreenShift) & TextRenderer::kGreenMask) / 4);  // G成分の25%
+    EXPECT_EQ(result_blue, ((0xFFFF >> TextRenderer::kBlueShift) & TextRenderer::kBlueMask) / 4);     // B成分の25%
 }
 
 TEST_F(TextRendererTest, Blend565_PrimaryColors) {
@@ -94,34 +94,34 @@ TEST_F(TextRendererTest, Blend565_PrimaryColors) {
     const uint16_t blue{0x001F};   // R=0, G=0, B=31
 
     // 赤と緑を50:50でブレンド → 黄色系
-    const uint16_t red_green{text_renderer.Blend565(red, green, 128)};
-    const int rg_red{text_renderer.ExtractColorComponent(red_green, 11, 0x1F)};
-    const int rg_green{text_renderer.ExtractColorComponent(red_green, 5, 0x3F)};
-    const int rg_blue{text_renderer.ExtractColorComponent(red_green, 0, 0x1F)};
+    const uint16_t red_green{text_renderer.Blend565(red, green, TextRenderer::kAlphaMax / 2)};
+    const int rg_red{text_renderer.ExtractColorComponent(red_green, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int rg_green{text_renderer.ExtractColorComponent(red_green, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int rg_blue{text_renderer.ExtractColorComponent(red_green, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
-    EXPECT_EQ(rg_red, ((0xF800 >> 11) & 0x1F) / 2);   // 赤成分の半分
-    EXPECT_EQ(rg_green, ((0x07E0 >> 5) & 0x3F) / 2);  // 緑成分の半分
-    EXPECT_EQ(rg_blue, 0);                            // 青成分はゼロ
+    EXPECT_EQ(rg_red, ((0xF800 >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 2);        // 赤成分の半分
+    EXPECT_EQ(rg_green, ((0x07E0 >> TextRenderer::kGreenShift) & TextRenderer::kGreenMask) / 2);  // 緑成分の半分
+    EXPECT_EQ(rg_blue, 0);                                                                        // 青成分はゼロ
 
     // 緑と青を50:50でブレンド → シアン系
-    const uint16_t green_blue{text_renderer.Blend565(green, blue, 128)};
-    const int gb_red{text_renderer.ExtractColorComponent(green_blue, 11, 0x1F)};
-    const int gb_green{text_renderer.ExtractColorComponent(green_blue, 5, 0x3F)};
-    const int gb_blue{text_renderer.ExtractColorComponent(green_blue, 0, 0x1F)};
+    const uint16_t green_blue{text_renderer.Blend565(green, blue, TextRenderer::kAlphaMax / 2)};
+    const int gb_red{text_renderer.ExtractColorComponent(green_blue, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int gb_green{text_renderer.ExtractColorComponent(green_blue, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int gb_blue{text_renderer.ExtractColorComponent(green_blue, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
-    EXPECT_EQ(gb_red, 0);                             // 赤成分はゼロ
-    EXPECT_EQ(gb_green, ((0x07E0 >> 5) & 0x3F) / 2);  // 緑成分の半分
-    EXPECT_EQ(gb_blue, ((0x001F >> 0) & 0x1F) / 2);   // 青成分の半分
+    EXPECT_EQ(gb_red, 0);                                                                         // 赤成分はゼロ
+    EXPECT_EQ(gb_green, ((0x07E0 >> TextRenderer::kGreenShift) & TextRenderer::kGreenMask) / 2);  // 緑成分の半分
+    EXPECT_EQ(gb_blue, ((0x001F >> TextRenderer::kBlueShift) & TextRenderer::kBlueMask) / 2);     // 青成分の半分
 
     // 青と赤を75:25でブレンド → 紫系
-    const uint16_t blue_red{text_renderer.Blend565(blue, red, 64)};
-    const int br_red{text_renderer.ExtractColorComponent(blue_red, 11, 0x1F)};
-    const int br_green{text_renderer.ExtractColorComponent(blue_red, 5, 0x3F)};
-    const int br_blue{text_renderer.ExtractColorComponent(blue_red, 0, 0x1F)};
+    const uint16_t blue_red{text_renderer.Blend565(blue, red, TextRenderer::kAlphaMax / 4)};
+    const int br_red{text_renderer.ExtractColorComponent(blue_red, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int br_green{text_renderer.ExtractColorComponent(blue_red, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int br_blue{text_renderer.ExtractColorComponent(blue_red, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
-    EXPECT_EQ(br_red, ((0xF800 >> 11) & 0x1F) / 4);      // 赤成分の25%
-    EXPECT_EQ(br_green, 0);                              // 緑成分はゼロ
-    EXPECT_EQ(br_blue, ((0x001F >> 0) & 0x1F) * 3 / 4);  // 青成分の75%
+    EXPECT_EQ(br_red, ((0xF800 >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 4);         // 赤成分の25%
+    EXPECT_EQ(br_green, 0);                                                                        // 緑成分はゼロ
+    EXPECT_EQ(br_blue, ((0x001F >> TextRenderer::kBlueShift) & TextRenderer::kBlueMask) * 3 / 4);  // 青成分の75%
 }
 
 // ExtractColorComponentのユニットテスト
@@ -134,13 +134,13 @@ TEST_F(TextRendererTest, ExtractColorComponentTest) {
 
     // 赤成分: 0x15 (0b10101)を抽出
     // 11ビットずらして，0x1F (0b11111)でマスク
-    const int r{text_renderer.ExtractColorComponent(color, 11, 0x1F)};
+    const int r{text_renderer.ExtractColorComponent(color, TextRenderer::kRedShift, TextRenderer::kRedMask)};
     // 緑成分: 0x1E (0b011110)
     // 5ビットずらして，0x3F (0b111111)でマスク
-    const int g{text_renderer.ExtractColorComponent(color, 5, 0x3F)};
+    const int g{text_renderer.ExtractColorComponent(color, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
     // 青成分: 0x0D (0b01101)
     // 0ビットずらして，0x1F (0b11111)でマスク
-    const int b{text_renderer.ExtractColorComponent(color, 0, 0x1F)};
+    const int b{text_renderer.ExtractColorComponent(color, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
     EXPECT_EQ(r, 0b10101);   // 赤成分
     EXPECT_EQ(g, 0b011110);  // 緑成分
     EXPECT_EQ(b, 0b01101);   // 青成分

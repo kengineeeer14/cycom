@@ -12,7 +12,7 @@ BreakBeforeBraces: Attach
 Cpp11BracedListStyle: true
 
 # 改行
-ColumnLimit: 100
+ColumnLimit: 200
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
