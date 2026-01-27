@@ -6,11 +6,40 @@ set -e
 # スクリプトがあるディレクトリの一つ上（プロジェクトルート）へ移動
 cd "$(dirname "$0")/.."
 
-# buildディレクトリが存在するか確認
+# ビルドが必要かどうかを判定
+NEED_BUILD=false
+
+# buildディレクトリが存在しない場合
 if [ ! -d "build" ]; then
-    echo "❌ build ディレクトリが見つかりません"
-    echo "   先に ./scripts/build.sh を実行してください"
-    exit 1
+    echo "📦 build ディレクトリが存在しないため、ビルドを実行します..."
+    NEED_BUILD=true
+# テスト実行ファイルが存在しない場合
+elif [ ! -d "build/tests" ] || [ -z "$(ls -A build/tests/*_test 2>/dev/null)" ]; then
+    echo "📦 テスト実行ファイルが見つからないため、ビルドを実行します..."
+    NEED_BUILD=true
+# ソースファイルがテスト実行ファイルより新しい場合
+else
+    # テスト実行ファイルのタイムスタンプを取得
+    NEWEST_TEST=$(find build/tests -name "*_test" -type f -executable 2>/dev/null | head -n1)
+    
+    if [ -n "$NEWEST_TEST" ]; then
+        # ソースファイル、ヘッダーファイル、CMakeLists.txtのいずれかが新しい場合
+        if [ -n "$(find src tests include CMakeLists.txt -type f -newer "$NEWEST_TEST" 2>/dev/null)" ]; then
+            echo "📦 ソースファイルが更新されているため、ビルドを実行します..."
+            NEED_BUILD=true
+        fi
+    fi
+fi
+
+# ビルドが必要な場合は実行
+if [ "$NEED_BUILD" = true ]; then
+    echo "🔨 Building..."
+    ./scripts/build.sh
+    if [ $? -ne 0 ]; then
+        echo "❌ ビルドに失敗しました"
+        exit 1
+    fi
+    echo ""
 fi
 
 cd build
