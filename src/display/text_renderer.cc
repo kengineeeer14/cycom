@@ -55,7 +55,7 @@ TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string
     size_t i = 0;
     while (i < utf8.size()) {
         uint32_t cp;
-        if (!NextCodepoint(utf8, i, cp))
+        if (!GetCodepoint(utf8, i, cp))
             break;
 
         if (cp == '\n') {
@@ -98,7 +98,7 @@ TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8) con
     size_t i = 0;
     while (i < utf8.size()) {
         uint32_t cp;
-        if (!NextCodepoint(utf8, i, cp))
+        if (!GetCodepoint(utf8, i, cp))
             break;
         if (cp == '\n') {
             max_w = std::max(max_w, cur_w);
@@ -208,48 +208,78 @@ TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
     return g;
 }
 
-bool TextRenderer::NextCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint) {
+bool TextRenderer::GetCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint) {
     bool is_valid{false};
 
     if (index >= utf8_str.size()) {
         is_valid = false;  // 文字列の終端に達した場合は次のコードポイントは取得できない
     } else {
+        // 1バイト目を読み取り、文字の種類を判定
         const unsigned char first_byte{static_cast<unsigned char>(utf8_str[index++])};
-        if (first_byte < kUtf8AsciiMax) {  // 1バイト文字 (ASCII)
+
+        // ========== 1バイト文字（ASCII: 0xxxxxxx）==========
+        if (first_byte < kUtf8AsciiMax) {  // 先頭ビットが0 → ASCII文字
+            // 例: 'A' = 0x41 = 01000001
             codepoint = first_byte;
             is_valid = true;
-        } else if ((first_byte >> kUtf8TwoByteShift) == kUtf8TwoBytePrefix) {  // 2バイト文字
+
+            // ========== 2バイト文字（110xxxxx 10xxxxxx）==========
+        } else if ((first_byte >> kUtf8TwoByteShift) == kUtf8TwoBytePrefix) {  // 先頭が110 → 2バイト文字
+            // 例: 'α' (U+03B1) = 0xCE 0xB1 = 11001110 10110001
             if (index >= utf8_str.size()) {
-                is_valid = false;
+                is_valid = false;  // 2バイト目がない
             } else {
                 const unsigned char second_byte{static_cast<unsigned char>(utf8_str[index++])};
+
+                // ビット抽出と結合:
+                // 1バイト目: 110[xxxxx] → 下位5ビット (& 0b11111)
+                // 2バイト目: 10[xxxxxx] → 下位6ビット (& 0b111111)
+                // 結合: (1バイト目の5ビット << 6) | (2バイト目の6ビット)
                 codepoint = ((first_byte & kUtf8TwoByteMask) << kUtf8TwoByteLeadingShift) | (second_byte & kUtf8ContinuationMask);
                 is_valid = true;
             }
-        } else if ((first_byte >> kUtf8ThreeByteShift) == kUtf8ThreeBytePrefix) {  // 3バイト文字
+
+            // ========== 3バイト文字（1110xxxx 10xxxxxx 10xxxxxx）==========
+        } else if ((first_byte >> kUtf8ThreeByteShift) == kUtf8ThreeBytePrefix) {  // 先頭が1110 → 3バイト文字
+            // 例: 'あ' (U+3042) = 0xE3 0x81 0x82 = 11100011 10000001 10000010
             if (index + 1 > utf8_str.size()) {
-                is_valid = false;
+                is_valid = false;  // 残りバイト数が不足
             } else {
                 const unsigned char second_byte{static_cast<unsigned char>(utf8_str[index++])};
                 const unsigned char third_byte{static_cast<unsigned char>(utf8_str[index++])};
+
+                // ビット抽出と結合:
+                // 1バイト目: 1110[xxxx] → 下位4ビット (& 0b1111) を12ビット左シフト
+                // 2バイト目: 10[xxxxxx] → 下位6ビット (& 0b111111) を6ビット左シフト
+                // 3バイト目: 10[xxxxxx] → 下位6ビット (& 0b111111)
                 codepoint =
                     ((first_byte & kUtf8ThreeByteMask) << kUtf8ThreeByteLeadingShift) | ((second_byte & kUtf8ContinuationMask) << kUtf8ThreeByte2ndByteShift) | (third_byte & kUtf8ContinuationMask);
                 is_valid = true;
             }
-        } else if ((first_byte >> kUtf8FourByteShift) == kUtf8FourBytePrefix) {  // 4バイト文字
+
+            // ========== 4バイト文字（11110xxx 10xxxxxx 10xxxxxx 10xxxxxx）==========
+        } else if ((first_byte >> kUtf8FourByteShift) == kUtf8FourBytePrefix) {  // 先頭が11110 → 4バイト文字
+            // 例: '🚴' (U+1F6B4) = 0xF0 0x9F 0x9A 0xB4 = 11110000 10011111 10011010 10110100
             if (index + 2 > utf8_str.size()) {
-                is_valid = false;
+                is_valid = false;  // 残りバイト数が不足
             } else {
                 const unsigned char second_byte{static_cast<unsigned char>(utf8_str[index++])};
                 const unsigned char third_byte{static_cast<unsigned char>(utf8_str[index++])};
                 const unsigned char fourth_byte{static_cast<unsigned char>(utf8_str[index++])};
+
+                // ビット抽出と結合:
+                // 1バイト目: 11110[xxx] → 下位3ビット (& 0b111) を18ビット左シフト
+                // 2バイト目: 10[xxxxxx] → 下位6ビット (& 0b111111) を12ビット左シフト
+                // 3バイト目: 10[xxxxxx] → 下位6ビット (& 0b111111) を6ビット左シフト
+                // 4バイト目: 10[xxxxxx] → 下位6ビット (& 0b111111)
                 codepoint = ((first_byte & kUtf8FourByteMask) << kUtf8FourByteLeadingShift) | ((second_byte & kUtf8ContinuationMask) << kUtf8FourByte2ndByteShift) |
                             ((third_byte & kUtf8ContinuationMask) << kUtf8FourByte3rdByteShift) | (fourth_byte & kUtf8ContinuationMask);
                 is_valid = true;
             }
         } else {
-            codepoint = '?';
-            is_valid = true;
+            // 5バイト以上の文字や不正なパターン
+            codepoint = '?';  // 不正な文字は'?'に置き換え
+            is_valid = false;
         }
     }
 

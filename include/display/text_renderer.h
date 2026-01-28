@@ -34,6 +34,18 @@ class TextRenderer {
     friend class TextRendererTest_Blend565_MaxColorComponents_Test;
     friend class TextRendererTest_Blend565_PrimaryColors_Test;
     friend class TextRendererTest_ExtractColorComponentTest_Test;
+    friend class TextRendererTest_GetCodepoint_AsciiCharacter_Test;
+    friend class TextRendererTest_GetCodepoint_TwoByteCharacter_Test;
+    friend class TextRendererTest_GetCodepoint_ThreeByteCharacter_Test;
+    friend class TextRendererTest_GetCodepoint_FourByteCharacter_Test;
+    friend class TextRendererTest_GetCodepoint_MixedCharacters_Test;
+    friend class TextRendererTest_GetCodepoint_EndOfString_Test;
+    friend class TextRendererTest_GetCodepoint_IncompleteTwoByteSequence_Test;
+    friend class TextRendererTest_GetCodepoint_IncompleteThreeByteSequence_Test;
+    friend class TextRendererTest_GetCodepoint_IncompleteFourByteSequence_Test;
+    friend class TextRendererTest_GetCodepoint_InvalidSequence_Test;
+    friend class TextRendererTest_GetCodepoint_EmptyString_Test;
+    friend class TextRendererTest_GetCodepoint_SequentialCalls_Test;
 
   public:
     // 型・エイリアス
@@ -80,14 +92,14 @@ class TextRenderer {
     static constexpr int kRedMask{0x1F};
 
     // UTF-8デコード用定数
-    static constexpr unsigned char kUtf8AsciiMax{0x80};          // ASCII文字の最大値+1
-    static constexpr unsigned char kUtf8TwoBytePrefix{0x6};      // 2バイト文字の先頭パターン (110xxxxx >> 5)
-    static constexpr unsigned char kUtf8ThreeBytePrefix{0xE};    // 3バイト文字の先頭パターン (1110xxxx >> 4)
-    static constexpr unsigned char kUtf8FourBytePrefix{0x1E};    // 4バイト文字の先頭パターン (11110xxx >> 3)
-    static constexpr unsigned char kUtf8TwoByteMask{0x1F};       // 2バイト文字の先頭バイトマスク
-    static constexpr unsigned char kUtf8ThreeByteMask{0x0F};     // 3バイト文字の先頭バイトマスク
-    static constexpr unsigned char kUtf8FourByteMask{0x07};      // 4バイト文字の先頭バイトマスク
-    static constexpr unsigned char kUtf8ContinuationMask{0x3F};  // 継続バイトのマスク
+    static constexpr unsigned char kUtf8AsciiMax{0b10000000};        // ASCII文字の最大値+1
+    static constexpr unsigned char kUtf8TwoBytePrefix{0b110};        // 2バイト文字の先頭パターン (110xxxxx >> 5)
+    static constexpr unsigned char kUtf8ThreeBytePrefix{0b1110};     // 3バイト文字の先頭パターン (1110xxxx >> 4)
+    static constexpr unsigned char kUtf8FourBytePrefix{0b11110};     // 4バイト文字の先頭パターン (11110xxx >> 3)
+    static constexpr unsigned char kUtf8TwoByteMask{0b11111};        // 2バイト文字の先頭バイトマスク
+    static constexpr unsigned char kUtf8ThreeByteMask{0b1111};       // 3バイト文字の先頭バイトマスク
+    static constexpr unsigned char kUtf8FourByteMask{0b111};         // 4バイト文字の先頭バイトマスク
+    static constexpr unsigned char kUtf8ContinuationMask{0b111111};  // 継続バイトのマスク
 
     // UTF-8デコード用シフト量
     static constexpr int kUtf8TwoByteShift{5};            // 2バイト文字判定用のシフト量
@@ -119,14 +131,17 @@ class TextRenderer {
     Glyph loadGlyph(uint32_t cp);
 
     /**
-     * @brief UTF-8 文字列から次のコードポイントを取得する
+     * @brief UTF-8文字列の現在位置のコードポイントを取得し、インデックスを次の位置に更新する
+     * @details UTF-8のバイト列→コードポイント変換の詳細は doc/utf8-explanation.md を参照
      *
      * @param[in] utf8_str UTF-8 文字列
-     * @param[out] index 現在のインデックス（呼び出し後に次の位置に更新される）
+     * @param[in,out] index 現在のインデックス（呼び出し後に次の位置に更新される）
      * @param[out] codepoint 取得したコードポイント
      * @return bool 成功した場合 true、失敗した場合 false
+     *
+     * @see doc/utf8-explanation.md
      */
-    static bool NextCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint);
+    static bool GetCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint);
 
     // メンバ変数
     Color565 bg_ = Color565::White();

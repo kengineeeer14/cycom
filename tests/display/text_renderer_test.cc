@@ -22,8 +22,11 @@ class TextRendererTest : public ::testing::Test {
     TextRenderer text_renderer{mock_display, font_path};
 };
 
+// =============================================================
 // Blend565のユニットテスト
+// -------------------------------------------------------------
 // 要件：アルファ値に基づいて、背景色と前景色を正しく合成できること
+// =============================================================
 TEST_F(TextRendererTest, Blend565_FullyOpaque) {
     // アルファ = 255（完全不透明）の場合、前景色がそのまま返る
     const uint16_t background{0xF800};  // 赤（RGB565）
@@ -124,8 +127,11 @@ TEST_F(TextRendererTest, Blend565_SameColor) {
     EXPECT_EQ(result_half, color);
 }
 
+// =============================================================
 // ExtractColorComponentのユニットテスト
+// -------------------------------------------------------------
 // 要件：RGB565形式の色から，指定された色成分（赤・緑・青）を抽出できること
+// =============================================================
 TEST_F(TextRendererTest, ExtractColorComponentTest) {
     const uint16_t color{0xABCD};  // RGB565
 
@@ -144,6 +150,175 @@ TEST_F(TextRendererTest, ExtractColorComponentTest) {
     EXPECT_EQ(r, 0b10101);   // 赤成分
     EXPECT_EQ(g, 0b011110);  // 緑成分
     EXPECT_EQ(b, 0b01101);   // 青成分
+}
+
+// =============================================================
+// GetCodepointのユニットテスト
+// -------------------------------------------------------------
+// 要件：
+// - UTF-8文字列の現在位置のコードポイントを取得し、インデックスを次の位置に更新すること
+// - 不正な文字列が与えられた場合、異常とわかる処置を行うこと
+// =============================================================
+TEST_F(TextRendererTest, GetCodepoint_AsciiCharacter) {
+    // ASCII文字（1バイト）の取得
+    const std::string utf8_str{"Hello"};
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    // 'H' (0x48)
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x0048);  // Hのコードポイント
+    EXPECT_EQ(index, 1);
+
+    // 'e' (0x65)
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x0065);  // eのコードポイント
+    EXPECT_EQ(index, 2);
+}
+
+TEST_F(TextRendererTest, GetCodepoint_TwoByteCharacter) {
+    // 2バイト文字の取得（ギリシャ文字 α: U+03B1）
+    const std::string utf8_str{"α"};  // α (U+03B1)
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x03B1);  // αのコードポイント
+    EXPECT_EQ(index, 2);           // 2バイト進む
+}
+
+TEST_F(TextRendererTest, GetCodepoint_ThreeByteCharacter) {
+    // 3バイト文字の取得（日本語 あ: U+3042）
+    const std::string utf8_str{"あ"};  // あ (U+3042)
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x3042);  // あのコードポイント
+    EXPECT_EQ(index, 3);           // 3バイト進む
+}
+
+TEST_F(TextRendererTest, GetCodepoint_FourByteCharacter) {
+    // 4バイト文字の取得（絵文字 🚴: U+1F6B4）
+    const std::string utf8_str{"🚴"};  // 🚴 (U+1F6B4)
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x1F6B4);  // 🚴 のコードポイント
+    EXPECT_EQ(index, 4);            // 4バイト進む
+}
+
+TEST_F(TextRendererTest, GetCodepoint_MixedCharacters) {
+    // 混合文字列（ASCII + 3バイト文字）
+    const std::string utf8_str{"Aあ"};  // A (1バイト) + あ (3バイト)
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    // 'A'
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x0041);  // Aのコードポイント
+    EXPECT_EQ(index, 1);           // 1バイト進む
+
+    // 'あ'
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x3042);  // あのコードポイント
+    EXPECT_EQ(index, 4);           // 3バイト進む
+}
+
+TEST_F(TextRendererTest, GetCodepoint_EndOfString) {
+    // 文字列の終端に達した場合
+    const std::string utf8_str{"A"};
+    size_t index{1};  // すでに終端
+    uint32_t codepoint{0};
+
+    EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+}
+
+TEST_F(TextRendererTest, GetCodepoint_IncompleteTwoByteSequence) {
+    // 2バイト文字の途中で終端
+    const std::string utf8_str{"\xCE"};  // 2バイト文字の1バイト目のみ
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(index, 1);  // 1バイト目は読まれている
+}
+
+TEST_F(TextRendererTest, GetCodepoint_IncompleteThreeByteSequence) {
+    // 3バイト文字の途中で終端（1バイト目のみ）
+    const std::string utf8_str{"\xE3"};  // 3バイト文字の1バイト目のみ
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    // 残り2バイト必要だが、文字列には1バイトしかない
+    EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(index, 1);  // 1バイト目は読まれている
+}
+
+TEST_F(TextRendererTest, GetCodepoint_IncompleteFourByteSequence) {
+    // 4バイト文字の途中で終端（2バイト目まで）
+    const std::string utf8_str{"\xF0\x9F"};  // 4バイト文字の2バイト目まで
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    // 残り3バイト必要だが、文字列には2バイトしかない
+    EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(index, 1);  // 1バイト目は読まれている
+}
+
+TEST_F(TextRendererTest, GetCodepoint_InvalidSequence) {
+    // 不正なUTF-8シーケンス（5バイト文字は存在しない）
+    const std::string utf8_str{"\xF8\x80\x80\x80"};  // 無効な先頭バイト
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, '?');  // 不正な文字は '?' として処理
+}
+
+TEST_F(TextRendererTest, GetCodepoint_EmptyString) {
+    // 空文字列
+    const std::string utf8_str{""};
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+}
+
+TEST_F(TextRendererTest, GetCodepoint_SequentialCalls) {
+    // 複数のコードポイントを順番に取得
+    const std::string utf8_str{"こんにちは"};  // 5文字の日本語（各3バイト）
+    size_t index{0};
+    uint32_t codepoint{0};
+
+    // こ (U+3053)
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x3053);  // こ のコードポイント
+    EXPECT_EQ(index, 3);
+
+    // ん (U+3093)
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x3093);  // ん のコードポイント
+    EXPECT_EQ(index, 6);
+
+    // に (U+306B)
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x306B);  // に のコードポイント
+    EXPECT_EQ(index, 9);
+
+    // ち (U+3061)
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x3061);  // ち のコードポイント
+    EXPECT_EQ(index, 12);
+
+    // は (U+306F)
+    EXPECT_TRUE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+    EXPECT_EQ(codepoint, 0x306F);  // は のコードポイント
+    EXPECT_EQ(index, 15);
+
+    // 終端
+    EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
 }
 
 }  // namespace ui
