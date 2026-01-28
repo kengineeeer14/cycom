@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libgpiod-dev \
     nlohmann-json3-dev \
+    # テストフレームワーク
+    libgtest-dev \
     # 注: 本番環境では実機に直接インストール \
     # デバッグ・開発ツール
     gdb \
@@ -50,6 +52,12 @@ RUN locale-gen ja_JP.UTF-8
 ENV LANG=ja_JP.UTF-8
 ENV LANGUAGE=ja_JP:ja
 ENV LC_ALL=ja_JP.UTF-8
+
+# Google Test のビルドとインストール
+RUN cd /usr/src/googletest \
+    && cmake . \
+    && make \
+    && cp lib/*.a /usr/lib/ || cp **/*.a /usr/lib/ || find . -name "*.a" -exec cp {} /usr/lib/ \;
 
 # 非rootユーザーの作成（セキュリティとVSCode互換性のため）
 ARG USERNAME=developer
