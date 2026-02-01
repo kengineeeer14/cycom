@@ -30,5 +30,6 @@
 3. 既存のコード構造を維持する
 4. 必要に応じて依存性注入（Dependency Injection）パターンを用いる
 5. 日本語を使用する
+6. アプリをインストールした場合は，Dockerfileにも変更を反映する
 <!-- 5. Markdown でクラス設計ドキュメントを書く場合は doc.instruction.md に従う -->
 <!-- 5. 新機能にはユニットテストを書く。テストの作成方法は test.instruction.md に従う -->

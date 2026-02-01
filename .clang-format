@@ -12,7 +12,7 @@ BreakBeforeBraces: Attach
 Cpp11BracedListStyle: true
 
 # 改行
-ColumnLimit: 100
+ColumnLimit: 200
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
@@ -24,7 +24,7 @@ CompactNamespaces: false
 
 # ポインタと参照
 DerivePointerAlignment: false
-PointerAlignment: Left
+PointerAlignment: Right
 
 # include文の並び替え
 SortIncludes: CaseInsensitive
