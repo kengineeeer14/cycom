@@ -113,8 +113,19 @@ class TextRenderer {
     static constexpr int kUtf8FourByte2ndByteShift{12};   // 4バイト文字の2番目のバイトのシフト量
     static constexpr int kUtf8FourByte3rdByteShift{6};    // 4バイト文字の3番目のバイトのシフト量
 
+    // GlyphKey生成用定数
+    static constexpr int kCodepointBits{21};             // コードポイント用のビット数
+    static constexpr uint32_t kCodepointMask{0x1FFFFF};  // コードポイント用のマスク（21ビット分）
+
     // メンバ関数
-    static GlyphKey MakeKey(int size_px, uint32_t cp) { return (static_cast<uint64_t>(size_px) << 21) | (cp & 0x1FFFFF); }
+    /**
+     * @brief サイズとコードポイントからキャッシュキーを生成する
+     *
+     * @param size_px フォントサイズ（ピクセル単位）
+     * @param codepoint コードポイント
+     * @return GlyphKey
+     */
+    static GlyphKey MakeKey(const int &size_px, const uint32_t &codepoint);
 
     /**
      * @brief RGB565形式の2色をアルファブレンディング（α合成）する

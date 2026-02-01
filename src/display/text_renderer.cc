@@ -130,6 +130,19 @@ void TextRenderer::SetWrapWidthPx(int px) {
 }
 
 // private メンバ関数
+
+TextRenderer::GlyphKey TextRenderer::MakeKey(const int &size_px, const uint32_t &codepoint) {
+    // 64ビットのキーを生成：上位43ビットにフォントサイズ、下位21ビットにコードポイントを格納
+    // 例: size_px=32, codepoint=0x3042の場合
+    //   → (32 << 21) | 0x3042 = 0x0000004000003042
+    //
+    // ビット配置:
+    // [63....................21][20....................0]
+    // [   フォントサイズ(px)   ][   コードポイント      ]
+    return (static_cast<uint64_t>(size_px) << kCodepointBits) |  // フォントサイズを上位ビットに配置
+           (codepoint & kCodepointMask);                         // コードポイントを下位21ビットに制限
+}
+
 uint16_t TextRenderer::Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha) {
     // RGB565形式（16ビット）から、各色成分（R:5bit、G:6bit、B:5bit）を取り出す．
     const int background_red{ExtractColorComponent(background, kRedShift, kRedMask)};
