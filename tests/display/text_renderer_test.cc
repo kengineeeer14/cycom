@@ -321,4 +321,107 @@ TEST_F(TextRendererTest, GetCodepoint_SequentialCalls) {
     EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
 }
 
+// =============================================================
+// MakeKeyのユニットテスト
+// -------------------------------------------------------------
+// 要件：フォントサイズとコードポイントから一意のキャッシュキーを生成できること
+// =============================================================
+TEST_F(TextRendererTest, MakeKey_BasicGeneration) {
+    // 基本的なキー生成が正しく動作することを確認
+    const int size_px{32};
+    const uint32_t codepoint{0x3042};  // ひらがな「あ」
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(size_px, codepoint)};
+
+    // キーは size_px を上位ビットに、codepoint を下位21ビットに格納
+    // 期待値: (32 << 21) | 0x3042 = 0x0000004000003042
+    const TextRenderer::GlyphKey expected{(static_cast<uint64_t>(size_px) << TextRenderer::kCodepointBits) | codepoint};
+    EXPECT_EQ(key, expected);
+}
+
+TEST_F(TextRendererTest, MakeKey_DifferentSizes) {
+    // 同じコードポイントでも異なるサイズで異なるキーが生成されることを確認
+    const uint32_t codepoint{0x0041};  // 'A'
+    const TextRenderer::GlyphKey key_16{TextRenderer::MakeKey(16, codepoint)};
+    const TextRenderer::GlyphKey key_32{TextRenderer::MakeKey(32, codepoint)};
+    const TextRenderer::GlyphKey key_64{TextRenderer::MakeKey(64, codepoint)};
+
+    // すべてのキーが異なることを確認
+    EXPECT_NE(key_16, key_32);
+    EXPECT_NE(key_32, key_64);
+    EXPECT_NE(key_16, key_64);
+}
+
+TEST_F(TextRendererTest, MakeKey_DifferentCodepoints) {
+    // 同じサイズでも異なるコードポイントで異なるキーが生成されることを確認
+    const int size_px{32};
+    const TextRenderer::GlyphKey key_a{TextRenderer::MakeKey(size_px, 0x0041)};   // 'A'
+    const TextRenderer::GlyphKey key_b{TextRenderer::MakeKey(size_px, 0x0042)};   // 'B'
+    const TextRenderer::GlyphKey key_ja{TextRenderer::MakeKey(size_px, 0x3042)};  // 'あ'
+
+    // すべてのキーが異なることを確認
+    EXPECT_NE(key_a, key_b);
+    EXPECT_NE(key_b, key_ja);
+    EXPECT_NE(key_a, key_ja);
+}
+
+TEST_F(TextRendererTest, MakeKey_MaxCodepoint) {
+    // Unicodeの最大コードポイント（U+10FFFF）でキーを生成
+    const int size_px{32};
+    const uint32_t max_codepoint{0x10FFFF};
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(size_px, max_codepoint)};
+
+    // コードポイント部分（下位21ビット）が正しくマスクされていることを確認
+    const uint32_t extracted_codepoint{static_cast<uint32_t>(key & TextRenderer::kCodepointMask)};
+    EXPECT_EQ(extracted_codepoint, max_codepoint);
+
+    // サイズ部分（上位ビット）が正しく格納されていることを確認
+    const int extracted_size{static_cast<int>(key >> TextRenderer::kCodepointBits)};
+    EXPECT_EQ(extracted_size, size_px);
+}
+
+TEST_F(TextRendererTest, MakeKey_CodepointMasking) {
+    // コードポイントが21ビットを超える場合、マスクが適用されることを確認
+    const int size_px{32};
+    const uint32_t invalid_codepoint{0xFFFFFFFF};  // 全ビット1
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(size_px, invalid_codepoint)};
+
+    // 下位21ビットのみが保持される
+    const uint32_t extracted_codepoint{static_cast<uint32_t>(key & TextRenderer::kCodepointMask)};
+    EXPECT_EQ(extracted_codepoint, TextRenderer::kCodepointMask);  // 0x1FFFFF
+}
+
+TEST_F(TextRendererTest, MakeKey_LargeSize) {
+    // 大きなフォントサイズでもキーが正しく生成されることを確認
+    const int large_size{1024};
+    const uint32_t codepoint{0x0041};  // 'A'
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(large_size, codepoint)};
+
+    // サイズとコードポイントが正しく抽出できることを確認
+    const int extracted_size{static_cast<int>(key >> TextRenderer::kCodepointBits)};
+    const uint32_t extracted_codepoint{static_cast<uint32_t>(key & TextRenderer::kCodepointMask)};
+
+    EXPECT_EQ(extracted_size, large_size);
+    EXPECT_EQ(extracted_codepoint, codepoint);
+}
+
+TEST_F(TextRendererTest, MakeKey_EmojiCodepoint) {
+    // 絵文字のコードポイントでキーを生成
+    const int size_px{48};
+    const uint32_t emoji_codepoint{0x1F6B4};  // 🚴 (自転車に乗る人)
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(size_px, emoji_codepoint)};
+
+    // コードポイントとサイズが正しく抽出できることを確認
+    const int extracted_size{static_cast<int>(key >> TextRenderer::kCodepointBits)};
+    const uint32_t extracted_codepoint{static_cast<uint32_t>(key & TextRenderer::kCodepointMask)};
+
+    EXPECT_EQ(extracted_size, size_px);
+    EXPECT_EQ(extracted_codepoint, emoji_codepoint);
+}
+
+TEST_F(TextRendererTest, MakeKey_ZeroValues) {
+    // サイズとコードポイントが0の場合
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(0, 0)};
+    EXPECT_EQ(key, 0);
+}
+
 }  // namespace ui
