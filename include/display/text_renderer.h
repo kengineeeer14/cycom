@@ -27,12 +27,20 @@ struct Color565 {
 class TextRenderer {
     // テスト用フレンドクラス
     friend class TextRendererTest;
+    friend class TextRendererTest_MakeKey_BasicGeneration_Test;
+    friend class TextRendererTest_MakeKey_DifferentSizes_Test;
+    friend class TextRendererTest_MakeKey_DifferentCodepoints_Test;
+    friend class TextRendererTest_MakeKey_MaxCodepoint_Test;
+    friend class TextRendererTest_MakeKey_CodepointMasking_Test;
+    friend class TextRendererTest_MakeKey_LargeSize_Test;
+    friend class TextRendererTest_MakeKey_EmojiCodepoint_Test;
+    friend class TextRendererTest_MakeKey_ZeroValues_Test;
     friend class TextRendererTest_Blend565_FullyOpaque_Test;
     friend class TextRendererTest_Blend565_FullyTransparent_Test;
     friend class TextRendererTest_Blend565_HalfTransparent_Test;
-    friend class TextRendererTest_Blend565_SameColor_Test;
     friend class TextRendererTest_Blend565_MaxColorComponents_Test;
     friend class TextRendererTest_Blend565_PrimaryColors_Test;
+    friend class TextRendererTest_Blend565_SameColor_Test;
     friend class TextRendererTest_ExtractColorComponentTest_Test;
     friend class TextRendererTest_GetCodepoint_AsciiCharacter_Test;
     friend class TextRendererTest_GetCodepoint_TwoByteCharacter_Test;
@@ -46,14 +54,6 @@ class TextRenderer {
     friend class TextRendererTest_GetCodepoint_InvalidSequence_Test;
     friend class TextRendererTest_GetCodepoint_EmptyString_Test;
     friend class TextRendererTest_GetCodepoint_SequentialCalls_Test;
-    friend class TextRendererTest_MakeKey_BasicGeneration_Test;
-    friend class TextRendererTest_MakeKey_DifferentSizes_Test;
-    friend class TextRendererTest_MakeKey_DifferentCodepoints_Test;
-    friend class TextRendererTest_MakeKey_MaxCodepoint_Test;
-    friend class TextRendererTest_MakeKey_CodepointMasking_Test;
-    friend class TextRendererTest_MakeKey_LargeSize_Test;
-    friend class TextRendererTest_MakeKey_EmojiCodepoint_Test;
-    friend class TextRendererTest_MakeKey_ZeroValues_Test;
 
   public:
     // 型・エイリアス
