@@ -118,40 +118,12 @@ class TextRenderer {
     static constexpr uint32_t kCodepointMask{0x1FFFFF};  // コードポイント用のマスク（21ビット分）
 
     // メンバ関数
-    /**
-     * @brief サイズとコードポイントからキャッシュキーを生成する
-     *
-     * @param size_px フォントサイズ（ピクセル単位）
-     * @param codepoint コードポイント
-     * @return GlyphKey
-     */
     static GlyphKey MakeKey(const int &size_px, const uint32_t &codepoint);
-
-    /**
-     * @brief RGB565形式の2色をアルファブレンディング（α合成）する
-     *
-     * @param[in] background 背景色（RGB565形式）
-     * @param[in] foreground 前景色（RGB565形式）
-     * @param[in] alpha アルファ値（0-255）
-     * @return uint16_t ブレンド後の色（RGB565形式）
-     */
     uint16_t Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha);
     void blitGlyph(int dst_x, int dst_y, const Glyph &g);
     int ExtractColorComponent(const uint16_t &color, const int &shift, const int &mask);
     const Glyph *getGlyph(uint32_t cp);
     Glyph loadGlyph(uint32_t cp);
-
-    /**
-     * @brief UTF-8文字列の現在位置のコードポイントを取得し、インデックスを次の位置に更新する
-     * @details UTF-8のバイト列→コードポイント変換の詳細は doc/utf8-explanation.md を参照
-     *
-     * @param[in] utf8_str UTF-8 文字列
-     * @param[in,out] index 現在のインデックス（呼び出し後に次の位置に更新される）
-     * @param[out] codepoint 取得したコードポイント
-     * @return bool 成功した場合 true、失敗した場合 false
-     *
-     * @see doc/utf8-explanation.md
-     */
     static bool GetCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint);
 
     // メンバ変数

@@ -131,6 +131,13 @@ void TextRenderer::SetWrapWidthPx(int px) {
 
 // private メンバ関数
 
+/**
+ * @brief サイズとコードポイントからキャッシュキーを生成する
+ *
+ * @param size_px フォントサイズ（ピクセル単位）
+ * @param codepoint コードポイント
+ * @return GlyphKey
+ */
 TextRenderer::GlyphKey TextRenderer::MakeKey(const int &size_px, const uint32_t &codepoint) {
     // 64ビットのキーを生成：上位43ビットにフォントサイズ、下位21ビットにコードポイントを格納
     // 例: size_px=32, codepoint=0x3042の場合
@@ -143,6 +150,14 @@ TextRenderer::GlyphKey TextRenderer::MakeKey(const int &size_px, const uint32_t 
            (codepoint & kCodepointMask);                         // コードポイントを下位21ビットに制限
 }
 
+/**
+ * @brief RGB565形式の2色をアルファブレンディング（α合成）する
+ *
+ * @param[in] background 背景色（RGB565形式）
+ * @param[in] foreground 前景色（RGB565形式）
+ * @param[in] alpha アルファ値（0-255）
+ * @return uint16_t ブレンド後の色（RGB565形式）
+ */
 uint16_t TextRenderer::Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha) {
     // RGB565形式（16ビット）から、各色成分（R:5bit、G:6bit、B:5bit）を取り出す．
     const int background_red{ExtractColorComponent(background, kRedShift, kRedMask)};
@@ -221,6 +236,17 @@ TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
     return g;
 }
 
+/**
+ * @brief UTF-8文字列の現在位置のコードポイントを取得し、インデックスを次の位置に更新する
+ * @details UTF-8のバイト列→コードポイント変換の詳細は doc/utf8-explanation.md を参照
+ *
+ * @param[in] utf8_str UTF-8 文字列
+ * @param[in,out] index 現在のインデックス（呼び出し後に次の位置に更新される）
+ * @param[out] codepoint 取得したコードポイント
+ * @return bool 成功した場合 true、失敗した場合 false
+ *
+ * @see doc/utf8-explanation.md
+ */
 bool TextRenderer::GetCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint) {
     bool is_valid{false};
 
