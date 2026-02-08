@@ -11,12 +11,17 @@ namespace ui {
 class TextRendererTest : public ::testing::Test {
   protected:
     void SetUp() override {
-        // フォントファイルがない場合はスキップ
+        // 各テスト実行前に呼ばれる初期化処理
         if (access(font_path.c_str(), F_OK) != 0) {
             GTEST_SKIP() << "Font file not found: " << font_path;
         }
     }
 
+    void TearDown() override {
+        // 各テスト実行後に呼ばれるクリーンアップ処理
+    }
+
+    // テストで使用する共通のメンバ変数
     const std::string font_path{"/workspace/config/fonts/DejaVuSans.ttf"};
     driver::MockDisplay mock_display;
     TextRenderer text_renderer{mock_display, font_path};
@@ -422,6 +427,254 @@ TEST_F(TextRendererTest, GetCodepoint_SequentialCalls) {
 
     // 終端
     EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
+}
+
+// =============================================================
+// blitGlyphのユニットテスト
+// -------------------------------------------------------------
+// 要件：指定位置にグリフを正しく描画できること
+// =============================================================
+TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_WidthZero) {
+    // 幅が0のグリフは描画されない
+    TextRenderer::Glyph glyph;
+    glyph.width = 0;
+    glyph.height = 10;
+    glyph.left = 0;
+    glyph.top = 8;
+    glyph.pitch = 0;
+
+    // DrawRGB565Lineが呼ばれないことを期待
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
+
+    text_renderer.blitGlyph(100, 100, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_HeightZero) {
+    // 高さが0のグリフは描画されない
+    TextRenderer::Glyph glyph;
+    glyph.width = 10;
+    glyph.height = 0;
+    glyph.left = 0;
+    glyph.top = 8;
+    glyph.pitch = 10;
+
+    // DrawRGB565Lineが呼ばれないことを期待
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
+
+    text_renderer.blitGlyph(100, 100, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_NegativeWidth) {
+    // 負の幅のグリフは描画されない
+    TextRenderer::Glyph glyph;
+    glyph.width = -5;
+    glyph.height = 10;
+    glyph.left = 0;
+    glyph.top = 8;
+    glyph.pitch = 0;
+
+    // DrawRGB565Lineが呼ばれないことを期待
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
+
+    text_renderer.blitGlyph(100, 100, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_NegativeHeight) {
+    // 負の高さのグリフは描画されない
+    TextRenderer::Glyph glyph;
+    glyph.width = 10;
+    glyph.height = -5;
+    glyph.left = 0;
+    glyph.top = 8;
+    glyph.pitch = 10;
+
+    // DrawRGB565Lineが呼ばれないことを期待
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
+
+    text_renderer.blitGlyph(100, 100, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_ValidGlyph_DrawsCalls) {
+    // 有効なグリフが指定された回数だけDrawRGB565Lineを呼ぶことを確認
+    TextRenderer::Glyph glyph;
+    glyph.width = 5;
+    glyph.height = 3;
+    glyph.left = 2;
+    glyph.top = 8;
+    glyph.pitch = 5;
+    glyph.alpha.resize(glyph.height * glyph.pitch, 255);  // 完全不透明
+
+    // 色を設定（前景：黒、背景：白）
+    text_renderer.SetColors(Color565::Black(), Color565::White());
+
+    const int baseline_x{100};
+    const int baseline_y{100};
+    const int expected_screen_x{baseline_x + glyph.left};  // 102
+    const int expected_screen_y{baseline_y - glyph.top};   // 92
+
+    // 各行（height=3）に対してDrawRGB565Lineが呼ばれる
+    EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y, ::testing::_, glyph.width)).Times(1);
+    EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y + 1, ::testing::_, glyph.width)).Times(1);
+    EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y + 2, ::testing::_, glyph.width)).Times(1);
+
+    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_CorrectScreenCoordinates) {
+    // スクリーン座標が正しく計算されることを確認
+    TextRenderer::Glyph glyph;
+    glyph.width = 8;
+    glyph.height = 10;
+    glyph.left = -2;  // 負のオフセット
+    glyph.top = 12;   // 正のオフセット
+    glyph.pitch = 8;
+    glyph.alpha.resize(glyph.height * glyph.pitch, 128);  // 半透明
+
+    const int baseline_x{50};
+    const int baseline_y{200};
+    const int expected_screen_x{baseline_x + glyph.left};  // 48
+    const int expected_screen_y{baseline_y - glyph.top};   // 188
+
+    // 各行（height=10）に対してDrawRGB565Lineが呼ばれることを確認
+    for (int row{0}; row < glyph.height; ++row) {
+        EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y + row, ::testing::_, glyph.width)).Times(1);
+    }
+
+    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyOpaque) {
+    // 完全不透明なグリフが正しくブレンドされることを確認
+    TextRenderer::Glyph glyph;
+    glyph.width = 2;
+    glyph.height = 1;
+    glyph.left = 0;
+    glyph.top = 0;
+    glyph.pitch = 2;
+    glyph.alpha = {255, 255};  // 完全不透明
+
+    // 色を設定（前景：白、背景：黒）
+    text_renderer.SetColors(Color565::White(), Color565::Black());
+
+    const int baseline_x{0};
+    const int baseline_y{0};
+
+    // DrawRGB565Lineが呼ばれ、前景色（白）がそのまま描画される
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::NotNull(), glyph.width)).Times(1).WillOnce(::testing::Invoke([](int x, int y, const uint16_t *rgb565, int len) {
+        // すべてのピクセルが白（0xFFFF）であることを確認
+        for (int i{0}; i < len; ++i) {
+            EXPECT_EQ(rgb565[i], Color565::White().value);
+        }
+    }));
+
+    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyTransparent) {
+    // 完全透明なグリフが正しくブレンドされることを確認
+    TextRenderer::Glyph glyph;
+    glyph.width = 2;
+    glyph.height = 1;
+    glyph.left = 0;
+    glyph.top = 0;
+    glyph.pitch = 2;
+    glyph.alpha = {0, 0};  // 完全透明
+
+    // 色を設定（前景：白、背景：黒）
+    text_renderer.SetColors(Color565::White(), Color565::Black());
+
+    const int baseline_x{0};
+    const int baseline_y{0};
+
+    // DrawRGB565Lineが呼ばれ、背景色（黒）がそのまま描画される
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::NotNull(), glyph.width)).Times(1).WillOnce(::testing::Invoke([](int x, int y, const uint16_t *rgb565, int len) {
+        // すべてのピクセルが黒（0x0000）であることを確認
+        for (int i = 0; i < len; ++i) {
+            EXPECT_EQ(rgb565[i], Color565::Black().value);
+        }
+    }));
+
+    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_VariedAlpha) {
+    // 異なるアルファ値を持つグリフが正しくブレンドされることを確認
+    TextRenderer::Glyph glyph;
+    glyph.width = 4;
+    glyph.height = 1;
+    glyph.left = 0;
+    glyph.top = 0;
+    glyph.pitch = 4;
+    glyph.alpha = {0, 85, 170, 255};  // 0%, 33%, 67%, 100%の不透明度
+
+    // 色を設定（前景：白、背景：黒）
+    text_renderer.SetColors(Color565::White(), Color565::Black());
+
+    const int baseline_x{0};
+    const int baseline_y{0};
+
+    // DrawRGB565Lineが呼ばれ、各ピクセルのアルファ値に応じてブレンドされる
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::NotNull(), glyph.width)).Times(1).WillOnce(::testing::Invoke([this](int x, int y, const uint16_t *rgb565, int len) {
+        // 各ピクセルのブレンド結果を確認
+        EXPECT_EQ(rgb565[0], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 0));    // 背景色（黒）
+        EXPECT_EQ(rgb565[1], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 85));   // 約33%ブレンド
+        EXPECT_EQ(rgb565[2], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 170));  // 約67%ブレンド
+        EXPECT_EQ(rgb565[3], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 255));  // 前景色（白）
+    }));
+
+    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+}
+
+TEST_F(TextRendererTest, BlitGlyph_MultipleRows) {
+    // 複数行のグリフが正しく描画されることを確認
+    TextRenderer::Glyph glyph;
+    glyph.width = 3;
+    glyph.height = 4;
+    glyph.left = 1;
+    glyph.top = 5;
+    glyph.pitch = 3;
+    // 各行に異なるアルファ値を設定
+    glyph.alpha = {
+        255, 255, 255,  // 1行目：完全不透明
+        200, 200, 200,  // 2行目：約78%不透明
+        128, 128, 128,  // 3行目：半透明
+        50,  50,  50    // 4行目：ほぼ透明
+    };
+
+    // 色を設定（前景：赤、背景：青）
+    const uint16_t red{0xF800};
+    const uint16_t blue{0x001F};
+    text_renderer.SetColors(Color565{red}, Color565{blue});
+
+    const int baseline_x{10};
+    const int baseline_y{20};
+    const int expected_screen_x{baseline_x + glyph.left};
+    const int expected_screen_y{baseline_y - glyph.top};
+
+    // 各行ごとにDrawRGB565Lineが呼ばれることを確認
+    for (int row{0}; row < glyph.height; ++row) {
+        EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y + row, ::testing::NotNull(), glyph.width))
+            .Times(1)
+            .WillOnce(::testing::Invoke([this, row, blue, red](int x, int y, const uint16_t *rgb565, int len) {
+                // 各行のアルファ値に応じたブレンド結果を確認
+                uint8_t expected_alpha{0};
+                if (row == 0)
+                    expected_alpha = 255;
+                else if (row == 1)
+                    expected_alpha = 200;
+                else if (row == 2)
+                    expected_alpha = 128;
+                else if (row == 3)
+                    expected_alpha = 50;
+
+                const uint16_t expected_color{text_renderer.Blend565(blue, red, expected_alpha)};
+                for (int i = 0; i < len; ++i) {
+                    EXPECT_EQ(rgb565[i], expected_color);
+                }
+            }));
+    }
+
+    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
 }
 
 }  // namespace ui

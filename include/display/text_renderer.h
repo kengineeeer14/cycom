@@ -54,6 +54,16 @@ class TextRenderer {
     friend class TextRendererTest_GetCodepoint_InvalidSequence_Test;
     friend class TextRendererTest_GetCodepoint_EmptyString_Test;
     friend class TextRendererTest_GetCodepoint_SequentialCalls_Test;
+    friend class TextRendererTest_BlitGlyph_EmptyGlyph_WidthZero_Test;
+    friend class TextRendererTest_BlitGlyph_EmptyGlyph_HeightZero_Test;
+    friend class TextRendererTest_BlitGlyph_EmptyGlyph_NegativeWidth_Test;
+    friend class TextRendererTest_BlitGlyph_EmptyGlyph_NegativeHeight_Test;
+    friend class TextRendererTest_BlitGlyph_ValidGlyph_DrawsCalls_Test;
+    friend class TextRendererTest_BlitGlyph_CorrectScreenCoordinates_Test;
+    friend class TextRendererTest_BlitGlyph_AlphaBlending_FullyOpaque_Test;
+    friend class TextRendererTest_BlitGlyph_AlphaBlending_FullyTransparent_Test;
+    friend class TextRendererTest_BlitGlyph_AlphaBlending_VariedAlpha_Test;
+    friend class TextRendererTest_BlitGlyph_MultipleRows_Test;
 
   public:
     // 型・エイリアス
@@ -82,11 +92,13 @@ class TextRenderer {
   private:
     // 型・エイリアス
     struct Glyph {
-        int width = 0, height = 0;
-        int left = 0, top = 0;       // bitmap_left/top
-        int advance = 0;             // ピクセル
-        int pitch = 0;               // row bytes
-        std::vector<uint8_t> alpha;  // 8bit alpha bitmap
+        int width{0};                // グリフビットマップの幅（ピクセル単位）
+        int height{0};               // グリフビットマップの高さ（ピクセル単位）
+        int left{0};                 // 描画開始位置の水平オフセット（ベースラインからの相対位置）
+        int top{0};                  // 描画開始位置の垂直オフセット（ベースライン上からの高さ）
+        int advance{0};              // 次の文字への水平移動量（ピクセル単位）
+        int pitch{0};                // ビットマップの1行あたりのバイト数（パディング含む）
+        std::vector<uint8_t> alpha;  // アンチエイリアス用グレースケールデータ（各ピクセルの不透明度 0-255）
     };
     using GlyphKey = uint64_t;
 
@@ -128,17 +140,17 @@ class TextRenderer {
     // メンバ関数
     static GlyphKey MakeKey(const int &size_px, const uint32_t &codepoint);
     uint16_t Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha);
-    void blitGlyph(int dst_x, int dst_y, const Glyph &g);
+    void blitGlyph(const int baseline_x, const int baseline_y, const Glyph &glyph);
     int ExtractColorComponent(const uint16_t &color, const int &shift, const int &mask);
     const Glyph *getGlyph(uint32_t cp);
     Glyph loadGlyph(uint32_t cp);
     static bool GetCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint);
 
     // メンバ変数
-    Color565 bg_ = Color565::White();
+    Color565 background_color_{Color565::White()};
+    Color565 foreground_color_{Color565::Black()};
     std::unordered_map<GlyphKey, Glyph> cache_;
     FT_Face face_ = nullptr;
-    Color565 fg_ = Color565::Black();
     int font_size_px_ = 32;
     FT_Library ft_ = nullptr;
     driver::IDisplay &lcd_;

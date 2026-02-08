@@ -112,8 +112,8 @@ TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8) con
 }
 
 void TextRenderer::SetColors(Color565 fg, Color565 bg) {
-    fg_ = fg;
-    bg_ = bg;
+    foreground_color_ = fg;
+    background_color_ = bg;
 }
 
 void TextRenderer::SetFontSizePx(int px) {
@@ -175,21 +175,28 @@ uint16_t TextRenderer::Blend565(const uint16_t &background, const uint16_t &fore
     return static_cast<uint16_t>((blended_red << kRedShift) | (blended_green << kGreenShift) | blended_blue);
 }
 
-void TextRenderer::blitGlyph(int dst_x, int dst_y, const Glyph &g) {
-    if (g.width <= 0 || g.height <= 0)
-        return;
-    int x0 = dst_x + g.left;
-    int y0 = dst_y - g.top;
+/**
+ * @brief 指定位置にグリフを描画する
+ *
+ * @param[in] baseline_x ベースライン上のX座標（ピクセル単位）
+ * @param[in] baseline_y ベースラインのY座標（ピクセル単位）
+ * @param[in] glyph 描画するグリフ
+ */
+void TextRenderer::blitGlyph(const int baseline_x, const int baseline_y, const Glyph &glyph) {
+    if ((glyph.width <= 0) || (glyph.height <= 0))
+        return;  // TODO: エラー処理
+    const int screen_x{baseline_x + glyph.left};
+    const int screen_y{baseline_y - glyph.top};
 
     // 1ラインずつα合成して送る
-    std::vector<uint16_t> line(g.width);
-    for (int y = 0; y < g.height; ++y) {
-        const uint8_t *src = g.alpha.data() + y * g.pitch;
-        for (int x = 0; x < g.width; ++x) {
-            uint8_t a = src[x];
-            line[x] = Blend565(bg_.value, fg_.value, a);
+    std::vector<uint16_t> rgb565_line(glyph.width);
+    for (int row{0}; row < glyph.height; ++row) {
+        const uint8_t *alpha_row = glyph.alpha.data() + row * glyph.pitch;  // グリフのαデータの1行分(ベクトルの先頭アドレス)
+        for (int col{0}; col < glyph.width; ++col) {
+            uint8_t alpha{alpha_row[col]};
+            rgb565_line[col] = Blend565(background_color_.value, foreground_color_.value, alpha);
         }
-        lcd_.DrawRGB565Line(x0, y0 + y, line.data(), g.width);
+        lcd_.DrawRGB565Line(screen_x, screen_y + row, rgb565_line.data(), glyph.width);
     }
 }
 

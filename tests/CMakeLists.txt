@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-# Google Testを見つける
+# Google TestとGMockを見つける
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
@@ -9,6 +9,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/tests
     ${GTEST_INCLUDE_DIRS}
+    /usr/src/googletest/googlemock/include
 )
 
 # text_renderer_testのビルド
@@ -19,6 +20,7 @@ add_executable(text_renderer_test
 
 target_link_libraries(text_renderer_test
     ${GTEST_BOTH_LIBRARIES}
+    gmock
     pthread
     Freetype::Freetype
 )

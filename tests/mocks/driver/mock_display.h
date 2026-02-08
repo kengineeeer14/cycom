@@ -3,6 +3,8 @@
 
 #include "driver/interface/i_display.h"
 
+#include <gmock/gmock.h>
+
 namespace driver {
 
 /**
@@ -16,25 +18,11 @@ class MockDisplay : public IDisplay {
     MockDisplay() = default;
     ~MockDisplay() override = default;
 
-    void Clear(uint16_t rgb565 = 0xFFFF) override {
-        // 何もしない
-    }
-
-    void DrawRGB565Line(int x, int y, const uint16_t* rgb565, int len) override {
-        // 何もしない
-    }
-
-    bool DrawBackgroundImage(const std::string& path) override {
-        return true;  // 常に成功とする
-    }
-
-    int GetWidth() const override {
-        return 320;  // 固定値
-    }
-
-    int GetHeight() const override {
-        return 480;  // 固定値
-    }
+    MOCK_METHOD(void, Clear, (uint16_t rgb565), (override));
+    MOCK_METHOD(void, DrawRGB565Line, (int x, int y, const uint16_t *rgb565, int len), (override));
+    MOCK_METHOD(bool, DrawBackgroundImage, (const std::string &path), (override));
+    MOCK_METHOD(int, GetWidth, (), (const, override));
+    MOCK_METHOD(int, GetHeight, (), (const, override));
 };
 
 }  // namespace driver
