@@ -83,7 +83,6 @@ class TextRenderer {
     TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string &utf8, bool center = true);
     // (x,y) はベースライン基準（左下寄り）
     TextMetrics DrawText(int x, int y, const std::string &utf8);
-    TextMetrics MeasureText(const std::string &utf8) const;
     void SetColors(Color565 fg, Color565 bg);
     void SetFontSizePx(int px);
     void SetLineGapPx(int px);
@@ -138,6 +137,7 @@ class TextRenderer {
     static constexpr uint32_t kCodepointMask{0x1FFFFF};  // コードポイント用のマスク（21ビット分）
 
     // メンバ関数
+    TextMetrics MeasureText(const std::string &utf8) const;
     static GlyphKey MakeKey(const int &size_px, const uint32_t &codepoint);
     uint16_t Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha);
     void blitGlyph(const int baseline_x, const int baseline_y, const Glyph &glyph);
