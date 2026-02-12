@@ -43,9 +43,11 @@ TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int 
 
 TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string &utf8) {
     int pen_x = x, pen_y = y;
-    int ascent = (face_->size->metrics.ascender >> 6);
-    int descent = -(face_->size->metrics.descender >> 6);
-    int line_h = (face_->size->metrics.height >> 6);
+    // FreeTypeのフォントメトリクスを取得し、ピクセル単位に変換
+    // FreeTypeの値は26.6固定小数点形式（下位6ビットが小数部）のため、>>6で整数部を抽出
+    int ascent{static_cast<int>(face_->size->metrics.ascender >> 6)};     // ベースラインから文字上端までの高さ
+    int descent{-static_cast<int>(face_->size->metrics.descender >> 6)};  // ベースラインから文字下端までの深さ（正の値に反転）
+    int line_h{static_cast<int>(face_->size->metrics.height >> 6)};       // 推奨される行の高さ
     if (line_h <= 0)
         line_h = ascent + descent + line_gap_px_;
 
@@ -88,29 +90,6 @@ TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string
     return TextMetrics{max_w, total_h, ascent};
 }
 
-TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8) const {
-    int cur_w = 0, max_w = 0;
-    int ascent = (face_->size->metrics.ascender >> 6);
-    int line_h = (face_->size->metrics.height >> 6);
-    if (line_h <= 0)
-        line_h = font_size_px_ + line_gap_px_;
-
-    size_t i = 0;
-    while (i < utf8.size()) {
-        uint32_t cp;
-        if (!GetCodepoint(utf8, i, cp))
-            break;
-        if (cp == '\n') {
-            max_w = std::max(max_w, cur_w);
-            cur_w = 0;
-            continue;
-        }
-        cur_w += static_cast<int>(font_size_px_ * 0.6);  // 概算
-    }
-    max_w = std::max(max_w, cur_w);
-    return TextMetrics{max_w, line_h, ascent};
-}
-
 void TextRenderer::SetColors(Color565 fg, Color565 bg) {
     foreground_color_ = fg;
     background_color_ = bg;
@@ -130,6 +109,41 @@ void TextRenderer::SetWrapWidthPx(int px) {
 }
 
 // private メンバ関数
+
+/**
+ * @brief UTF-8文字列の描画に必要なメトリクス（幅・高さ・ベースライン位置）を計測する
+ *
+ * @param utf8_str UTF-8文字列
+ * @return TextMetrics 描画に必要なメトリクス
+ */
+TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8_str) const {
+    int current_width_px{0};
+    int max_width_px{0};
+    // FreeTypeのフォントメトリクスを取得し、ピクセル単位に変換
+    // FreeTypeの値は26.6固定小数点形式（下位6ビットが小数部）のため、>>6で整数部を抽出
+    int ascent_px{static_cast<int>(face_->size->metrics.ascender >> 6)};  // ベースラインから文字上端までの高さ．大文字や上に伸びる文字（'A', 'h', 'b'など）の高さ．
+    int line_height_px{static_cast<int>(face_->size->metrics.height >> 6)};  // 1行分の推奨される総高さです。次の行までの距離で、ascent + descent + 行間を含む．
+    // フォントメトリクスが不正な場合（破損フォント、極小サイズ等）のフェイルセーフ
+    // フォントサイズを基準に代替の行高さを計算して最低限の描画品質を保証
+    if (line_height_px <= 0)
+        line_height_px = font_size_px_ + line_gap_px_;  // TODO: エラー処理
+    size_t i{0};
+    while (i < utf8_str.size()) {
+        uint32_t codepoint;
+        if (!GetCodepoint(utf8_str, i, codepoint))
+            // TODO: エラー処理
+            break;
+        if (codepoint == '\n') {
+            // 改行文字の場合、現在の行幅を最大幅と比較し、行幅をリセットして次の行へ
+            max_width_px = std::max(max_width_px, current_width_px);
+            current_width_px = 0;
+            continue;
+        }
+        current_width_px += static_cast<int>(font_size_px_ * 0.6);  // 各文字の幅をフォントサイズの60%で概算して加算
+    }
+    max_width_px = std::max(max_width_px, current_width_px);  // 最後の行の幅を最大幅と比較（最後の行の改行がない場合に対応）
+    return TextMetrics{max_width_px, line_height_px, ascent_px};
+}
 
 /**
  * @brief サイズとコードポイントからキャッシュキーを生成する
