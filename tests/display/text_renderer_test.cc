@@ -15,6 +15,9 @@ class TextRendererTest : public ::testing::Test {
         if (access(font_path.c_str(), F_OK) != 0) {
             GTEST_SKIP() << "Font file not found: " << font_path;
         }
+
+        // フォントサイズのデフォルト設定
+        text_renderer.SetFontSizePx(32);
     }
 
     void TearDown() override {
@@ -25,6 +28,51 @@ class TextRendererTest : public ::testing::Test {
     const std::string font_path{"/workspace/config/fonts/DejaVuSans.ttf"};
     driver::MockDisplay mock_display;
     TextRenderer text_renderer{mock_display, font_path};
+};
+
+// フェイルセーフロジックのテスト用：FreeTypeメトリクスをモック可能なサブクラス
+class TestableTextRenderer : public TextRenderer {
+  public:
+    TestableTextRenderer(driver::IDisplay &lcd, const std::string &font_path) : TextRenderer(lcd, font_path) {}
+
+    // テスト用：メトリクスを制御可能にオーバーライド
+    int GetFreeTypeLineHeightPx() const override {
+        if (override_line_height_) {
+            return forced_line_height_;
+        }
+        // privateメソッドは直接呼べないため、FreeTypeから直接取得
+        return static_cast<int>(face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits);
+    }
+
+    int GetFreeTypeAscentPx() const override {
+        if (override_ascent_) {
+            return forced_ascent_;
+        }
+        // privateメソッドは直接呼べないため、FreeTypeから直接取得
+        return static_cast<int>(face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits);
+    }
+
+    // テスト制御用のメソッド
+    void ForceLineHeight(int value) {
+        override_line_height_ = true;
+        forced_line_height_ = value;
+    }
+
+    void ForceAscent(int value) {
+        override_ascent_ = true;
+        forced_ascent_ = value;
+    }
+
+    void ResetOverrides() {
+        override_line_height_ = false;
+        override_ascent_ = false;
+    }
+
+  private:
+    bool override_line_height_{false};
+    bool override_ascent_{false};
+    int forced_line_height_{0};
+    int forced_ascent_{0};
 };
 
 // =============================================================
@@ -677,4 +725,314 @@ TEST_F(TextRendererTest, BlitGlyph_MultipleRows) {
     text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
 }
 
+// =============================================================
+// MeasureTextのユニットテスト
+// -------------------------------------------------------------
+// 要件：UTF-8文字列の描画に必要なメトリクス（幅・高さ・ベースライン）を正しく計測できること
+// =============================================================
+TEST_F(TextRendererTest, MeasureText_EmptyString) {
+    // 空文字列の場合、幅は0になること
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText("")};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    EXPECT_EQ(metrics.width_px, 0);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_SingleLine_Ascii) {
+    // 1行のASCII文字列
+    const std::string text{"Hello"};
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // 幅：5文字 × static_cast<int>(32 * 0.6) = 5 × 19 = 95
+    const int expected_width{5 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_SingleLine_Japanese) {
+    // 1行の日本語文字列
+    const std::string text{"こんにちは"};  // 5文字
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // 幅：5文字 × static_cast<int>(32 * 0.6) = 5 × 19 = 95
+    const int expected_width{5 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_MultipleLines_LastLineIsLongest) {
+    // 複数行で最後の行が最も長い場合
+    const std::string text{"Hi\nHello\nWorld!!"};
+    // 行1: "Hi" = 2文字
+    // 行2: "Hello" = 5文字
+    // 行3: "World!!" = 7文字（最長）
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // 最大幅：7文字 × static_cast<int>(32 * 0.6) = 7 × 19 = 133
+    const int expected_width{133};
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_MultipleLines_MiddleLineIsLongest) {
+    // 複数行で途中の行が最も長い場合
+    const std::string text{"Hi\nHelloWorld\nOK"};
+    // 行1: "Hi" = 2文字
+    // 行2: "HelloWorld" = 10文字（最長）
+    // 行3: "OK" = 2文字
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // 最大幅：10文字 × static_cast<int>(32 * 0.6) = 10 × 19 = 190
+    const int expected_width{190};
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_SingleNewline) {
+    // 改行のみの文字列
+    const std::string text{"\n"};
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // 改行のみなので幅は0
+    EXPECT_EQ(metrics.width_px, 0);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_MultipleNewlines) {
+    // 複数の改行
+    const std::string text{"\n\n\n"};
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // 改行のみなので幅は0
+    EXPECT_EQ(metrics.width_px, 0);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_TrailingNewline) {
+    // 末尾に改行がある場合
+    const std::string text{"Hello\n"};
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // 幅：5文字 × static_cast<int>(32 * 0.6) = 5 × 19 = 95
+    const int expected_width{95};
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_MixedCharacters) {
+    // ASCII、日本語、絵文字が混在する文字列
+    const std::string text{"Hello世界🚴"};  // 5 + 2 + 1 = 8文字
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // 幅：8文字 × static_cast<int>(32 * 0.6) = 8 × 19 = 152
+    const int expected_width{152};
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_HeightIsLineHeight) {
+    // 単一行の場合、高さは行高さと同じ
+    const std::string text{"Test"};
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // メトリクスの高さは FreeType の line_height と同じ
+    EXPECT_EQ(metrics.height_px, expected_height);
+}
+
+TEST_F(TextRendererTest, MeasureText_BaselineIsAscent) {
+    // ベースラインは ascent と同じ
+    const std::string text{"Test"};
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // ベースラインは ascent（文字の上端までの高さ）
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+    EXPECT_LE(metrics.baseline_px, metrics.height_px);  // 高さ以下であることも確認
+}
+
+TEST_F(TextRendererTest, MeasureText_DifferentFontSizes) {
+    // フォントサイズを変更して幅が変わることを確認
+    const std::string text{"Test"};
+
+    text_renderer.SetFontSizePx(16);
+    const TextRenderer::TextMetrics metrics_16{text_renderer.MeasureText(text)};
+    const int expected_width_16{4 * static_cast<int>(16 * TextRenderer::kApproximateGlyphWidthRatio)};
+    EXPECT_EQ(metrics_16.width_px, expected_width_16);
+
+    text_renderer.SetFontSizePx(32);
+    const TextRenderer::TextMetrics metrics_32{text_renderer.MeasureText(text)};
+    const int expected_width_32{4 * static_cast<int>(32 * TextRenderer::kApproximateGlyphWidthRatio)};
+    EXPECT_EQ(metrics_32.width_px, expected_width_32);
+
+    text_renderer.SetFontSizePx(48);
+    const TextRenderer::TextMetrics metrics_48{text_renderer.MeasureText(text)};
+    const int expected_width_48{4 * static_cast<int>(48 * TextRenderer::kApproximateGlyphWidthRatio)};
+    EXPECT_EQ(metrics_48.width_px, expected_width_48);
+
+    // 高さとベースラインがフォントサイズに応じて増加することを確認
+    EXPECT_LT(metrics_16.height_px, metrics_32.height_px);
+    EXPECT_LT(metrics_32.height_px, metrics_48.height_px);
+    EXPECT_LT(metrics_16.baseline_px, metrics_32.baseline_px);
+    EXPECT_LT(metrics_32.baseline_px, metrics_48.baseline_px);
+}
+
+TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AtBeginning) {
+    // 最初から不正なUTF-8シーケンス
+    const std::string text{"\xF8\x80\x80\x80"};  // 無効な先頭バイト
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // GetCodepointが失敗するため、breakで即座にループを抜ける
+    // 結果として幅は0になる
+    EXPECT_EQ(metrics.width_px, 0);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_InvalidUTF8_InMiddle) {
+    // 正常な文字の後に不正なUTF-8シーケンス
+    const std::string text{"AB\xF8\x80\x80\x80"};  // "AB" + 無効なバイト列
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // "AB"（2文字）まで計測され、不正なシーケンスでbreakする
+    const int expected_width{2 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_InvalidUTF8_IncompleteSequence) {
+    // 不完全なUTF-8シーケンス（3バイト文字の1バイト目のみ）
+    const std::string text{"Hello\xE3"};  // "Hello" + 3バイト文字の1バイト目のみ
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // "Hello"（5文字）まで計測され、不完全なシーケンスでbreakする
+    const int expected_width{5 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AfterNewline) {
+    // 改行の後に不正なUTF-8シーケンス
+    const std::string text{"AB\nCD\xF8EF"};  // "AB" + 改行 + "CD" + 無効 + "EF"
+    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+
+    // FreeTypeのメトリクスから期待値を計算
+    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+
+    // 1行目: "AB" = 2文字、2行目: "CD" = 2文字（不正なシーケンスでbreak）
+    // 最大幅は2文字
+    const int expected_width{2 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+// =============================================================
+// MeasureText フェイルセーフロジックの明示的テスト
+// -------------------------------------------------------------
+// 要件：line_height_px <= 0 の場合にフェイルセーフが確実に動作すること
+// =============================================================
+TEST_F(TextRendererTest, MeasureText_FailsafeLogic_ZeroLineHeight) {
+    // テスト専用のサブクラスを使用してFreeTypeの戻り値を制御
+    TestableTextRenderer testable_renderer{mock_display, font_path};
+    testable_renderer.SetFontSizePx(32);
+
+    // line_height_px = 0 を強制
+    testable_renderer.ForceLineHeight(0);
+    testable_renderer.ForceAscent(20);
+
+    const std::string text{"Test"};
+    const TextRenderer::TextMetrics metrics{testable_renderer.MeasureText(text)};
+
+    // フェイルセーフ値を計算: font_size_px_ + line_gap_px_
+    const int expected_height{testable_renderer.font_size_px_ + testable_renderer.line_gap_px_};
+
+    // フェイルセーフが発動し、計算された値が使用されることを確認
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_GT(metrics.height_px, 0);
+}
+
+TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
+    // 負の値の場合もフェイルセーフが動作することを確認
+    TestableTextRenderer testable_renderer{mock_display, font_path};
+    testable_renderer.SetFontSizePx(32);
+
+    // line_height_px = -5 を強制
+    testable_renderer.ForceLineHeight(-5);
+    testable_renderer.ForceAscent(20);
+
+    const std::string text{"Test"};
+    const TextRenderer::TextMetrics metrics{testable_renderer.MeasureText(text)};
+
+    // フェイルセーフ値を計算
+    const int expected_height{testable_renderer.font_size_px_ + testable_renderer.line_gap_px_};
+
+    // フェイルセーフが発動することを確認
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_GT(metrics.height_px, 0);
+}
 }  // namespace ui

@@ -43,11 +43,10 @@ TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int 
 
 TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string &utf8) {
     int pen_x = x, pen_y = y;
-    // FreeTypeのフォントメトリクスを取得し、ピクセル単位に変換
-    // FreeTypeの値は26.6固定小数点形式（下位6ビットが小数部）のため、>>6で整数部を抽出
-    int ascent{static_cast<int>(face_->size->metrics.ascender >> 6)};     // ベースラインから文字上端までの高さ
-    int descent{-static_cast<int>(face_->size->metrics.descender >> 6)};  // ベースラインから文字下端までの深さ（正の値に反転）
-    int line_h{static_cast<int>(face_->size->metrics.height >> 6)};       // 推奨される行の高さ
+    // FreeTypeのフォントメトリクスを取得（仮想メソッド経由でテスト可能）
+    int ascent{GetFreeTypeAscentPx()};                                                          // ベースラインから文字上端までの高さ
+    int descent{-static_cast<int>(face_->size->metrics.descender >> kFreeTypeFractionalBits)};  // ベースラインから文字下端までの深さ（正の値に反転）
+    int line_h{GetFreeTypeLineHeightPx()};                                                      // 推奨される行の高さ
     if (line_h <= 0)
         line_h = ascent + descent + line_gap_px_;
 
@@ -108,6 +107,24 @@ void TextRenderer::SetWrapWidthPx(int px) {
     wrap_width_px_ = std::max(0, px);
 }
 
+// protected メンバ関数
+
+/**
+ * @brief FreeTypeから行の高さ（line height）を取得する
+ * @return int ピクセル単位の行の高さ
+ */
+int TextRenderer::GetFreeTypeLineHeightPx() const {
+    return static_cast<int>(face_->size->metrics.height >> kFreeTypeFractionalBits);
+}
+
+/**
+ * @brief FreeTypeからアセント（ascent）を取得する
+ * @return int ピクセル単位のアセント
+ */
+int TextRenderer::GetFreeTypeAscentPx() const {
+    return static_cast<int>(face_->size->metrics.ascender >> kFreeTypeFractionalBits);
+}
+
 // private メンバ関数
 
 /**
@@ -119,10 +136,9 @@ void TextRenderer::SetWrapWidthPx(int px) {
 TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8_str) const {
     int current_width_px{0};
     int max_width_px{0};
-    // FreeTypeのフォントメトリクスを取得し、ピクセル単位に変換
-    // FreeTypeの値は26.6固定小数点形式（下位6ビットが小数部）のため、>>6で整数部を抽出
-    int ascent_px{static_cast<int>(face_->size->metrics.ascender >> 6)};  // ベースラインから文字上端までの高さ．大文字や上に伸びる文字（'A', 'h', 'b'など）の高さ．
-    int line_height_px{static_cast<int>(face_->size->metrics.height >> 6)};  // 1行分の推奨される総高さです。次の行までの距離で、ascent + descent + 行間を含む．
+    // FreeTypeのフォントメトリクスを取得（仮想メソッド経由でテスト可能）
+    const int ascent_px{GetFreeTypeAscentPx()};     // ベースラインから文字上端までの高さ．大文字や上に伸びる文字（'A', 'h', 'b'など）の高さ．
+    int line_height_px{GetFreeTypeLineHeightPx()};  // 1行分の推奨される総高さです。次の行までの距離で、ascent + descent + 行間を含む．
     // フォントメトリクスが不正な場合（破損フォント、極小サイズ等）のフェイルセーフ
     // フォントサイズを基準に代替の行高さを計算して最低限の描画品質を保証
     if (line_height_px <= 0)
@@ -139,7 +155,7 @@ TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8_str)
             current_width_px = 0;
             continue;
         }
-        current_width_px += static_cast<int>(font_size_px_ * 0.6);  // 各文字の幅をフォントサイズの60%で概算して加算
+        current_width_px += static_cast<int>(font_size_px_ * kApproximateGlyphWidthRatio);  // 各グリフの幅をフォントサイズに概算比率を乗じて加算
     }
     max_width_px = std::max(max_width_px, current_width_px);  // 最後の行の幅を最大幅と比較（最後の行の改行がない場合に対応）
     return TextMetrics{max_width_px, line_height_px, ascent_px};
@@ -247,7 +263,7 @@ TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
     g.height = bmp.rows;
     g.left = slot->bitmap_left;
     g.top = slot->bitmap_top;
-    g.advance = (slot->advance.x >> 6);
+    g.advance = (slot->advance.x >> kFreeTypeFractionalBits);
     g.pitch = bmp.pitch;
 
     if (g.width > 0 && g.height > 0) {

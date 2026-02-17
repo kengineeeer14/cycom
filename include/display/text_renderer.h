@@ -27,6 +27,7 @@ struct Color565 {
 class TextRenderer {
     // テスト用フレンドクラス
     friend class TextRendererTest;
+    friend class TestableTextRenderer;  // テスト用サブクラスにprivateメンバーへのアクセスを許可
     friend class TextRendererTest_MakeKey_BasicGeneration_Test;
     friend class TextRendererTest_MakeKey_DifferentSizes_Test;
     friend class TextRendererTest_MakeKey_DifferentCodepoints_Test;
@@ -64,13 +65,32 @@ class TextRenderer {
     friend class TextRendererTest_BlitGlyph_AlphaBlending_FullyTransparent_Test;
     friend class TextRendererTest_BlitGlyph_AlphaBlending_VariedAlpha_Test;
     friend class TextRendererTest_BlitGlyph_MultipleRows_Test;
+    friend class TextRendererTest_MeasureText_EmptyString_Test;
+    friend class TextRendererTest_MeasureText_SingleLine_Ascii_Test;
+    friend class TextRendererTest_MeasureText_SingleLine_Japanese_Test;
+    friend class TextRendererTest_MeasureText_MultipleLines_LastLineIsLongest_Test;
+    friend class TextRendererTest_MeasureText_MultipleLines_MiddleLineIsLongest_Test;
+    friend class TextRendererTest_MeasureText_SingleNewline_Test;
+    friend class TextRendererTest_MeasureText_MultipleNewlines_Test;
+    friend class TextRendererTest_MeasureText_TrailingNewline_Test;
+    friend class TextRendererTest_MeasureText_MixedCharacters_Test;
+    friend class TextRendererTest_MeasureText_HeightIsLineHeight_Test;
+    friend class TextRendererTest_MeasureText_BaselineIsAscent_Test;
+    friend class TextRendererTest_MeasureText_DifferentFontSizes_Test;
+    friend class TextRendererTest_MeasureText_InvalidUTF8_AtBeginning_Test;
+    friend class TextRendererTest_MeasureText_InvalidUTF8_InMiddle_Test;
+    friend class TextRendererTest_MeasureText_InvalidUTF8_IncompleteSequence_Test;
+    friend class TextRendererTest_MeasureText_InvalidUTF8_AfterNewline_Test;
+    friend class TextRendererTest_MeasureText_FailsafeLogic_ZeroLineHeight_Test;
+    friend class TextRendererTest_MeasureText_FailsafeLogic_NegativeLineHeight_Test;
+    friend class TextRendererTest_MeasureText_FailsafeLogic_NormalCase_Test;
 
   public:
     // 型・エイリアス
     struct TextMetrics {
-        int width_px;
-        int height_px;
-        int baseline_px;
+        int width_px;     // テキスト全体の中で最も幅が広い行の幅
+        int height_px;    // 1行分の推奨される総高さです。次の行までの距離で、ascent + descent + 行間を含む．
+        int baseline_px;  // // ベースラインから文字上端までの高さ．大文字や上に伸びる文字（'A', 'h', 'b'など）の高さ．
     };
 
     // コンストラクタ/デストラクタ
@@ -136,6 +156,16 @@ class TextRenderer {
     static constexpr int kCodepointBits{21};             // コードポイント用のビット数
     static constexpr uint32_t kCodepointMask{0x1FFFFF};  // コードポイント用のマスク（21ビット分）
 
+    // テキスト計測用定数
+    static constexpr double kApproximateGlyphWidthRatio{0.6};  // グリフ幅の概算比率（フォントサイズに対する割合）
+
+    // FreeType用定数
+    static constexpr int kFreeTypeFractionalBits{6};  // FreeTypeの26.6固定小数点形式における小数部のビット数
+
+    // FreeTypeメトリクスの取得を仮想化（privateだがテストでオーバーライド可能）
+    virtual int GetFreeTypeLineHeightPx() const;
+    virtual int GetFreeTypeAscentPx() const;
+
     // メンバ関数
     TextMetrics MeasureText(const std::string &utf8) const;
     static GlyphKey MakeKey(const int &size_px, const uint32_t &codepoint);
@@ -150,12 +180,12 @@ class TextRenderer {
     Color565 background_color_{Color565::White()};
     Color565 foreground_color_{Color565::Black()};
     std::unordered_map<GlyphKey, Glyph> cache_;
-    FT_Face face_ = nullptr;
-    int font_size_px_ = 32;
-    FT_Library ft_ = nullptr;
+    FT_Face face_{nullptr};
+    int font_size_px_{32};
+    FT_Library ft_{nullptr};
     driver::IDisplay &lcd_;
-    int line_gap_px_ = 4;
-    int wrap_width_px_ = 0;
+    int line_gap_px_{4};
+    int wrap_width_px_{0};
 };
 
 }  // namespace ui
