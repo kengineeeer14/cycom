@@ -976,7 +976,9 @@ TEST_F(TextRendererTest, MeasureText_InvalidUTF8_IncompleteSequence) {
 
 TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AfterNewline) {
     // 改行の後に不正なUTF-8シーケンス
-    const std::string text{"AB\nCD\xF8EF"};  // "AB" + 改行 + "CD" + 無効 + "EF"
+    const std::string text{
+        "AB\nCD\xF8"
+        "EF"};  // "AB" + 改行 + "CD" + 無効 + "EF"
     const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
 
     // FreeTypeのメトリクスから期待値を計算
