@@ -37,19 +37,13 @@ class TestableTextRenderer : public TextRenderer {
 
     // テスト用：メトリクスを制御可能にオーバーライド
     int GetFreeTypeLineHeightPx() const override {
-        if (override_line_height_) {
-            return forced_line_height_;
-        }
         // privateメソッドは直接呼べないため、FreeTypeから直接取得
-        return static_cast<int>(face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits);
+        return override_line_height_ ? forced_line_height_ : static_cast<int>(face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits);
     }
 
     int GetFreeTypeAscentPx() const override {
-        if (override_ascent_) {
-            return forced_ascent_;
-        }
         // privateメソッドは直接呼べないため、FreeTypeから直接取得
-        return static_cast<int>(face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits);
+        return override_ascent_ ? forced_ascent_ : static_cast<int>(face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits);
     }
 
     // テスト制御用のメソッド
