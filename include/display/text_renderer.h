@@ -172,15 +172,15 @@ class TextRenderer {
     uint16_t Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha);
     void blitGlyph(const int baseline_x, const int baseline_y, const Glyph &glyph);
     int ExtractColorComponent(const uint16_t &color, const int &shift, const int &mask);
-    const Glyph *getGlyph(uint32_t cp);
-    Glyph loadGlyph(uint32_t cp);
+    const Glyph *getGlyph(uint32_t codepoint);
+    Glyph loadGlyph(uint32_t codepoint);
     static bool GetCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint);
 
     // メンバ変数
     Color565 background_color_{Color565::White()};
     Color565 foreground_color_{Color565::Black()};
     std::unordered_map<GlyphKey, Glyph> cache_;
-    FT_Face face_{nullptr};
+    FT_Face face_{nullptr};  // FreeTypeのフォントフェイスオブジェクト
     int font_size_px_{32};
     FT_Library ft_{nullptr};
     driver::IDisplay &lcd_;

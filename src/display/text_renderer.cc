@@ -242,35 +242,56 @@ int TextRenderer::ExtractColorComponent(const uint16_t &color, const int &shift,
     return (color >> shift) & mask;
 }
 
-const TextRenderer::Glyph *TextRenderer::getGlyph(uint32_t cp) {
-    GlyphKey key = MakeKey(font_size_px_, cp);
+/**
+ * @brief グリフをキャッシュから取得、または新規ロードしてキャッシュに保存する
+ * @details 同じ文字（例: "Hello"の'l'は2回出現）を何度も描画する際、毎回FreeTypeから読み込むと遅いため、
+ *          一度読み込んだグリフをキャッシュして再利用する。キャッシュのキーはフォントサイズとコードポイントの組み合わせ。
+ *
+ * @param codepoint 取得したい文字のコードポイント
+ * @return const TextRenderer::Glyph* グリフへのポインタ（キャッシュ内のデータを指す）
+ */
+const TextRenderer::Glyph *TextRenderer::getGlyph(uint32_t codepoint) {
+    GlyphKey key = MakeKey(font_size_px_, codepoint);
     auto it = cache_.find(key);
     if (it != cache_.end())
-        return &it->second;
-    Glyph g = loadGlyph(cp);
+        return &it->second;  // キャッシュヒット：既存のグリフを返す
+    // キャッシュミス：FreeTypeからロードしてキャッシュに保存
+    Glyph g = loadGlyph(codepoint);
     auto [pos, _] = cache_.emplace(key, std::move(g));
     return &pos->second;
 }
 
-TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t cp) {
-    Glyph g;
-    if (FT_Load_Char(face_, cp, FT_LOAD_RENDER) != 0)
-        return g;
-    FT_GlyphSlot slot = face_->glyph;
-    const FT_Bitmap &bmp = slot->bitmap;
+/**
+ * @brief FreeTypeからコードポイントに応じたグリフをロードし、Glyph構造体に変換する
+ *
+ * @param codepoint ロードする文字のコードポイント
+ * @return TextRenderer::Glyph ロードされたグリフの情報を含む構造体。失敗した場合は幅と高さが0の空のグリフを返す。
+ */
+TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t codepoint) {
+    Glyph glyph{};
+    if (FT_Load_Char(face_, codepoint, FT_LOAD_RENDER) != 0) {
+        // FT_Load_Charは失敗すると非0を返す。失敗した場合は空のグリフを返す（幅と高さが0）。
+        // TODO : エラー処理
+    } else {
+        FT_GlyphSlot slot = face_->glyph;     // ロードされたグリフの情報が格納されている構造体へのポインタ
+        const FT_Bitmap &bmp = slot->bitmap;  // グリフのビットマップデータ。bmp.bufferにピクセルのアルファ値が格納されている。
 
-    g.width = bmp.width;
-    g.height = bmp.rows;
-    g.left = slot->bitmap_left;
-    g.top = slot->bitmap_top;
-    g.advance = (slot->advance.x >> kFreeTypeFractionalBits);
-    g.pitch = bmp.pitch;
-
-    if (g.width > 0 && g.height > 0) {
-        g.alpha.resize(g.height * g.pitch);
-        std::memcpy(g.alpha.data(), bmp.buffer, g.alpha.size());
+        glyph.width = bmp.width;
+        glyph.height = bmp.rows;
+        glyph.left = slot->bitmap_left;
+        glyph.top = slot->bitmap_top;
+        glyph.advance = (slot->advance.x >> kFreeTypeFractionalBits);
+        glyph.pitch = bmp.pitch;
+        if (glyph.width > 0 && glyph.height > 0) {
+            // FreeTypeの内部バッファ（bmp.buffer）は次のFT_Load_Char呼び出し時に上書きされるため，
+            // 画像データを独自のメモリ領域にコピーして永続的に保存する必要がある
+            glyph.alpha.resize(glyph.height * glyph.pitch);
+            std::memcpy(glyph.alpha.data(), bmp.buffer, glyph.alpha.size());
+        } else {
+            // スペース文字などは画像データ不要．描画時にblitGlyphで幅・高さ0チェックによりスキップされる
+        }
     }
-    return g;
+    return glyph;
 }
 
 /**
