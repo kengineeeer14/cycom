@@ -236,11 +236,11 @@ const TextRenderer::Glyph *TextRenderer::getGlyph(uint32_t codepoint) {
  */
 TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t codepoint) {
     IFontLoader::GlyphData glyph_data;
-    int result = font_loader_.LoadChar(codepoint, glyph_data);
+    const int result = font_loader_.LoadChar(codepoint, glyph_data);
 
     Glyph glyph{};
     if (result != 0) {
-        // LoadCharが失敗（フォント破損、メモリ不足等）した場合は空のグリフを返す
+        // LoadCharが失敗（フォント破損、メモリ不足等）した場合はグリフの初期値を返す
         // 注意：存在しないコードポイントの場合は成功し、デフォルトグリフ（.notdef）が返される
         // TODO : エラーログ出力
     } else {

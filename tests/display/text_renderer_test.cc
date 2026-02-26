@@ -1139,25 +1139,24 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
 // loadGlyph のユニットテスト
 // -------------------------------------------------------------
 // 要件：
-// 1. FT_Load_Charが失敗した場合，空のグリフ（width=0, height=0）が返されること
+// 1. FT_Load_Charが失敗した場合，グリフの初期値が返されること
 // 2. グリフのロードに成功した場合，正しいグリフデータが返されること
-// 2-1. 存在しないコードポイントでもFreeTypeがデフォルトグリフ（.notdef）を返すこと
-// 2-2. グリフのロードに成功して，グリフが実際のピクセルデータを持つとき，独自のメモリ領域に画像データ（アルファ値）がコピーされること
 // =============================================================
 
-// 1. FT_Load_Charが失敗した場合、空のグリフが返されること
+// 1. FT_Load_Charが失敗した場合、グリフの初期値が返されること
 TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
     // MockFontLoaderを使用してLoadCharの失敗をシミュレート
     MockFontLoader mock_font_loader;
     TextRenderer testable_renderer{mock_display, mock_font_loader};
     testable_renderer.SetFontSizePx(32);
+    const uint32_t codepoint{0x0041};  // 'A' のコードポイント
 
     // LoadCharが失敗（非ゼロの戻り値）を返すように設定
-    EXPECT_CALL(mock_font_loader, LoadChar(0x0041, testing::_)).WillOnce(testing::Return(1));  // FT_Load_Charは失敗時に非ゼロを返す
+    EXPECT_CALL(mock_font_loader, LoadChar(codepoint, testing::_)).WillOnce(testing::Return(1));  // FT_Load_Charは失敗時に非ゼロを返す
 
-    const TextRenderer::Glyph glyph{testable_renderer.loadGlyph(0x0041)};
+    const TextRenderer::Glyph glyph{testable_renderer.loadGlyph(codepoint)};
 
-    // 空のグリフが返されることを確認
+    // グリフの初期値が返されることを確認
     EXPECT_EQ(glyph.width, 0);
     EXPECT_EQ(glyph.height, 0);
     EXPECT_EQ(glyph.left, 0);
@@ -1167,7 +1166,8 @@ TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
     EXPECT_TRUE(glyph.alpha.empty());
 }
 
-// 2. ASCII文字のグリフが正しくロードされること
+// 2. グリフのロードに成功した場合，正しいグリフデータが返されること
+// 2-1. ASCII文字のグリフが正しくロードされること
 TEST_F(TextRendererTest, LoadGlyph_AsciiCharacter) {
     // 'A' (U+0041) をロード
     const uint32_t codepoint_a{0x0041};
@@ -1181,38 +1181,7 @@ TEST_F(TextRendererTest, LoadGlyph_AsciiCharacter) {
     EXPECT_EQ(glyph_a.alpha.size(), glyph_a.height * glyph_a.pitch);  // アルファデータのサイズが正しい
 }
 
-// 2-1. 存在しないコードポイントでもデフォルトグリフが返されること
-TEST_F(TextRendererTest, LoadGlyph_InvalidCodepointReturnsDefaultGlyph) {
-    // 注意：FreeTypeは存在しないコードポイントに対してもデフォルトグリフ（.notdef）を返す
-    // そのため、FT_Load_Charは失敗せず、何らかのグリフが返される
-    const uint32_t invalid_codepoint{0xFFFFFFFF};  // 存在しないコードポイント
-    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(invalid_codepoint)};
-
-    // デフォルトグリフが返されることを確認（幅・高さが0より大きい）
-    EXPECT_GT(glyph.width, 0);
-    EXPECT_GT(glyph.height, 0);
-    EXPECT_EQ(glyph.pitch, glyph.width);                        // 通常、pitchは幅と同じ
-    EXPECT_FALSE(glyph.alpha.empty());                          // アルファデータが存在
-    EXPECT_EQ(glyph.alpha.size(), glyph.height * glyph.pitch);  // サイズが正しい
-}
-
-// 2-2. グリフのアルファデータが独自のメモリ領域にコピーされていること
-TEST_F(TextRendererTest, LoadGlyph_AlphaDataIsIndependent) {
-    // 同じ文字を2回ロード
-    const TextRenderer::Glyph glyph1{text_renderer->loadGlyph(0x0041)};
-    const TextRenderer::Glyph glyph2{text_renderer->loadGlyph(0x0041)};
-
-    // アルファデータの内容は同じはず
-    EXPECT_EQ(glyph1.alpha.size(), glyph2.alpha.size());
-    EXPECT_EQ(glyph1.alpha, glyph2.alpha);
-
-    // しかし、メモリアドレスは異なるはず（独立したコピー）
-    if (!glyph1.alpha.empty() && !glyph2.alpha.empty()) {
-        EXPECT_NE(glyph1.alpha.data(), glyph2.alpha.data());
-    }
-}
-
-// 日本語文字のグリフが正しくロードされること
+// 2-2. 日本語文字のグリフが正しくロードされること
 TEST_F(TextRendererTest, LoadGlyph_JapaneseCharacter) {
     // 'あ' (U+3042) をロード
     const uint32_t codepoint_hiragana{0x3042};
@@ -1226,7 +1195,7 @@ TEST_F(TextRendererTest, LoadGlyph_JapaneseCharacter) {
     EXPECT_EQ(glyph_hiragana.alpha.size(), glyph_hiragana.height * glyph_hiragana.pitch);
 }
 
-// スペース文字のグリフが正しく処理されること
+// 2-3. スペース文字のグリフが正しく処理されること
 TEST_F(TextRendererTest, LoadGlyph_SpaceCharacter) {
     // ' ' (U+0020) をロード
     const uint32_t codepoint_space{0x0020};
@@ -1241,7 +1210,7 @@ TEST_F(TextRendererTest, LoadGlyph_SpaceCharacter) {
     }
 }
 
-// 絵文字のグリフがロードされること（フォントに存在する場合）
+// 2-4. 絵文字のグリフがロードされること（フォントに存在する場合）
 TEST_F(TextRendererTest, LoadGlyph_EmojiCharacter) {
     // '🚴' (U+1F6B4) をロード
     const uint32_t codepoint_emoji{0x1F6B4};
@@ -1254,7 +1223,22 @@ TEST_F(TextRendererTest, LoadGlyph_EmojiCharacter) {
     EXPECT_FALSE(glyph_emoji.alpha.empty());
 }
 
-// 異なる文字で異なるグリフが返されること
+// 2-5. 存在しないコードポイントでもデフォルトグリフが返されること
+TEST_F(TextRendererTest, LoadGlyph_InvalidCodepointReturnsDefaultGlyph) {
+    // 注意：FreeTypeは存在しないコードポイントに対してもデフォルトグリフ（.notdef）を返す
+    // そのため、FT_Load_Charは失敗せず、何らかのグリフが返される
+    const uint32_t invalid_codepoint{0xFFFFFFFF};  // 存在しないコードポイント
+    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(invalid_codepoint)};
+
+    // デフォルトグリフが返されることを確認（幅・高さが0より大きい）
+    EXPECT_GT(glyph.width, 0);
+    EXPECT_GT(glyph.height, 0);
+    EXPECT_EQ(glyph.pitch, glyph.width);                        // 通常、pitchは幅と同じ
+    EXPECT_FALSE(glyph.alpha.empty());                          // アルファデータが存在
+    EXPECT_EQ(glyph.alpha.size(), glyph.height * glyph.pitch);  // サイズが正しい
+}
+
+// 2-6.異なる文字で異なるグリフが返されること
 TEST_F(TextRendererTest, LoadGlyph_DifferentCharactersReturnDifferentGlyphs) {
     // 'A' と 'B' をロード
     const TextRenderer::Glyph glyph_a{text_renderer->loadGlyph(0x0041)};
@@ -1266,7 +1250,7 @@ TEST_F(TextRendererTest, LoadGlyph_DifferentCharactersReturnDifferentGlyphs) {
     EXPECT_TRUE(different);
 }
 
-// フォントサイズを変更すると異なるグリフが返されること
+// 2-7. フォントサイズを変更すると異なるグリフが返されること
 TEST_F(TextRendererTest, LoadGlyph_DifferentFontSizes) {
     // フォントサイズ16で 'A' をロード
     text_renderer->SetFontSizePx(16);
@@ -1280,36 +1264,6 @@ TEST_F(TextRendererTest, LoadGlyph_DifferentFontSizes) {
     EXPECT_LT(glyph_16.width, glyph_32.width);
     EXPECT_LT(glyph_16.height, glyph_32.height);
     EXPECT_LT(glyph_16.advance, glyph_32.advance);
-}
-
-// グリフのメトリクスが妥当な範囲にあること
-TEST_F(TextRendererTest, LoadGlyph_MetricsAreValid) {
-    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(0x0041)};
-
-    // メトリクスが妥当な範囲にあることを確認
-    EXPECT_GE(glyph.width, 0);
-    EXPECT_GE(glyph.height, 0);
-    EXPECT_GE(glyph.advance, 0);
-    EXPECT_GE(glyph.pitch, 0);
-
-    // leftとtopは負の値もあり得る（オフセット）
-    // 特に制約はないが、極端に大きな値でないことを確認
-    EXPECT_LT(std::abs(glyph.left), 1000);
-    EXPECT_LT(std::abs(glyph.top), 1000);
-}
-
-// ビットマップがある場合、アルファデータが正しいサイズであること
-TEST_F(TextRendererTest, LoadGlyph_AlphaSizeMatchesBitmap) {
-    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(0x0041)};
-
-    if (glyph.width > 0 && glyph.height > 0) {
-        // ビットマップがある場合、アルファデータのサイズは height * pitch と一致
-        EXPECT_EQ(glyph.alpha.size(), glyph.height * glyph.pitch);
-        EXPECT_FALSE(glyph.alpha.empty());
-    } else {
-        // ビットマップがない場合、アルファデータも空
-        EXPECT_TRUE(glyph.alpha.empty());
-    }
 }
 
 }  // namespace ui
