@@ -1,7 +1,10 @@
 #include "display/text_renderer.h"
 
+#include "display/impl/freetype_font_loader.h"
+#include "mocks/display/mock_font_loader.h"
 #include "mocks/driver/mock_display.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <unistd.h>
 
@@ -16,57 +19,27 @@ class TextRendererTest : public ::testing::Test {
             GTEST_SKIP() << "Font file not found: " << font_path;
         }
 
+        // FreeTypeFontLoaderをインスタンス化
+        font_loader = std::make_unique<FreeTypeFontLoader>(font_path);
+
+        // TextRendererを初期化
+        text_renderer = std::make_unique<TextRenderer>(mock_display, *font_loader);
+
         // フォントサイズのデフォルト設定
-        text_renderer.SetFontSizePx(32);
+        text_renderer->SetFontSizePx(32);
     }
 
     void TearDown() override {
         // 各テスト実行後に呼ばれるクリーンアップ処理
+        text_renderer.reset();
+        font_loader.reset();
     }
 
     // テストで使用する共通のメンバ変数
     const std::string font_path{"/workspace/config/fonts/DejaVuSans.ttf"};
     driver::MockDisplay mock_display;
-    TextRenderer text_renderer{mock_display, font_path};
-};
-
-// フェイルセーフロジックのテスト用：FreeTypeメトリクスをモック可能なサブクラス
-class TestableTextRenderer : public TextRenderer {
-  public:
-    TestableTextRenderer(driver::IDisplay &lcd, const std::string &font_path) : TextRenderer(lcd, font_path) {}
-
-    // テスト用：メトリクスを制御可能にオーバーライド
-    int GetFreeTypeLineHeightPx() const override {
-        // privateメソッドは直接呼べないため、FreeTypeから直接取得
-        return override_line_height_ ? forced_line_height_ : static_cast<int>(face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits);
-    }
-
-    int GetFreeTypeAscentPx() const override {
-        // privateメソッドは直接呼べないため、FreeTypeから直接取得
-        return override_ascent_ ? forced_ascent_ : static_cast<int>(face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits);
-    }
-
-    // テスト制御用のメソッド
-    void ForceLineHeight(int value) {
-        override_line_height_ = true;
-        forced_line_height_ = value;
-    }
-
-    void ForceAscent(int value) {
-        override_ascent_ = true;
-        forced_ascent_ = value;
-    }
-
-    void ResetOverrides() {
-        override_line_height_ = false;
-        override_ascent_ = false;
-    }
-
-  private:
-    bool override_line_height_{false};
-    bool override_ascent_{false};
-    int forced_line_height_{0};
-    int forced_ascent_{0};
+    std::unique_ptr<IFontLoader> font_loader;
+    std::unique_ptr<TextRenderer> text_renderer;
 };
 
 // =============================================================
@@ -181,7 +154,7 @@ TEST_F(TextRendererTest, Blend565_FullyOpaque) {
     // アルファ = 255（完全不透明）の場合、前景色がそのまま返る
     const uint16_t background{0xF800};  // 赤（RGB565）
     const uint16_t foreground{0x07E0};  // 緑（RGB565）
-    const uint16_t result{text_renderer.Blend565(background, foreground, TextRenderer::kAlphaMax)};
+    const uint16_t result{text_renderer->Blend565(background, foreground, TextRenderer::kAlphaMax)};
     EXPECT_EQ(result, foreground);
 }
 
@@ -189,7 +162,7 @@ TEST_F(TextRendererTest, Blend565_FullyTransparent) {
     // アルファ = 0（完全透明）の場合、背景色がそのまま返る
     const uint16_t background{0xF800};  // 赤（RGB565）
     const uint16_t foreground{0x07E0};  // 緑（RGB565）
-    const uint16_t result{text_renderer.Blend565(background, foreground, 0)};
+    const uint16_t result{text_renderer->Blend565(background, foreground, 0)};
     EXPECT_EQ(result, background);
 }
 
@@ -197,12 +170,12 @@ TEST_F(TextRendererTest, Blend565_HalfTransparent) {
     // アルファ = 128（半透明）の場合、背景色と前景色が50:50で合成される
     const uint16_t background{0x0000};  // 黒（RGB565）
     const uint16_t foreground{0xFFFF};  // 白（RGB565）
-    const uint16_t result{text_renderer.Blend565(background, foreground, TextRenderer::kAlphaMax / 2)};
+    const uint16_t result{text_renderer->Blend565(background, foreground, TextRenderer::kAlphaMax / 2)};
 
     // 各色成分が約半分になることを確認
-    const int result_red{text_renderer.ExtractColorComponent(result, TextRenderer::kRedShift, TextRenderer::kRedMask)};
-    const int result_green{text_renderer.ExtractColorComponent(result, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
-    const int result_blue{text_renderer.ExtractColorComponent(result, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
+    const int result_red{text_renderer->ExtractColorComponent(result, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int result_green{text_renderer->ExtractColorComponent(result, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int result_blue{text_renderer->ExtractColorComponent(result, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
     // 白(0xFFFF)の50%で合成
     EXPECT_EQ(result_red, ((0xFFFF >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 2);        // R成分の半分
@@ -216,11 +189,11 @@ TEST_F(TextRendererTest, Blend565_MaxColorComponents) {
     const uint16_t black{0x0000};  // R=0, G=0, B=0
 
     // alpha=64（約25%）でブレンド
-    const uint16_t result{text_renderer.Blend565(black, white, TextRenderer::kAlphaMax / 4)};
+    const uint16_t result{text_renderer->Blend565(black, white, TextRenderer::kAlphaMax / 4)};
 
-    const int result_red{text_renderer.ExtractColorComponent(result, TextRenderer::kRedShift, TextRenderer::kRedMask)};
-    const int result_green{text_renderer.ExtractColorComponent(result, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
-    const int result_blue{text_renderer.ExtractColorComponent(result, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
+    const int result_red{text_renderer->ExtractColorComponent(result, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int result_green{text_renderer->ExtractColorComponent(result, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int result_blue{text_renderer->ExtractColorComponent(result, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
     // 白(0xFFFF)の25%で合成
     EXPECT_EQ(result_red, ((0xFFFF >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 4);        // R成分の25%
@@ -235,30 +208,30 @@ TEST_F(TextRendererTest, Blend565_PrimaryColors) {
     const uint16_t blue{0x001F};   // R=0, G=0, B=31
 
     // 赤と緑を50:50でブレンド → 黄色系
-    const uint16_t red_green{text_renderer.Blend565(red, green, TextRenderer::kAlphaMax / 2)};
-    const int rg_red{text_renderer.ExtractColorComponent(red_green, TextRenderer::kRedShift, TextRenderer::kRedMask)};
-    const int rg_green{text_renderer.ExtractColorComponent(red_green, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
-    const int rg_blue{text_renderer.ExtractColorComponent(red_green, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
+    const uint16_t red_green{text_renderer->Blend565(red, green, TextRenderer::kAlphaMax / 2)};
+    const int rg_red{text_renderer->ExtractColorComponent(red_green, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int rg_green{text_renderer->ExtractColorComponent(red_green, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int rg_blue{text_renderer->ExtractColorComponent(red_green, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
     EXPECT_EQ(rg_red, ((0xF800 >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 2);        // 赤成分の半分
     EXPECT_EQ(rg_green, ((0x07E0 >> TextRenderer::kGreenShift) & TextRenderer::kGreenMask) / 2);  // 緑成分の半分
     EXPECT_EQ(rg_blue, 0);                                                                        // 青成分はゼロ
 
     // 緑と青を50:50でブレンド → シアン系
-    const uint16_t green_blue{text_renderer.Blend565(green, blue, TextRenderer::kAlphaMax / 2)};
-    const int gb_red{text_renderer.ExtractColorComponent(green_blue, TextRenderer::kRedShift, TextRenderer::kRedMask)};
-    const int gb_green{text_renderer.ExtractColorComponent(green_blue, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
-    const int gb_blue{text_renderer.ExtractColorComponent(green_blue, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
+    const uint16_t green_blue{text_renderer->Blend565(green, blue, TextRenderer::kAlphaMax / 2)};
+    const int gb_red{text_renderer->ExtractColorComponent(green_blue, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int gb_green{text_renderer->ExtractColorComponent(green_blue, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int gb_blue{text_renderer->ExtractColorComponent(green_blue, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
     EXPECT_EQ(gb_red, 0);                                                                         // 赤成分はゼロ
     EXPECT_EQ(gb_green, ((0x07E0 >> TextRenderer::kGreenShift) & TextRenderer::kGreenMask) / 2);  // 緑成分の半分
     EXPECT_EQ(gb_blue, ((0x001F >> TextRenderer::kBlueShift) & TextRenderer::kBlueMask) / 2);     // 青成分の半分
 
     // 青と赤を75:25でブレンド → 紫系
-    const uint16_t blue_red{text_renderer.Blend565(blue, red, TextRenderer::kAlphaMax / 4)};
-    const int br_red{text_renderer.ExtractColorComponent(blue_red, TextRenderer::kRedShift, TextRenderer::kRedMask)};
-    const int br_green{text_renderer.ExtractColorComponent(blue_red, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
-    const int br_blue{text_renderer.ExtractColorComponent(blue_red, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
+    const uint16_t blue_red{text_renderer->Blend565(blue, red, TextRenderer::kAlphaMax / 4)};
+    const int br_red{text_renderer->ExtractColorComponent(blue_red, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int br_green{text_renderer->ExtractColorComponent(blue_red, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int br_blue{text_renderer->ExtractColorComponent(blue_red, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
 
     EXPECT_EQ(br_red, ((0xF800 >> TextRenderer::kRedShift) & TextRenderer::kRedMask) / 4);         // 赤成分の25%
     EXPECT_EQ(br_green, 0);                                                                        // 緑成分はゼロ
@@ -268,9 +241,9 @@ TEST_F(TextRendererTest, Blend565_PrimaryColors) {
 TEST_F(TextRendererTest, Blend565_SameColor) {
     // 背景色と前景色が同じ場合、アルファ値に関わらず同じ色が返る
     const uint16_t color{0x07E0};  // 緑（RGB565）
-    const uint16_t result_opaque{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax)};
-    const uint16_t result_transparent{text_renderer.Blend565(color, color, 0)};
-    const uint16_t result_half{text_renderer.Blend565(color, color, TextRenderer::kAlphaMax / 2)};
+    const uint16_t result_opaque{text_renderer->Blend565(color, color, TextRenderer::kAlphaMax)};
+    const uint16_t result_transparent{text_renderer->Blend565(color, color, 0)};
+    const uint16_t result_half{text_renderer->Blend565(color, color, TextRenderer::kAlphaMax / 2)};
 
     EXPECT_EQ(result_opaque, color);
     EXPECT_EQ(result_transparent, color);
@@ -290,13 +263,13 @@ TEST_F(TextRendererTest, ExtractColorComponentTest) {
 
     // 赤成分: 0x15 (0b10101)を抽出
     // 11ビットずらして，0x1F (0b11111)でマスク
-    const int r{text_renderer.ExtractColorComponent(color, TextRenderer::kRedShift, TextRenderer::kRedMask)};
+    const int r{text_renderer->ExtractColorComponent(color, TextRenderer::kRedShift, TextRenderer::kRedMask)};
     // 緑成分: 0x1E (0b011110)
     // 5ビットずらして，0x3F (0b111111)でマスク
-    const int g{text_renderer.ExtractColorComponent(color, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
+    const int g{text_renderer->ExtractColorComponent(color, TextRenderer::kGreenShift, TextRenderer::kGreenMask)};
     // 青成分: 0x0D (0b01101)
     // 0ビットずらして，0x1F (0b11111)でマスク
-    const int b{text_renderer.ExtractColorComponent(color, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
+    const int b{text_renderer->ExtractColorComponent(color, TextRenderer::kBlueShift, TextRenderer::kBlueMask)};
     EXPECT_EQ(r, 0b10101);   // 赤成分
     EXPECT_EQ(g, 0b011110);  // 緑成分
     EXPECT_EQ(b, 0b01101);   // 青成分
@@ -488,7 +461,7 @@ TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_WidthZero) {
     // DrawRGB565Lineが呼ばれないことを期待
     EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
 
-    text_renderer.blitGlyph(100, 100, glyph);
+    text_renderer->blitGlyph(100, 100, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_HeightZero) {
@@ -503,7 +476,7 @@ TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_HeightZero) {
     // DrawRGB565Lineが呼ばれないことを期待
     EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
 
-    text_renderer.blitGlyph(100, 100, glyph);
+    text_renderer->blitGlyph(100, 100, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_NegativeWidth) {
@@ -518,7 +491,7 @@ TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_NegativeWidth) {
     // DrawRGB565Lineが呼ばれないことを期待
     EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
 
-    text_renderer.blitGlyph(100, 100, glyph);
+    text_renderer->blitGlyph(100, 100, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_NegativeHeight) {
@@ -533,7 +506,7 @@ TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_NegativeHeight) {
     // DrawRGB565Lineが呼ばれないことを期待
     EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
 
-    text_renderer.blitGlyph(100, 100, glyph);
+    text_renderer->blitGlyph(100, 100, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_ValidGlyph_DrawsCalls) {
@@ -547,7 +520,7 @@ TEST_F(TextRendererTest, BlitGlyph_ValidGlyph_DrawsCalls) {
     glyph.alpha.resize(glyph.height * glyph.pitch, 255);  // 完全不透明
 
     // 色を設定（前景：黒、背景：白）
-    text_renderer.SetColors(Color565::Black(), Color565::White());
+    text_renderer->SetColors(Color565::Black(), Color565::White());
 
     const int baseline_x{100};
     const int baseline_y{100};
@@ -559,7 +532,7 @@ TEST_F(TextRendererTest, BlitGlyph_ValidGlyph_DrawsCalls) {
     EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y + 1, ::testing::_, glyph.width)).Times(1);
     EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y + 2, ::testing::_, glyph.width)).Times(1);
 
-    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+    text_renderer->blitGlyph(baseline_x, baseline_y, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_CorrectScreenCoordinates) {
@@ -582,7 +555,7 @@ TEST_F(TextRendererTest, BlitGlyph_CorrectScreenCoordinates) {
         EXPECT_CALL(mock_display, DrawRGB565Line(expected_screen_x, expected_screen_y + row, ::testing::_, glyph.width)).Times(1);
     }
 
-    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+    text_renderer->blitGlyph(baseline_x, baseline_y, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyOpaque) {
@@ -596,7 +569,7 @@ TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyOpaque) {
     glyph.alpha = {255, 255};  // 完全不透明
 
     // 色を設定（前景：白、背景：黒）
-    text_renderer.SetColors(Color565::White(), Color565::Black());
+    text_renderer->SetColors(Color565::White(), Color565::Black());
 
     const int baseline_x{0};
     const int baseline_y{0};
@@ -609,7 +582,7 @@ TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyOpaque) {
         }
     }));
 
-    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+    text_renderer->blitGlyph(baseline_x, baseline_y, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyTransparent) {
@@ -623,7 +596,7 @@ TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyTransparent) {
     glyph.alpha = {0, 0};  // 完全透明
 
     // 色を設定（前景：白、背景：黒）
-    text_renderer.SetColors(Color565::White(), Color565::Black());
+    text_renderer->SetColors(Color565::White(), Color565::Black());
 
     const int baseline_x{0};
     const int baseline_y{0};
@@ -636,7 +609,7 @@ TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_FullyTransparent) {
         }
     }));
 
-    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+    text_renderer->blitGlyph(baseline_x, baseline_y, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_VariedAlpha) {
@@ -650,7 +623,7 @@ TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_VariedAlpha) {
     glyph.alpha = {0, 85, 170, 255};  // 0%, 33%, 67%, 100%の不透明度
 
     // 色を設定（前景：白、背景：黒）
-    text_renderer.SetColors(Color565::White(), Color565::Black());
+    text_renderer->SetColors(Color565::White(), Color565::Black());
 
     const int baseline_x{0};
     const int baseline_y{0};
@@ -658,13 +631,13 @@ TEST_F(TextRendererTest, BlitGlyph_AlphaBlending_VariedAlpha) {
     // DrawRGB565Lineが呼ばれ、各ピクセルのアルファ値に応じてブレンドされる
     EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::NotNull(), glyph.width)).Times(1).WillOnce(::testing::Invoke([this](int x, int y, const uint16_t *rgb565, int len) {
         // 各ピクセルのブレンド結果を確認
-        EXPECT_EQ(rgb565[0], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 0));    // 背景色（黒）
-        EXPECT_EQ(rgb565[1], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 85));   // 約33%ブレンド
-        EXPECT_EQ(rgb565[2], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 170));  // 約67%ブレンド
-        EXPECT_EQ(rgb565[3], text_renderer.Blend565(Color565::Black().value, Color565::White().value, 255));  // 前景色（白）
+        EXPECT_EQ(rgb565[0], text_renderer->Blend565(Color565::Black().value, Color565::White().value, 0));    // 背景色（黒）
+        EXPECT_EQ(rgb565[1], text_renderer->Blend565(Color565::Black().value, Color565::White().value, 85));   // 約33%ブレンド
+        EXPECT_EQ(rgb565[2], text_renderer->Blend565(Color565::Black().value, Color565::White().value, 170));  // 約67%ブレンド
+        EXPECT_EQ(rgb565[3], text_renderer->Blend565(Color565::Black().value, Color565::White().value, 255));  // 前景色（白）
     }));
 
-    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+    text_renderer->blitGlyph(baseline_x, baseline_y, glyph);
 }
 
 TEST_F(TextRendererTest, BlitGlyph_MultipleRows) {
@@ -686,7 +659,7 @@ TEST_F(TextRendererTest, BlitGlyph_MultipleRows) {
     // 色を設定（前景：赤、背景：青）
     const uint16_t red{0xF800};
     const uint16_t blue{0x001F};
-    text_renderer.SetColors(Color565{red}, Color565{blue});
+    text_renderer->SetColors(Color565{red}, Color565{blue});
 
     const int baseline_x{10};
     const int baseline_y{20};
@@ -709,14 +682,14 @@ TEST_F(TextRendererTest, BlitGlyph_MultipleRows) {
                 else if (row == 3)
                     expected_alpha = 50;
 
-                const uint16_t expected_color{text_renderer.Blend565(blue, red, expected_alpha)};
+                const uint16_t expected_color{text_renderer->Blend565(blue, red, expected_alpha)};
                 for (int i = 0; i < len; ++i) {
                     EXPECT_EQ(rgb565[i], expected_color);
                 }
             }));
     }
 
-    text_renderer.blitGlyph(baseline_x, baseline_y, glyph);
+    text_renderer->blitGlyph(baseline_x, baseline_y, glyph);
 }
 
 // =============================================================
@@ -726,11 +699,11 @@ TEST_F(TextRendererTest, BlitGlyph_MultipleRows) {
 // =============================================================
 TEST_F(TextRendererTest, MeasureText_EmptyString) {
     // 空文字列の場合、幅は0になること
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText("")};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText("")};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     EXPECT_EQ(metrics.width_px, 0);
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -740,13 +713,25 @@ TEST_F(TextRendererTest, MeasureText_EmptyString) {
 TEST_F(TextRendererTest, MeasureText_SingleLine_Ascii) {
     // 1行のASCII文字列
     const std::string text{"Hello"};
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // 幅：5文字 × static_cast<int>(32 * 0.6) = 5 × 19 = 95
-    const int expected_width{5 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // 幅：実際のグリフをロードして計測（概算式は使わない）
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
+
+    // 幅は実際にロードされたグリフの合計幅を計算
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < text.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(text, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
 
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -756,13 +741,24 @@ TEST_F(TextRendererTest, MeasureText_SingleLine_Ascii) {
 TEST_F(TextRendererTest, MeasureText_SingleLine_Japanese) {
     // 1行の日本語文字列
     const std::string text{"こんにちは"};  // 5文字
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // 幅：5文字 × static_cast<int>(32 * 0.6) = 5 × 19 = 95
-    const int expected_width{5 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
+
+    // 幅は実際にロードされたグリフの合計幅を計算
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < text.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(text, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
 
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -772,16 +768,25 @@ TEST_F(TextRendererTest, MeasureText_SingleLine_Japanese) {
 TEST_F(TextRendererTest, MeasureText_MultipleLines_LastLineIsLongest) {
     // 複数行で最後の行が最も長い場合
     const std::string text{"Hi\nHello\nWorld!!"};
-    // 行1: "Hi" = 2文字
-    // 行2: "Hello" = 5文字
-    // 行3: "World!!" = 7文字（最長）
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // 最大幅：7文字 × static_cast<int>(32 * 0.6) = 7 × 19 = 133
-    const int expected_width{133};
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
+
+    // 最長行（"World!!"）の幅を計算
+    const std::string longest_line{"World!!"};
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < longest_line.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(longest_line, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
 
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -791,16 +796,25 @@ TEST_F(TextRendererTest, MeasureText_MultipleLines_LastLineIsLongest) {
 TEST_F(TextRendererTest, MeasureText_MultipleLines_MiddleLineIsLongest) {
     // 複数行で途中の行が最も長い場合
     const std::string text{"Hi\nHelloWorld\nOK"};
-    // 行1: "Hi" = 2文字
-    // 行2: "HelloWorld" = 10文字（最長）
-    // 行3: "OK" = 2文字
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // 最大幅：10文字 × static_cast<int>(32 * 0.6) = 10 × 19 = 190
-    const int expected_width{190};
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
+
+    // 最長行（"HelloWorld"）の幅を計算
+    const std::string longest_line{"HelloWorld"};
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < longest_line.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(longest_line, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
 
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -810,11 +824,11 @@ TEST_F(TextRendererTest, MeasureText_MultipleLines_MiddleLineIsLongest) {
 TEST_F(TextRendererTest, MeasureText_SingleNewline) {
     // 改行のみの文字列
     const std::string text{"\n"};
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     // 改行のみなので幅は0
     EXPECT_EQ(metrics.width_px, 0);
@@ -825,11 +839,11 @@ TEST_F(TextRendererTest, MeasureText_SingleNewline) {
 TEST_F(TextRendererTest, MeasureText_MultipleNewlines) {
     // 複数の改行
     const std::string text{"\n\n\n"};
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     // 改行のみなので幅は0
     EXPECT_EQ(metrics.width_px, 0);
@@ -840,13 +854,24 @@ TEST_F(TextRendererTest, MeasureText_MultipleNewlines) {
 TEST_F(TextRendererTest, MeasureText_TrailingNewline) {
     // 末尾に改行がある場合
     const std::string text{"Hello\n"};
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // 幅：5文字 × static_cast<int>(32 * 0.6) = 5 × 19 = 95
-    const int expected_width{95};
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // 幅は実際にロードされたグリフの合計幅を計算
+    const std::string text_without_newline{"Hello"};
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < text_without_newline.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(text_without_newline, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -856,13 +881,23 @@ TEST_F(TextRendererTest, MeasureText_TrailingNewline) {
 TEST_F(TextRendererTest, MeasureText_MixedCharacters) {
     // ASCII、日本語、絵文字が混在する文字列
     const std::string text{"Hello世界🚴"};  // 5 + 2 + 1 = 8文字
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // 幅：8文字 × static_cast<int>(32 * 0.6) = 8 × 19 = 152
-    const int expected_width{152};
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // 幅は実際にロードされたグリフの合計幅を計算
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < text.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(text, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -872,10 +907,10 @@ TEST_F(TextRendererTest, MeasureText_MixedCharacters) {
 TEST_F(TextRendererTest, MeasureText_HeightIsLineHeight) {
     // 単一行の場合、高さは行高さと同じ
     const std::string text{"Test"};
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
 
     // メトリクスの高さは FreeType の line_height と同じ
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -884,10 +919,10 @@ TEST_F(TextRendererTest, MeasureText_HeightIsLineHeight) {
 TEST_F(TextRendererTest, MeasureText_BaselineIsAscent) {
     // ベースラインは ascent と同じ
     const std::string text{"Test"};
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     // ベースラインは ascent（文字の上端までの高さ）
     EXPECT_EQ(metrics.baseline_px, expected_baseline);
@@ -898,20 +933,18 @@ TEST_F(TextRendererTest, MeasureText_DifferentFontSizes) {
     // フォントサイズを変更して幅が変わることを確認
     const std::string text{"Test"};
 
-    text_renderer.SetFontSizePx(16);
-    const TextRenderer::TextMetrics metrics_16{text_renderer.MeasureText(text)};
-    const int expected_width_16{4 * static_cast<int>(16 * TextRenderer::kApproximateGlyphWidthRatio)};
-    EXPECT_EQ(metrics_16.width_px, expected_width_16);
+    text_renderer->SetFontSizePx(16);
+    const TextRenderer::TextMetrics metrics_16{text_renderer->MeasureText(text)};
 
-    text_renderer.SetFontSizePx(32);
-    const TextRenderer::TextMetrics metrics_32{text_renderer.MeasureText(text)};
-    const int expected_width_32{4 * static_cast<int>(32 * TextRenderer::kApproximateGlyphWidthRatio)};
-    EXPECT_EQ(metrics_32.width_px, expected_width_32);
+    text_renderer->SetFontSizePx(32);
+    const TextRenderer::TextMetrics metrics_32{text_renderer->MeasureText(text)};
 
-    text_renderer.SetFontSizePx(48);
-    const TextRenderer::TextMetrics metrics_48{text_renderer.MeasureText(text)};
-    const int expected_width_48{4 * static_cast<int>(48 * TextRenderer::kApproximateGlyphWidthRatio)};
-    EXPECT_EQ(metrics_48.width_px, expected_width_48);
+    text_renderer->SetFontSizePx(48);
+    const TextRenderer::TextMetrics metrics_48{text_renderer->MeasureText(text)};
+
+    // 幅がフォントサイズに応じて増加することを確認
+    EXPECT_LT(metrics_16.width_px, metrics_32.width_px);
+    EXPECT_LT(metrics_32.width_px, metrics_48.width_px);
 
     // 高さとベースラインがフォントサイズに応じて増加することを確認
     EXPECT_LT(metrics_16.height_px, metrics_32.height_px);
@@ -923,11 +956,11 @@ TEST_F(TextRendererTest, MeasureText_DifferentFontSizes) {
 TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AtBeginning) {
     // 最初から不正なUTF-8シーケンス
     const std::string text{"\xF8\x80\x80\x80"};  // 無効な先頭バイト
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     // GetCodepointが失敗するため、breakで即座にループを抜ける
     // 結果として幅は0になる
@@ -939,14 +972,25 @@ TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AtBeginning) {
 TEST_F(TextRendererTest, MeasureText_InvalidUTF8_InMiddle) {
     // 正常な文字の後に不正なUTF-8シーケンス
     const std::string text{"AB\xF8\x80\x80\x80"};  // "AB" + 無効なバイト列
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     // "AB"（2文字）まで計測され、不正なシーケンスでbreakする
-    const int expected_width{2 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    const std::string valid_text{"AB"};
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < valid_text.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(valid_text, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
     EXPECT_EQ(metrics.baseline_px, expected_baseline);
@@ -955,14 +999,25 @@ TEST_F(TextRendererTest, MeasureText_InvalidUTF8_InMiddle) {
 TEST_F(TextRendererTest, MeasureText_InvalidUTF8_IncompleteSequence) {
     // 不完全なUTF-8シーケンス（3バイト文字の1バイト目のみ）
     const std::string text{"Hello\xE3"};  // "Hello" + 3バイト文字の1バイト目のみ
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     // "Hello"（5文字）まで計測され、不完全なシーケンスでbreakする
-    const int expected_width{5 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    const std::string valid_text{"Hello"};
+    int expected_width = 0;
+    size_t idx = 0;
+    while (idx < valid_text.size()) {
+        uint32_t cp;
+        if (TextRenderer::GetCodepoint(valid_text, idx, cp)) {
+            IFontLoader::GlyphData glyph_data;
+            if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                expected_width += glyph_data.advance;
+            }
+        }
+    }
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
     EXPECT_EQ(metrics.baseline_px, expected_baseline);
@@ -973,15 +1028,32 @@ TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AfterNewline) {
     const std::string text{
         "AB\nCD\xF8"
         "EF"};  // "AB" + 改行 + "CD" + 無効 + "EF"
-    const TextRenderer::TextMetrics metrics{text_renderer.MeasureText(text)};
+    const TextRenderer::TextMetrics metrics{text_renderer->MeasureText(text)};
 
-    // FreeTypeのメトリクスから期待値を計算
-    const int expected_height{static_cast<int>(text_renderer.face_->size->metrics.height >> TextRenderer::kFreeTypeFractionalBits)};
-    const int expected_baseline{static_cast<int>(text_renderer.face_->size->metrics.ascender >> TextRenderer::kFreeTypeFractionalBits)};
+    // フォントローダーからメトリクスを取得
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
 
     // 1行目: "AB" = 2文字、2行目: "CD" = 2文字（不正なシーケンスでbreak）
-    // 最大幅は2文字
-    const int expected_width{2 * static_cast<int>(text_renderer.font_size_px_ * TextRenderer::kApproximateGlyphWidthRatio)};
+    // 最大幅を計算
+    auto calculate_width = [this](const std::string &str) {
+        int width = 0;
+        size_t idx = 0;
+        while (idx < str.size()) {
+            uint32_t cp;
+            if (TextRenderer::GetCodepoint(str, idx, cp)) {
+                IFontLoader::GlyphData glyph_data;
+                if (font_loader->LoadChar(cp, glyph_data) == 0) {
+                    width += glyph_data.advance;
+                }
+            }
+        }
+        return width;
+    };
+    const int width_line1 = calculate_width("AB");
+    const int width_line2 = calculate_width("CD");
+    const int expected_width = std::max(width_line1, width_line2);
+
     EXPECT_EQ(metrics.width_px, expected_width);
     EXPECT_EQ(metrics.height_px, expected_height);
     EXPECT_EQ(metrics.baseline_px, expected_baseline);
@@ -993,19 +1065,35 @@ TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AfterNewline) {
 // 要件：line_height_px <= 0 の場合にフェイルセーフが確実に動作すること
 // =============================================================
 TEST_F(TextRendererTest, MeasureText_FailsafeLogic_ZeroLineHeight) {
-    // テスト専用のサブクラスを使用してFreeTypeの戻り値を制御
-    TestableTextRenderer testable_renderer{mock_display, font_path};
+    // MockFontLoaderを使用してline_height = 0を返すように設定
+    MockFontLoader mock_font_loader;
+    TextRenderer testable_renderer{mock_display, mock_font_loader};
     testable_renderer.SetFontSizePx(32);
+    const int font_size = 32;
+    const int line_gap = 4;  // TextRendererのデフォルト値
 
     // line_height_px = 0 を強制
-    testable_renderer.ForceLineHeight(0);
-    testable_renderer.ForceAscent(20);
+    EXPECT_CALL(mock_font_loader, GetLineHeightPx()).WillRepeatedly(testing::Return(0));
+    EXPECT_CALL(mock_font_loader, GetAscentPx()).WillRepeatedly(testing::Return(20));
+
+    // LoadCharを設定（グリフロード時に呼ばれる）
+    EXPECT_CALL(mock_font_loader, LoadChar(testing::_, testing::_)).WillRepeatedly(testing::Invoke([](uint32_t codepoint, IFontLoader::GlyphData &glyph_data) {
+        glyph_data.width = 10;
+        glyph_data.height = 15;
+        glyph_data.advance = 12;
+        glyph_data.left = 1;
+        glyph_data.top = 14;
+        glyph_data.pitch = 10;
+        glyph_data.alpha.resize(150);
+        return 0;
+    }));
 
     const std::string text{"Test"};
     const TextRenderer::TextMetrics metrics{testable_renderer.MeasureText(text)};
 
-    // フェイルセーフ値を計算: font_size_px_ + line_gap_px_
-    const int expected_height{testable_renderer.font_size_px_ + testable_renderer.line_gap_px_};
+    // フェイルセーフ値を計算: ascent + descent + line_gap_px_
+    // descent ≈ font_size - ascent = 32 - 20 = 12
+    const int expected_height{20 + 12 + line_gap};
 
     // フェイルセーフが発動し、計算された値が使用されることを確認
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -1014,21 +1102,214 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_ZeroLineHeight) {
 
 TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
     // 負の値の場合もフェイルセーフが動作することを確認
-    TestableTextRenderer testable_renderer{mock_display, font_path};
+    MockFontLoader mock_font_loader;
+    TextRenderer testable_renderer{mock_display, mock_font_loader};
     testable_renderer.SetFontSizePx(32);
+    const int font_size = 32;
+    const int line_gap = 4;
 
     // line_height_px = -5 を強制
-    testable_renderer.ForceLineHeight(-5);
-    testable_renderer.ForceAscent(20);
+    EXPECT_CALL(mock_font_loader, GetLineHeightPx()).WillRepeatedly(testing::Return(-5));
+    EXPECT_CALL(mock_font_loader, GetAscentPx()).WillRepeatedly(testing::Return(20));
+
+    // LoadCharを設定
+    EXPECT_CALL(mock_font_loader, LoadChar(testing::_, testing::_)).WillRepeatedly(testing::Invoke([](uint32_t codepoint, IFontLoader::GlyphData &glyph_data) {
+        glyph_data.width = 10;
+        glyph_data.height = 15;
+        glyph_data.advance = 12;
+        glyph_data.left = 1;
+        glyph_data.top = 14;
+        glyph_data.pitch = 10;
+        glyph_data.alpha.resize(150);
+        return 0;
+    }));
 
     const std::string text{"Test"};
     const TextRenderer::TextMetrics metrics{testable_renderer.MeasureText(text)};
 
-    // フェイルセーフ値を計算
-    const int expected_height{testable_renderer.font_size_px_ + testable_renderer.line_gap_px_};
+    // フェイルセーフ値を計算: ascent + descent + line_gap_px_
+    const int expected_height{20 + 12 + line_gap};
 
     // フェイルセーフが発動することを確認
     EXPECT_EQ(metrics.height_px, expected_height);
     EXPECT_GT(metrics.height_px, 0);
 }
+
+// =============================================================
+// loadGlyph のユニットテスト
+// -------------------------------------------------------------
+// 要件：
+// 1. FT_Load_Charが失敗した場合，空のグリフ（width=0, height=0）が返されること
+// 2. グリフのロードに成功した場合，正しいグリフデータが返されること
+// 2-1. 存在しないコードポイントでもFreeTypeがデフォルトグリフ（.notdef）を返すこと
+// 2-2. グリフのロードに成功して，グリフが実際のピクセルデータを持つとき，独自のメモリ領域に画像データ（アルファ値）がコピーされること
+// =============================================================
+
+// 1. FT_Load_Charが失敗した場合、空のグリフが返されること
+TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
+    // MockFontLoaderを使用してLoadCharの失敗をシミュレート
+    MockFontLoader mock_font_loader;
+    TextRenderer testable_renderer{mock_display, mock_font_loader};
+    testable_renderer.SetFontSizePx(32);
+
+    // LoadCharが失敗（非ゼロの戻り値）を返すように設定
+    EXPECT_CALL(mock_font_loader, LoadChar(0x0041, testing::_)).WillOnce(testing::Return(1));  // FT_Load_Charは失敗時に非ゼロを返す
+
+    const TextRenderer::Glyph glyph{testable_renderer.loadGlyph(0x0041)};
+
+    // 空のグリフが返されることを確認
+    EXPECT_EQ(glyph.width, 0);
+    EXPECT_EQ(glyph.height, 0);
+    EXPECT_EQ(glyph.left, 0);
+    EXPECT_EQ(glyph.top, 0);
+    EXPECT_EQ(glyph.advance, 0);
+    EXPECT_EQ(glyph.pitch, 0);
+    EXPECT_TRUE(glyph.alpha.empty());
+}
+
+// 2. ASCII文字のグリフが正しくロードされること
+TEST_F(TextRendererTest, LoadGlyph_AsciiCharacter) {
+    // 'A' (U+0041) をロード
+    const uint32_t codepoint_a{0x0041};
+    const TextRenderer::Glyph glyph_a{text_renderer->loadGlyph(codepoint_a)};
+
+    // グリフの基本的な情報が正しく設定されていることを確認
+    EXPECT_GT(glyph_a.width, 0);                                      // 幅が正の値
+    EXPECT_GT(glyph_a.height, 0);                                     // 高さが正の値
+    EXPECT_GT(glyph_a.advance, 0);                                    // アドバンス値が正の値
+    EXPECT_GE(glyph_a.pitch, glyph_a.width);                          // pitchは幅以上
+    EXPECT_EQ(glyph_a.alpha.size(), glyph_a.height * glyph_a.pitch);  // アルファデータのサイズが正しい
+}
+
+// 2-1. 存在しないコードポイントでもデフォルトグリフが返されること
+TEST_F(TextRendererTest, LoadGlyph_InvalidCodepointReturnsDefaultGlyph) {
+    // 注意：FreeTypeは存在しないコードポイントに対してもデフォルトグリフ（.notdef）を返す
+    // そのため、FT_Load_Charは失敗せず、何らかのグリフが返される
+    const uint32_t invalid_codepoint{0xFFFFFFFF};  // 存在しないコードポイント
+    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(invalid_codepoint)};
+
+    // デフォルトグリフが返されることを確認（幅・高さが0より大きい）
+    EXPECT_GT(glyph.width, 0);
+    EXPECT_GT(glyph.height, 0);
+    EXPECT_EQ(glyph.pitch, glyph.width);                        // 通常、pitchは幅と同じ
+    EXPECT_FALSE(glyph.alpha.empty());                          // アルファデータが存在
+    EXPECT_EQ(glyph.alpha.size(), glyph.height * glyph.pitch);  // サイズが正しい
+}
+
+// 2-2. グリフのアルファデータが独自のメモリ領域にコピーされていること
+TEST_F(TextRendererTest, LoadGlyph_AlphaDataIsIndependent) {
+    // 同じ文字を2回ロード
+    const TextRenderer::Glyph glyph1{text_renderer->loadGlyph(0x0041)};
+    const TextRenderer::Glyph glyph2{text_renderer->loadGlyph(0x0041)};
+
+    // アルファデータの内容は同じはず
+    EXPECT_EQ(glyph1.alpha.size(), glyph2.alpha.size());
+    EXPECT_EQ(glyph1.alpha, glyph2.alpha);
+
+    // しかし、メモリアドレスは異なるはず（独立したコピー）
+    if (!glyph1.alpha.empty() && !glyph2.alpha.empty()) {
+        EXPECT_NE(glyph1.alpha.data(), glyph2.alpha.data());
+    }
+}
+
+// 日本語文字のグリフが正しくロードされること
+TEST_F(TextRendererTest, LoadGlyph_JapaneseCharacter) {
+    // 'あ' (U+3042) をロード
+    const uint32_t codepoint_hiragana{0x3042};
+    const TextRenderer::Glyph glyph_hiragana{text_renderer->loadGlyph(codepoint_hiragana)};
+
+    // グリフの基本的な情報が正しく設定されていることを確認
+    EXPECT_GT(glyph_hiragana.width, 0);
+    EXPECT_GT(glyph_hiragana.height, 0);
+    EXPECT_GT(glyph_hiragana.advance, 0);
+    EXPECT_GE(glyph_hiragana.pitch, glyph_hiragana.width);
+    EXPECT_EQ(glyph_hiragana.alpha.size(), glyph_hiragana.height * glyph_hiragana.pitch);
+}
+
+// スペース文字のグリフが正しく処理されること
+TEST_F(TextRendererTest, LoadGlyph_SpaceCharacter) {
+    // ' ' (U+0020) をロード
+    const uint32_t codepoint_space{0x0020};
+    const TextRenderer::Glyph glyph_space{text_renderer->loadGlyph(codepoint_space)};
+
+    // スペースはアドバンス値を持つが、ビットマップデータは持たない場合がある
+    EXPECT_GT(glyph_space.advance, 0);  // アドバンス値は正の値
+
+    // ビットマップがない場合、幅と高さは0
+    if (glyph_space.width == 0 || glyph_space.height == 0) {
+        EXPECT_TRUE(glyph_space.alpha.empty());  // アルファデータも空
+    }
+}
+
+// 絵文字のグリフがロードされること（フォントに存在する場合）
+TEST_F(TextRendererTest, LoadGlyph_EmojiCharacter) {
+    // '🚴' (U+1F6B4) をロード
+    const uint32_t codepoint_emoji{0x1F6B4};
+    const TextRenderer::Glyph glyph_emoji{text_renderer->loadGlyph(codepoint_emoji)};
+
+    // フォントに絵文字が含まれていない場合はデフォルトグリフが返される
+    // いずれにしてもグリフは返される
+    EXPECT_GT(glyph_emoji.width, 0);
+    EXPECT_GT(glyph_emoji.height, 0);
+    EXPECT_FALSE(glyph_emoji.alpha.empty());
+}
+
+// 異なる文字で異なるグリフが返されること
+TEST_F(TextRendererTest, LoadGlyph_DifferentCharactersReturnDifferentGlyphs) {
+    // 'A' と 'B' をロード
+    const TextRenderer::Glyph glyph_a{text_renderer->loadGlyph(0x0041)};
+    const TextRenderer::Glyph glyph_b{text_renderer->loadGlyph(0x0042)};
+
+    // 異なる文字なので、何らかのメトリクスが異なるはず
+    // （幅、高さ、アドバンス値、またはビットマップデータのいずれか）
+    const bool different{(glyph_a.width != glyph_b.width) || (glyph_a.height != glyph_b.height) || (glyph_a.advance != glyph_b.advance) || (glyph_a.alpha != glyph_b.alpha)};
+    EXPECT_TRUE(different);
+}
+
+// フォントサイズを変更すると異なるグリフが返されること
+TEST_F(TextRendererTest, LoadGlyph_DifferentFontSizes) {
+    // フォントサイズ16で 'A' をロード
+    text_renderer->SetFontSizePx(16);
+    const TextRenderer::Glyph glyph_16{text_renderer->loadGlyph(0x0041)};
+
+    // フォントサイズ32で 'A' をロード
+    text_renderer->SetFontSizePx(32);
+    const TextRenderer::Glyph glyph_32{text_renderer->loadGlyph(0x0041)};
+
+    // フォントサイズが異なるので、グリフのサイズも異なるはず
+    EXPECT_LT(glyph_16.width, glyph_32.width);
+    EXPECT_LT(glyph_16.height, glyph_32.height);
+    EXPECT_LT(glyph_16.advance, glyph_32.advance);
+}
+
+// グリフのメトリクスが妥当な範囲にあること
+TEST_F(TextRendererTest, LoadGlyph_MetricsAreValid) {
+    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(0x0041)};
+
+    // メトリクスが妥当な範囲にあることを確認
+    EXPECT_GE(glyph.width, 0);
+    EXPECT_GE(glyph.height, 0);
+    EXPECT_GE(glyph.advance, 0);
+    EXPECT_GE(glyph.pitch, 0);
+
+    // leftとtopは負の値もあり得る（オフセット）
+    // 特に制約はないが、極端に大きな値でないことを確認
+    EXPECT_LT(std::abs(glyph.left), 1000);
+    EXPECT_LT(std::abs(glyph.top), 1000);
+}
+
+// ビットマップがある場合、アルファデータが正しいサイズであること
+TEST_F(TextRendererTest, LoadGlyph_AlphaSizeMatchesBitmap) {
+    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(0x0041)};
+
+    if (glyph.width > 0 && glyph.height > 0) {
+        // ビットマップがある場合、アルファデータのサイズは height * pitch と一致
+        EXPECT_EQ(glyph.alpha.size(), glyph.height * glyph.pitch);
+        EXPECT_FALSE(glyph.alpha.empty());
+    } else {
+        // ビットマップがない場合、アルファデータも空
+        EXPECT_TRUE(glyph.alpha.empty());
+    }
+}
+
 }  // namespace ui

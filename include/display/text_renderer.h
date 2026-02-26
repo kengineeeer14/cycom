@@ -1,9 +1,7 @@
 #ifndef CYCOM_DISPLAY_TEXT_RENDERER_H_
 #define CYCOM_DISPLAY_TEXT_RENDERER_H_
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
+#include "display/interface/i_font_loader.h"
 #include "driver/interface/i_display.h"
 
 #include <cstdint>
@@ -27,7 +25,6 @@ struct Color565 {
 class TextRenderer {
     // テスト用フレンドクラス
     friend class TextRendererTest;
-    friend class TestableTextRenderer;  // テスト用サブクラスにprivateメンバーへのアクセスを許可
     friend class TextRendererTest_MakeKey_BasicGeneration_Test;
     friend class TextRendererTest_MakeKey_DifferentSizes_Test;
     friend class TextRendererTest_MakeKey_DifferentCodepoints_Test;
@@ -83,7 +80,17 @@ class TextRenderer {
     friend class TextRendererTest_MeasureText_InvalidUTF8_AfterNewline_Test;
     friend class TextRendererTest_MeasureText_FailsafeLogic_ZeroLineHeight_Test;
     friend class TextRendererTest_MeasureText_FailsafeLogic_NegativeLineHeight_Test;
-    friend class TextRendererTest_MeasureText_FailsafeLogic_NormalCase_Test;
+    friend class TextRendererTest_LoadGlyph_InvalidCodepointReturnsDefaultGlyph_Test;
+    friend class TextRendererTest_LoadGlyph_AsciiCharacter_Test;
+    friend class TextRendererTest_LoadGlyph_JapaneseCharacter_Test;
+    friend class TextRendererTest_LoadGlyph_SpaceCharacter_Test;
+    friend class TextRendererTest_LoadGlyph_EmojiCharacter_Test;
+    friend class TextRendererTest_LoadGlyph_DifferentCharactersReturnDifferentGlyphs_Test;
+    friend class TextRendererTest_LoadGlyph_DifferentFontSizes_Test;
+    friend class TextRendererTest_LoadGlyph_AlphaDataIsIndependent_Test;
+    friend class TextRendererTest_LoadGlyph_MetricsAreValid_Test;
+    friend class TextRendererTest_LoadGlyph_AlphaSizeMatchesBitmap_Test;
+    friend class TextRendererTest_LoadGlyph_FT_Load_Char_Failure_Test;
 
   public:
     // 型・エイリアス
@@ -94,9 +101,9 @@ class TextRenderer {
     };
 
     // コンストラクタ/デストラクタ
-    // font_path に .ttf / .otf を指定
-    TextRenderer(driver::IDisplay &lcd, const std::string &font_path);
-    ~TextRenderer();
+    // font_loader: フォントローディングを行う実装（FreeTypeFontLoaderまたはMockFontLoader）
+    TextRenderer(driver::IDisplay &lcd, IFontLoader &font_loader);
+    ~TextRenderer() = default;
 
     // メンバ関数
     // パネル塗り→中央寄せ描画
@@ -156,16 +163,6 @@ class TextRenderer {
     static constexpr int kCodepointBits{21};             // コードポイント用のビット数
     static constexpr uint32_t kCodepointMask{0x1FFFFF};  // コードポイント用のマスク（21ビット分）
 
-    // テキスト計測用定数
-    static constexpr double kApproximateGlyphWidthRatio{0.6};  // グリフ幅の概算比率（フォントサイズに対する割合）
-
-    // FreeType用定数
-    static constexpr int kFreeTypeFractionalBits{6};  // FreeTypeの26.6固定小数点形式における小数部のビット数
-
-    // FreeTypeメトリクスの取得を仮想化（privateだがテストでオーバーライド可能）
-    virtual int GetFreeTypeLineHeightPx() const;
-    virtual int GetFreeTypeAscentPx() const;
-
     // メンバ関数
     TextMetrics MeasureText(const std::string &utf8) const;
     static GlyphKey MakeKey(const int &size_px, const uint32_t &codepoint);
@@ -180,9 +177,8 @@ class TextRenderer {
     Color565 background_color_{Color565::White()};
     Color565 foreground_color_{Color565::Black()};
     std::unordered_map<GlyphKey, Glyph> cache_;
-    FT_Face face_{nullptr};  // FreeTypeのフォントフェイスオブジェクト
+    IFontLoader &font_loader_;  // フォントローディングの実装
     int font_size_px_{32};
-    FT_Library ft_{nullptr};
     driver::IDisplay &lcd_;
     int line_gap_px_{4};
     int wrap_width_px_{0};

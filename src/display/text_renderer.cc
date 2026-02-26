@@ -1,28 +1,12 @@
 #include "display/text_renderer.h"
 
 #include <algorithm>
-#include <cstring>
-#include <stdexcept>
 
 namespace ui {
 
-// コンストラクタ/デストラクタ
-TextRenderer::TextRenderer(driver::IDisplay &lcd, const std::string &font_path) : lcd_(lcd) {
-    if (FT_Init_FreeType(&ft_) != 0)
-        throw std::runtime_error("FT_Init_FreeType failed");
-    if (FT_New_Face(ft_, font_path.c_str(), 0, &face_) != 0) {
-        FT_Done_FreeType(ft_);
-        ft_ = nullptr;
-        throw std::runtime_error("FT_New_Face failed: " + font_path);
-    }
-    FT_Set_Pixel_Sizes(face_, 0, font_size_px_);
-}
-
-TextRenderer::~TextRenderer() {
-    if (face_)
-        FT_Done_Face(face_);
-    if (ft_)
-        FT_Done_FreeType(ft_);
+// コンストラクタ
+TextRenderer::TextRenderer(driver::IDisplay &lcd, IFontLoader &font_loader) : lcd_(lcd), font_loader_(font_loader) {
+    font_loader_.SetPixelSize(font_size_px_);
 }
 
 // public メンバ関数
@@ -43,10 +27,10 @@ TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int 
 
 TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string &utf8) {
     int pen_x = x, pen_y = y;
-    // FreeTypeのフォントメトリクスを取得（仮想メソッド経由でテスト可能）
-    int ascent{GetFreeTypeAscentPx()};                                                          // ベースラインから文字上端までの高さ
-    int descent{-static_cast<int>(face_->size->metrics.descender >> kFreeTypeFractionalBits)};  // ベースラインから文字下端までの深さ（正の値に反転）
-    int line_h{GetFreeTypeLineHeightPx()};                                                      // 推奨される行の高さ
+    // フォントメトリクスを取得
+    int ascent{font_loader_.GetAscentPx()};      // ベースラインから文字上端までの高さ
+    int descent{font_size_px_ - ascent};         // ベースラインから文字下端までの深さの推定値
+    int line_h{font_loader_.GetLineHeightPx()};  // 推奨される行の高さ
     if (line_h <= 0)
         line_h = ascent + descent + line_gap_px_;
 
@@ -96,7 +80,7 @@ void TextRenderer::SetColors(Color565 fg, Color565 bg) {
 
 void TextRenderer::SetFontSizePx(int px) {
     font_size_px_ = std::max(6, px);
-    FT_Set_Pixel_Sizes(face_, 0, font_size_px_);
+    font_loader_.SetPixelSize(font_size_px_);
 }
 
 void TextRenderer::SetLineGapPx(int px) {
@@ -105,24 +89,6 @@ void TextRenderer::SetLineGapPx(int px) {
 
 void TextRenderer::SetWrapWidthPx(int px) {
     wrap_width_px_ = std::max(0, px);
-}
-
-// protected メンバ関数
-
-/**
- * @brief FreeTypeから行の高さ（line height）を取得する
- * @return int ピクセル単位の行の高さ
- */
-int TextRenderer::GetFreeTypeLineHeightPx() const {
-    return static_cast<int>(face_->size->metrics.height >> kFreeTypeFractionalBits);
-}
-
-/**
- * @brief FreeTypeからアセント（ascent）を取得する
- * @return int ピクセル単位のアセント
- */
-int TextRenderer::GetFreeTypeAscentPx() const {
-    return static_cast<int>(face_->size->metrics.ascender >> kFreeTypeFractionalBits);
 }
 
 // private メンバ関数
@@ -136,9 +102,9 @@ int TextRenderer::GetFreeTypeAscentPx() const {
 TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8_str) const {
     int current_width_px{0};
     int max_width_px{0};
-    // FreeTypeのフォントメトリクスを取得（仮想メソッド経由でテスト可能）
-    const int ascent_px{GetFreeTypeAscentPx()};     // ベースラインから文字上端までの高さ．大文字や上に伸びる文字（'A', 'h', 'b'など）の高さ．
-    int line_height_px{GetFreeTypeLineHeightPx()};  // 1行分の推奨される総高さです。次の行までの距離で、ascent + descent + 行間を含む．
+    // フォントメトリクスを取得
+    const int ascent_px{font_loader_.GetAscentPx()};     // ベースラインから文字上端までの高さ
+    int line_height_px{font_loader_.GetLineHeightPx()};  // 1行分の推奨される総高さ
     // フォントメトリクスが不正な場合（破損フォント、極小サイズ等）のフェイルセーフ
     // フォントサイズを基準に代替の行高さを計算して最低限の描画品質を保証
     if (line_height_px <= 0)
@@ -155,7 +121,11 @@ TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8_str)
             current_width_px = 0;
             continue;
         }
-        current_width_px += static_cast<int>(font_size_px_ * kApproximateGlyphWidthRatio);  // 各グリフの幅をフォントサイズに概算比率を乗じて加算
+        // 実際のグリフをロードして正確な幅を取得
+        IFontLoader::GlyphData glyph_data;
+        if (font_loader_.LoadChar(codepoint, glyph_data) == 0) {
+            current_width_px += glyph_data.advance;
+        }
     }
     max_width_px = std::max(max_width_px, current_width_px);  // 最後の行の幅を最大幅と比較（最後の行の改行がない場合に対応）
     return TextMetrics{max_width_px, line_height_px, ascent_px};
@@ -244,52 +214,43 @@ int TextRenderer::ExtractColorComponent(const uint16_t &color, const int &shift,
 
 /**
  * @brief グリフをキャッシュから取得、または新規ロードしてキャッシュに保存する
- * @details 同じ文字（例: "Hello"の'l'は2回出現）を何度も描画する際、毎回FreeTypeから読み込むと遅いため、
- *          一度読み込んだグリフをキャッシュして再利用する。キャッシュのキーはフォントサイズとコードポイントの組み合わせ。
  *
  * @param codepoint 取得したい文字のコードポイント
- * @return const TextRenderer::Glyph* グリフへのポインタ（キャッシュ内のデータを指す）
+ * @return const TextRenderer::Glyph* グリフへのポインタ
  */
 const TextRenderer::Glyph *TextRenderer::getGlyph(uint32_t codepoint) {
     GlyphKey key = MakeKey(font_size_px_, codepoint);
     auto it = cache_.find(key);
     if (it != cache_.end())
-        return &it->second;  // キャッシュヒット：既存のグリフを返す
-    // キャッシュミス：FreeTypeからロードしてキャッシュに保存
+        return &it->second;
     Glyph g = loadGlyph(codepoint);
     auto [pos, _] = cache_.emplace(key, std::move(g));
     return &pos->second;
 }
 
 /**
- * @brief FreeTypeからコードポイントに応じたグリフをロードし、Glyph構造体に変換する
+ * @brief フォントローダーからコードポイントに応じたグリフをロードし、Glyph構造体に変換する
  *
  * @param codepoint ロードする文字のコードポイント
  * @return TextRenderer::Glyph ロードされたグリフの情報を含む構造体。失敗した場合は幅と高さが0の空のグリフを返す。
  */
 TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t codepoint) {
-    Glyph glyph{};
-    if (FT_Load_Char(face_, codepoint, FT_LOAD_RENDER) != 0) {
-        // FT_Load_Charは失敗すると非0を返す。失敗した場合は空のグリフを返す（幅と高さが0）。
-        // TODO : エラー処理
-    } else {
-        FT_GlyphSlot slot = face_->glyph;     // ロードされたグリフの情報が格納されている構造体へのポインタ
-        const FT_Bitmap &bmp = slot->bitmap;  // グリフのビットマップデータ。bmp.bufferにピクセルのアルファ値が格納されている。
+    IFontLoader::GlyphData glyph_data;
+    int result = font_loader_.LoadChar(codepoint, glyph_data);
 
-        glyph.width = bmp.width;
-        glyph.height = bmp.rows;
-        glyph.left = slot->bitmap_left;
-        glyph.top = slot->bitmap_top;
-        glyph.advance = (slot->advance.x >> kFreeTypeFractionalBits);
-        glyph.pitch = bmp.pitch;
-        if (glyph.width > 0 && glyph.height > 0) {
-            // FreeTypeの内部バッファ（bmp.buffer）は次のFT_Load_Char呼び出し時に上書きされるため，
-            // 画像データを独自のメモリ領域にコピーして永続的に保存する必要がある
-            glyph.alpha.resize(glyph.height * glyph.pitch);
-            std::memcpy(glyph.alpha.data(), bmp.buffer, glyph.alpha.size());
-        } else {
-            // スペース文字などは画像データ不要．描画時にblitGlyphで幅・高さ0チェックによりスキップされる
-        }
+    Glyph glyph{};
+    if (result != 0) {
+        // LoadCharが失敗（フォント破損、メモリ不足等）した場合は空のグリフを返す
+        // 注意：存在しないコードポイントの場合は成功し、デフォルトグリフ（.notdef）が返される
+        // TODO : エラーログ出力
+    } else {
+        glyph.width = glyph_data.width;
+        glyph.height = glyph_data.height;
+        glyph.left = glyph_data.left;
+        glyph.top = glyph_data.top;
+        glyph.advance = glyph_data.advance;
+        glyph.pitch = glyph_data.pitch;
+        glyph.alpha = std::move(glyph_data.alpha);
     }
     return glyph;
 }

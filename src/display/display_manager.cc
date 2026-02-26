@@ -1,12 +1,13 @@
 #include "display/display_manager.h"
+
 #include <chrono>
 #include <cstdio>
 #include <iostream>
 
 namespace display {
 
-DisplayManager::DisplayManager(driver::IDisplay& lcd, sensor::L76k& gps)
-    : lcd_(lcd), gps_(gps), tr_(lcd, "config/fonts/DejaVuSans.ttf") {
+DisplayManager::DisplayManager(driver::IDisplay &lcd, sensor::L76k &gps)
+    : lcd_(lcd), gps_(gps), font_loader_(std::make_unique<ui::FreeTypeFontLoader>("config/fonts/DejaVuSans.ttf")), tr_(lcd, *font_loader_) {
     // 初期画面を表示
     ShowInitialScreens();
     // Touch / Logger / SensorManager と同様、コンストラクタで自動的にスレッドを起動
@@ -18,9 +19,9 @@ DisplayManager::~DisplayManager() {
 }
 
 void DisplayManager::Start() {
-    Stop(); // 既存スレッドが動いていれば停止
+    Stop();  // 既存スレッドが動いていれば停止
     running_.store(true, std::memory_order_release);
-    th_ = std::thread([this]{ DisplayLoop(); });
+    th_ = std::thread([this] { DisplayLoop(); });
 }
 
 void DisplayManager::Stop() {
@@ -36,7 +37,7 @@ void DisplayManager::ShowInitialScreens() {
         lcd_.Clear(0xFFFF);  // 失敗時は白でフォールバック
     }
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    
+
     // 計測画面を表示
     if (!lcd_.DrawBackgroundImage("resource/background/measure.jpg")) {
         lcd_.Clear(0xFFFF);  // 失敗時は白でフォールバック
@@ -71,7 +72,7 @@ void DisplayManager::DisplayLoop() {
 
         const auto UPDATE_INTERVAL = std::chrono::milliseconds(1000);
         std::string prev_text;
-        
+
         while (running_.load(std::memory_order_acquire)) {
             std::this_thread::sleep_for(UPDATE_INTERVAL);
 
@@ -86,9 +87,9 @@ void DisplayManager::DisplayLoop() {
                 prev_text = cur_text;
             }
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         std::cerr << "DisplayManager Fatal: " << e.what() << "\n";
     }
 }
 
-} // namespace display
+}  // namespace display

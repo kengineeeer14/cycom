@@ -16,6 +16,7 @@ include_directories(
 add_executable(text_renderer_test
     display/text_renderer_test.cc
     ${PROJECT_SOURCE_DIR}/src/display/text_renderer.cc
+    ${PROJECT_SOURCE_DIR}/src/display/impl/freetype_font_loader.cc
 )
 
 target_link_libraries(text_renderer_test
