@@ -1,6 +1,7 @@
 #ifndef CYCOM_DISPLAY_TEXT_RENDERER_H_
 #define CYCOM_DISPLAY_TEXT_RENDERER_H_
 
+#include "display/color.h"
 #include "display/interface/i_font_loader.h"
 #include "driver/interface/i_display.h"
 
@@ -10,17 +11,6 @@
 #include <vector>
 
 namespace ui {
-
-struct Color565 {
-    uint16_t value;  // RGB565
-    static Color565 RGB(uint8_t r, uint8_t g, uint8_t b) {
-        uint16_t v = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
-        return {v};
-    }
-    static Color565 Black() { return {0x0000}; }
-    static Color565 White() { return {0xFFFF}; }
-    static Color565 Gray() { return {0x7BEF}; }
-};
 
 class TextRenderer {
     // テスト用フレンドクラス

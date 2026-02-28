@@ -15,6 +15,7 @@ include_directories(
 # text_renderer_testのビルド
 add_executable(text_renderer_test
     display/text_renderer_test.cc
+    ${PROJECT_SOURCE_DIR}/src/display/color.cc
     ${PROJECT_SOURCE_DIR}/src/display/text_renderer.cc
     ${PROJECT_SOURCE_DIR}/src/display/impl/freetype_font_loader.cc
 )
