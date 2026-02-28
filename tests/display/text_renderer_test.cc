@@ -1354,30 +1354,6 @@ TEST_F(TextRendererTest, GetGlyph_MultipleAccesses_ReturnsSamePointer) {
 // 3. LoadCharが失敗した場合、初期化されたグリフ（ゼロ値）を返すこと
 // =============================================================
 
-// 要件3: LoadCharが失敗した場合、初期化されたグリフ（ゼロ値）が返されること
-// 3-1. LoadCharの失敗時にゼロ値のグリフが返されること
-TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
-    // MockFontLoaderを使用してLoadCharの失敗をシミュレート
-    MockFontLoader mock_font_loader;
-    TextRenderer testable_renderer{mock_display, mock_font_loader};
-    testable_renderer.SetFontSizePx(32);
-    const uint32_t codepoint{0x0041};  // 'A' のコードポイント
-
-    // LoadCharが失敗（非ゼロの戻り値）を返すように設定
-    EXPECT_CALL(mock_font_loader, LoadChar(codepoint, testing::_)).WillOnce(testing::Return(1));  // FT_Load_Charは失敗時に非ゼロを返す
-
-    const TextRenderer::Glyph glyph{testable_renderer.loadGlyph(codepoint)};
-
-    // グリフの初期値が返されることを確認
-    EXPECT_EQ(glyph.width, 0);
-    EXPECT_EQ(glyph.height, 0);
-    EXPECT_EQ(glyph.left, 0);
-    EXPECT_EQ(glyph.top, 0);
-    EXPECT_EQ(glyph.advance, 0);
-    EXPECT_EQ(glyph.pitch, 0);
-    EXPECT_TRUE(glyph.alpha.empty());
-}
-
 // 要件1&2: グリフデータが正しくロードされ、Glyph構造体に正しく変換されること
 // 1-1. ASCII文字のグリフが正しくロードされること
 TEST_F(TextRendererTest, LoadGlyph_AsciiCharacter) {
@@ -1476,6 +1452,30 @@ TEST_F(TextRendererTest, LoadGlyph_DifferentFontSizes) {
     EXPECT_LT(glyph_16.width, glyph_32.width);
     EXPECT_LT(glyph_16.height, glyph_32.height);
     EXPECT_LT(glyph_16.advance, glyph_32.advance);
+}
+
+// 要件3: LoadCharが失敗した場合、初期化されたグリフ（ゼロ値）が返されること
+// 3-1. LoadCharの失敗時にゼロ値のグリフが返されること
+TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
+    // MockFontLoaderを使用してLoadCharの失敗をシミュレート
+    MockFontLoader mock_font_loader;
+    TextRenderer testable_renderer{mock_display, mock_font_loader};
+    testable_renderer.SetFontSizePx(32);
+    const uint32_t codepoint{0x0041};  // 'A' のコードポイント
+
+    // LoadCharが失敗（非ゼロの戻り値）を返すように設定
+    EXPECT_CALL(mock_font_loader, LoadChar(codepoint, testing::_)).WillOnce(testing::Return(1));  // FT_Load_Charは失敗時に非ゼロを返す
+
+    const TextRenderer::Glyph glyph{testable_renderer.loadGlyph(codepoint)};
+
+    // グリフの初期値が返されることを確認
+    EXPECT_EQ(glyph.width, 0);
+    EXPECT_EQ(glyph.height, 0);
+    EXPECT_EQ(glyph.left, 0);
+    EXPECT_EQ(glyph.top, 0);
+    EXPECT_EQ(glyph.advance, 0);
+    EXPECT_EQ(glyph.pitch, 0);
+    EXPECT_TRUE(glyph.alpha.empty());
 }
 
 }  // namespace ui
