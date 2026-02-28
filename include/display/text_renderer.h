@@ -91,6 +91,15 @@ class TextRenderer {
     friend class TextRendererTest_LoadGlyph_MetricsAreValid_Test;
     friend class TextRendererTest_LoadGlyph_AlphaSizeMatchesBitmap_Test;
     friend class TextRendererTest_LoadGlyph_FT_Load_Char_Failure_Test;
+    friend class TextRendererTest_GetGlyph_FirstAccess_LoadsAndCaches_Test;
+    friend class TextRendererTest_GetGlyph_SecondAccess_ReturnsCachedGlyph_Test;
+    friend class TextRendererTest_GetGlyph_MultipleAccesses_ReturnsSamePointer_Test;
+    friend class TextRendererTest_GetGlyph_DifferentCodepoints_ReturnDifferentGlyphs_Test;
+    friend class TextRendererTest_GetGlyph_DifferentFontSizes_ReturnDifferentGlyphs_Test;
+    friend class TextRendererTest_GetGlyph_SpaceCharacter_IsCached_Test;
+    friend class TextRendererTest_GetGlyph_EmojiCharacter_IsCached_Test;
+    friend class TextRendererTest_GetGlyph_MultipleCharacters_AllCached_Test;
+    friend class TextRendererTest_GetGlyph_InvalidCodepoint_ReturnsValidGlyph_Test;
 
   public:
     // 型・エイリアス
@@ -169,8 +178,8 @@ class TextRenderer {
     uint16_t Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha);
     void blitGlyph(const int baseline_x, const int baseline_y, const Glyph &glyph);
     int ExtractColorComponent(const uint16_t &color, const int &shift, const int &mask);
-    const Glyph *getGlyph(uint32_t codepoint);
-    Glyph loadGlyph(uint32_t codepoint);
+    const Glyph *getGlyph(const uint32_t &codepoint);
+    Glyph loadGlyph(const uint32_t &codepoint);
     static bool GetCodepoint(const std::string &utf8_str, size_t &index, uint32_t &codepoint);
 
     // メンバ変数

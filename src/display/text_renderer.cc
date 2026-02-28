@@ -218,14 +218,18 @@ int TextRenderer::ExtractColorComponent(const uint16_t &color, const int &shift,
  * @param codepoint 取得したい文字のコードポイント
  * @return const TextRenderer::Glyph* グリフへのポインタ
  */
-const TextRenderer::Glyph *TextRenderer::getGlyph(uint32_t codepoint) {
-    GlyphKey key = MakeKey(font_size_px_, codepoint);
-    auto it = cache_.find(key);
-    if (it != cache_.end())
-        return &it->second;
-    Glyph g = loadGlyph(codepoint);
-    auto [pos, _] = cache_.emplace(key, std::move(g));
-    return &pos->second;
+const TextRenderer::Glyph *TextRenderer::getGlyph(const uint32_t &codepoint) {
+    const GlyphKey key = MakeKey(font_size_px_, codepoint);
+    const std::unordered_map<GlyphKey, Glyph>::iterator iterator = cache_.find(key);
+    const Glyph *result_ptr;
+    if (iterator != cache_.end()) {
+        result_ptr = &iterator->second;
+    } else {
+        const Glyph glyph = loadGlyph(codepoint);
+        const std::pair<std::unordered_map<GlyphKey, Glyph>::iterator, bool> emplace_result = cache_.emplace(key, std::move(glyph));
+        result_ptr = &emplace_result.first->second;
+    }
+    return result_ptr;
 }
 
 /**
@@ -234,7 +238,7 @@ const TextRenderer::Glyph *TextRenderer::getGlyph(uint32_t codepoint) {
  * @param codepoint ロードする文字のコードポイント
  * @return TextRenderer::Glyph ロードされたグリフの情報を含む構造体。失敗した場合は幅と高さが0の空のグリフを返す。
  */
-TextRenderer::Glyph TextRenderer::loadGlyph(uint32_t codepoint) {
+TextRenderer::Glyph TextRenderer::loadGlyph(const uint32_t &codepoint) {
     IFontLoader::GlyphData glyph_data;
     const int result = font_loader_.LoadChar(codepoint, glyph_data);
 

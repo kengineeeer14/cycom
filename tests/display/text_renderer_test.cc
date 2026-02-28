@@ -1136,14 +1136,226 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
 }
 
 // =============================================================
+// getGlyph のユニットテスト
+// -------------------------------------------------------------
+// 要件：
+// 1. キャッシュが存在しない場合：
+//    - グリフがフォントローダーからロードされること
+//    - ロードされたグリフがキャッシュに追加されること
+//    - 追加されたグリフのアドレスが返されること
+// 2. キャッシュが存在する場合：
+//    - キャッシュから直接グリフが取得されること
+//    - 同じアドレスが返されること（ロード処理が発生しないこと）
+// =============================================================
+
+// 要件1: キャッシュが存在しない場合、グリフがロードされてキャッシュに追加されること
+// 1-1. 初回アクセス時にグリフがロードされてキャッシュに追加されること
+TEST_F(TextRendererTest, GetGlyph_FirstAccess_LoadsAndCaches) {
+    const uint32_t codepoint{0x0041};  // 'A'
+
+    // キャッシュが空であることを確認
+    EXPECT_EQ(text_renderer->cache_.empty(), true);
+
+    // getGlyphを呼び出す
+    const TextRenderer::Glyph *glyph{text_renderer->getGlyph(codepoint)};
+
+    // グリフが返されることを確認
+    EXPECT_NE(glyph, nullptr);
+
+    // グリフの内容が有効であることを確認
+    EXPECT_GT(glyph->width, 0);
+    EXPECT_GT(glyph->height, 0);
+    EXPECT_GT(glyph->advance, 0);
+
+    // キャッシュにグリフが追加されたことを確認
+    EXPECT_EQ(text_renderer->cache_.size(), 1);
+
+    // キャッシュ内のグリフと返されたグリフが同じアドレスであることを確認
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(text_renderer->font_size_px_, codepoint)};
+    EXPECT_EQ(glyph, &text_renderer->cache_[key]);
+}
+
+// 1-2. 異なるコードポイントで異なるグリフが返されること
+TEST_F(TextRendererTest, GetGlyph_DifferentCodepoints_ReturnDifferentGlyphs) {
+    const uint32_t codepoint_a{0x0041};  // 'A'
+    const uint32_t codepoint_b{0x0042};  // 'B'
+
+    // それぞれのグリフを取得
+    const TextRenderer::Glyph *glyph_a{text_renderer->getGlyph(codepoint_a)};
+    const TextRenderer::Glyph *glyph_b{text_renderer->getGlyph(codepoint_b)};
+
+    // 異なるポインタが返されることを確認
+    EXPECT_NE(glyph_a, glyph_b);
+
+    // キャッシュに2つのグリフが追加されていることを確認
+    EXPECT_GE(text_renderer->cache_.size(), 2);
+
+    // グリフの内容も異なることを確認（少なくとも1つのメトリクスが異なる）
+    const bool different{(glyph_a->width != glyph_b->width) || (glyph_a->height != glyph_b->height) || (glyph_a->advance != glyph_b->advance) || (glyph_a->alpha != glyph_b->alpha)};
+    EXPECT_EQ(different, true);
+}
+
+// 1-3. 同じコードポイントでも異なるフォントサイズで異なるグリフが返されること
+TEST_F(TextRendererTest, GetGlyph_DifferentFontSizes_ReturnDifferentGlyphs) {
+    const uint32_t codepoint{0x0041};  // 'A'
+
+    // フォントサイズ16でグリフを取得
+    text_renderer->SetFontSizePx(16);
+    const TextRenderer::Glyph *glyph_16{text_renderer->getGlyph(codepoint)};
+    EXPECT_NE(glyph_16, nullptr);
+
+    // フォントサイズ32でグリフを取得
+    text_renderer->SetFontSizePx(32);
+    const TextRenderer::Glyph *glyph_32{text_renderer->getGlyph(codepoint)};
+    EXPECT_NE(glyph_32, nullptr);
+
+    // 異なるポインタが返されることを確認
+    EXPECT_NE(glyph_16, glyph_32);
+
+    // キャッシュには2つのグリフが存在することを確認
+    EXPECT_GE(text_renderer->cache_.size(), 2);
+
+    // グリフのサイズが異なることを確認
+    EXPECT_LT(glyph_16->width, glyph_32->width);
+    EXPECT_LT(glyph_16->height, glyph_32->height);
+    EXPECT_LT(glyph_16->advance, glyph_32->advance);
+}
+
+// 1-4. スペース文字もキャッシュされること
+TEST_F(TextRendererTest, GetGlyph_SpaceCharacter_IsCached) {
+    const uint32_t codepoint_space{0x0020};  // ' '
+
+    // スペース文字のグリフを取得
+    const TextRenderer::Glyph *glyph{text_renderer->getGlyph(codepoint_space)};
+    EXPECT_NE(glyph, nullptr);
+
+    // キャッシュに追加されていることを確認
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(text_renderer->font_size_px_, codepoint_space)};
+    EXPECT_EQ(text_renderer->cache_.count(key), 1);
+
+    // 2回目のアクセスで同じポインタが返されることを確認
+    const TextRenderer::Glyph *glyph2{text_renderer->getGlyph(codepoint_space)};
+    EXPECT_EQ(glyph, glyph2);
+}
+
+// 1-5. 絵文字もキャッシュされること
+TEST_F(TextRendererTest, GetGlyph_EmojiCharacter_IsCached) {
+    const uint32_t codepoint_emoji{0x1F6B4};  // '🚴'
+
+    // 絵文字のグリフを取得
+    const TextRenderer::Glyph *glyph{text_renderer->getGlyph(codepoint_emoji)};
+    EXPECT_NE(glyph, nullptr);
+
+    // キャッシュに追加されていることを確認
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(text_renderer->font_size_px_, codepoint_emoji)};
+    EXPECT_EQ(text_renderer->cache_.count(key), 1);
+
+    // 2回目のアクセスで同じポインタが返されることを確認
+    const TextRenderer::Glyph *glyph2{text_renderer->getGlyph(codepoint_emoji)};
+    EXPECT_EQ(glyph, glyph2);
+}
+
+// 1-6. 複数の文字をキャッシュした後、各文字に正しくアクセスできること
+TEST_F(TextRendererTest, GetGlyph_MultipleCharacters_AllCached) {
+    // 複数の文字をキャッシュ
+    const std::vector<uint32_t> codepoints{0x0041, 0x0042, 0x0043, 0x3042, 0x3044, 0x3046};  // A, B, C, あ, い, う
+
+    // すべての文字のグリフを取得してキャッシュ
+    std::vector<const TextRenderer::Glyph *> glyphs;
+    for (const uint32_t cp : codepoints) {
+        const TextRenderer::Glyph *glyph{text_renderer->getGlyph(cp)};
+        EXPECT_NE(glyph, nullptr);
+        glyphs.push_back(glyph);
+    }
+
+    // キャッシュサイズを確認
+    EXPECT_GE(text_renderer->cache_.size(), codepoints.size());
+
+    // 再度アクセスして、同じポインタが返されることを確認
+    for (size_t i{0}; i < codepoints.size(); ++i) {
+        const TextRenderer::Glyph *glyph{text_renderer->getGlyph(codepoints[i])};
+        EXPECT_EQ(glyph, glyphs[i]);
+    }
+}
+
+// 1-7. 存在しないコードポイントでもnullptrではなくグリフが返されること
+TEST_F(TextRendererTest, GetGlyph_InvalidCodepoint_ReturnsValidGlyph) {
+    const uint32_t invalid_codepoint{0xFFFFFFFF};  // 存在しないコードポイント
+
+    // グリフを取得
+    const TextRenderer::Glyph *glyph{text_renderer->getGlyph(invalid_codepoint)};
+
+    // nullptrではなく有効なポインタが返されることを確認
+    EXPECT_NE(glyph, nullptr);
+
+    // デフォルトグリフが返されることを確認（幅・高さが0より大きい）
+    EXPECT_GT(glyph->width, 0);
+    EXPECT_GT(glyph->height, 0);
+
+    // キャッシュに追加されていることを確認
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(text_renderer->font_size_px_, invalid_codepoint)};
+    EXPECT_EQ(text_renderer->cache_.count(key), 1);
+}
+
+// 要件2: キャッシュが存在する場合、キャッシュから取得されること
+// 2-1. 2回目以降のアクセス時にキャッシュから取得されること（同じポインタが返ること）
+TEST_F(TextRendererTest, GetGlyph_SecondAccess_ReturnsCachedGlyph) {
+    const uint32_t codepoint{0x0042};  // 'B'
+
+    // 1回目のアクセス
+    const TextRenderer::Glyph *glyph1{text_renderer->getGlyph(codepoint)};
+    EXPECT_NE(glyph1, nullptr);
+
+    // キャッシュサイズを記録
+    const size_t cache_size_after_first{text_renderer->cache_.size()};
+
+    // 2回目のアクセス
+    const TextRenderer::Glyph *glyph2{text_renderer->getGlyph(codepoint)};
+    EXPECT_NE(glyph2, nullptr);
+
+    // 同じポインタが返されることを確認
+    EXPECT_EQ(glyph1, glyph2);
+
+    // キャッシュサイズが変わっていないことを確認
+    EXPECT_EQ(text_renderer->cache_.size(), cache_size_after_first);
+
+    // グリフの内容が同じであることを確認
+    EXPECT_EQ(glyph1->width, glyph2->width);
+    EXPECT_EQ(glyph1->height, glyph2->height);
+    EXPECT_EQ(glyph1->advance, glyph2->advance);
+}
+
+// 2-2. 複数回アクセスしても常に同じポインタが返されること
+TEST_F(TextRendererTest, GetGlyph_MultipleAccesses_ReturnsSamePointer) {
+    const uint32_t codepoint{0x3042};  // 'あ'
+
+    // 複数回アクセス
+    const TextRenderer::Glyph *glyph1{text_renderer->getGlyph(codepoint)};
+    const TextRenderer::Glyph *glyph2{text_renderer->getGlyph(codepoint)};
+    const TextRenderer::Glyph *glyph3{text_renderer->getGlyph(codepoint)};
+    const TextRenderer::Glyph *glyph4{text_renderer->getGlyph(codepoint)};
+
+    // すべて同じポインタであることを確認
+    EXPECT_EQ(glyph1, glyph2);
+    EXPECT_EQ(glyph2, glyph3);
+    EXPECT_EQ(glyph3, glyph4);
+
+    // キャッシュには1つだけ追加されていることを確認
+    const TextRenderer::GlyphKey key{TextRenderer::MakeKey(text_renderer->font_size_px_, codepoint)};
+    EXPECT_EQ(text_renderer->cache_.count(key), 1);
+}
+
+// =============================================================
 // loadGlyph のユニットテスト
 // -------------------------------------------------------------
 // 要件：
-// 1. FT_Load_Charが失敗した場合，グリフの初期値が返されること
-// 2. グリフのロードに成功した場合，正しいグリフデータが返されること
+// 1. フォントローダーからグリフデータを正しくロードできること
+// 2. ロードしたグリフデータを内部のGlyph構造体に正しく変換できること
+// 3. LoadCharが失敗した場合、初期化されたグリフ（ゼロ値）を返すこと
 // =============================================================
 
-// 1. FT_Load_Charが失敗した場合、グリフの初期値が返されること
+// 要件3: LoadCharが失敗した場合、初期化されたグリフ（ゼロ値）が返されること
+// 3-1. LoadCharの失敗時にゼロ値のグリフが返されること
 TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
     // MockFontLoaderを使用してLoadCharの失敗をシミュレート
     MockFontLoader mock_font_loader;
@@ -1166,8 +1378,8 @@ TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
     EXPECT_TRUE(glyph.alpha.empty());
 }
 
-// 2. グリフのロードに成功した場合，正しいグリフデータが返されること
-// 2-1. ASCII文字のグリフが正しくロードされること
+// 要件1&2: グリフデータが正しくロードされ、Glyph構造体に正しく変換されること
+// 1-1. ASCII文字のグリフが正しくロードされること
 TEST_F(TextRendererTest, LoadGlyph_AsciiCharacter) {
     // 'A' (U+0041) をロード
     const uint32_t codepoint_a{0x0041};
@@ -1181,7 +1393,7 @@ TEST_F(TextRendererTest, LoadGlyph_AsciiCharacter) {
     EXPECT_EQ(glyph_a.alpha.size(), glyph_a.height * glyph_a.pitch);  // アルファデータのサイズが正しい
 }
 
-// 2-2. 日本語文字のグリフが正しくロードされること
+// 1-2. 日本語文字のグリフが正しくロードされること
 TEST_F(TextRendererTest, LoadGlyph_JapaneseCharacter) {
     // 'あ' (U+3042) をロード
     const uint32_t codepoint_hiragana{0x3042};
@@ -1195,7 +1407,7 @@ TEST_F(TextRendererTest, LoadGlyph_JapaneseCharacter) {
     EXPECT_EQ(glyph_hiragana.alpha.size(), glyph_hiragana.height * glyph_hiragana.pitch);
 }
 
-// 2-3. スペース文字のグリフが正しく処理されること
+// 1-3. スペース文字のグリフが正しく処理されること
 TEST_F(TextRendererTest, LoadGlyph_SpaceCharacter) {
     // ' ' (U+0020) をロード
     const uint32_t codepoint_space{0x0020};
@@ -1210,7 +1422,7 @@ TEST_F(TextRendererTest, LoadGlyph_SpaceCharacter) {
     }
 }
 
-// 2-4. 絵文字のグリフがロードされること（フォントに存在する場合）
+// 1-4. 絵文字のグリフがロードされること（フォントに存在する場合）
 TEST_F(TextRendererTest, LoadGlyph_EmojiCharacter) {
     // '🚴' (U+1F6B4) をロード
     const uint32_t codepoint_emoji{0x1F6B4};
@@ -1223,7 +1435,7 @@ TEST_F(TextRendererTest, LoadGlyph_EmojiCharacter) {
     EXPECT_FALSE(glyph_emoji.alpha.empty());
 }
 
-// 2-5. 存在しないコードポイントでもデフォルトグリフが返されること
+// 1-5. 存在しないコードポイントでもデフォルトグリフが返されること
 TEST_F(TextRendererTest, LoadGlyph_InvalidCodepointReturnsDefaultGlyph) {
     // 注意：FreeTypeは存在しないコードポイントに対してもデフォルトグリフ（.notdef）を返す
     // そのため、FT_Load_Charは失敗せず、何らかのグリフが返される
@@ -1238,7 +1450,7 @@ TEST_F(TextRendererTest, LoadGlyph_InvalidCodepointReturnsDefaultGlyph) {
     EXPECT_EQ(glyph.alpha.size(), glyph.height * glyph.pitch);  // サイズが正しい
 }
 
-// 2-6.異なる文字で異なるグリフが返されること
+// 1-6. 異なる文字で異なるグリフが返されること
 TEST_F(TextRendererTest, LoadGlyph_DifferentCharactersReturnDifferentGlyphs) {
     // 'A' と 'B' をロード
     const TextRenderer::Glyph glyph_a{text_renderer->loadGlyph(0x0041)};
@@ -1250,7 +1462,7 @@ TEST_F(TextRendererTest, LoadGlyph_DifferentCharactersReturnDifferentGlyphs) {
     EXPECT_TRUE(different);
 }
 
-// 2-7. フォントサイズを変更すると異なるグリフが返されること
+// 1-7. フォントサイズを変更すると異なるグリフが返されること
 TEST_F(TextRendererTest, LoadGlyph_DifferentFontSizes) {
     // フォントサイズ16で 'A' をロード
     text_renderer->SetFontSizePx(16);
