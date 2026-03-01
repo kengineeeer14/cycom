@@ -99,6 +99,8 @@ class TextRenderer {
     friend class TextRendererTest_SetFontSizePx_ValidValue_Test;
     friend class TextRendererTest_SetFontSizePx_MinValue_Test;
     friend class TextRendererTest_SetFontSizePx_BelowMinValue_Test;
+    friend class TextRendererTest_SetColors_BasicColors_Test;
+    friend class TextRendererTest_SetColors_CustomColors_Test;
 
   public:
     // 型・エイリアス
@@ -118,7 +120,14 @@ class TextRenderer {
     TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string &utf8, bool center = true);
     // (x,y) はベースライン基準（左下寄り）
     TextMetrics DrawText(int x, int y, const std::string &utf8);
-    void SetColors(Color565 fg, Color565 bg);
+
+    /**
+     * @brief 描画するテキストの前傾色と背景色を設定する
+     *
+     * @param foreground_color 描画するテキストの前景色（Color565形式）
+     * @param background_color 描画するテキストの背景色（Color565形式）。
+     */
+    void SetColors(const Color565 &foreground_color, const Color565 &background_color);
 
     /**
      * @brief フォントサイズを設定する。最小値は kMinFontSizePx で、これより小さい値が指定された場合は kMinFontSizePx に補正される。

@@ -73,9 +73,9 @@ TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string
     return TextMetrics{max_w, total_h, ascent};
 }
 
-void TextRenderer::SetColors(Color565 fg, Color565 bg) {
-    foreground_color_ = fg;
-    background_color_ = bg;
+void TextRenderer::SetColors(const Color565 &foreground_color, const Color565 &background_color) {
+    foreground_color_ = foreground_color;
+    background_color_ = background_color;
 }
 
 void TextRenderer::SetFontSizePx(const int &font_size_px) {

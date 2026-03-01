@@ -1559,4 +1559,26 @@ TEST_F(TextRendererTest, SetFontSizePx_BelowMinValue) {
     EXPECT_EQ(text_renderer->font_size_px_, TextRenderer::kMinFontSizePx);
 }
 
+// =============================================================
+// SetColorsのユニットテスト
+// -------------------------------------------------------------
+// 要件：foreground_color_とbackground_color_に任意の色を設定できること．
+// =============================================================
+
+TEST_F(TextRendererTest, SetColors_BasicColors) {
+    const Color565 foreground{Color565::Black()};
+    const Color565 background{Color565::White()};
+    text_renderer->SetColors(foreground, background);
+    EXPECT_EQ(text_renderer->foreground_color_.value, foreground.value);
+    EXPECT_EQ(text_renderer->background_color_.value, background.value);
+}
+
+TEST_F(TextRendererTest, SetColors_CustomColors) {
+    const Color565 foreground{0xF800};  // 赤
+    const Color565 background{0x001F};  // 青
+    text_renderer->SetColors(foreground, background);
+    EXPECT_EQ(text_renderer->foreground_color_.value, 0xF800);
+    EXPECT_EQ(text_renderer->background_color_.value, 0x001F);
+}
+
 }  // namespace ui
