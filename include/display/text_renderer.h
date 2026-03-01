@@ -96,6 +96,9 @@ class TextRenderer {
     friend class TextRendererTest_SetLineGapPx_PositiveValue_Test;
     friend class TextRendererTest_SetLineGapPx_ZeroValue_Test;
     friend class TextRendererTest_SetLineGapPx_NegativeValue_Test;
+    friend class TextRendererTest_SetFontSizePx_ValidValue_Test;
+    friend class TextRendererTest_SetFontSizePx_MinValue_Test;
+    friend class TextRendererTest_SetFontSizePx_BelowMinValue_Test;
 
   public:
     // 型・エイリアス
@@ -116,7 +119,13 @@ class TextRenderer {
     // (x,y) はベースライン基準（左下寄り）
     TextMetrics DrawText(int x, int y, const std::string &utf8);
     void SetColors(Color565 fg, Color565 bg);
-    void SetFontSizePx(int px);
+
+    /**
+     * @brief フォントサイズを設定する。最小値は kMinFontSizePx で、これより小さい値が指定された場合は kMinFontSizePx に補正される。
+     *
+     * @param font_size_px フォントサイズ（ピクセル単位）。
+     */
+    void SetFontSizePx(const int &font_size_px);
 
     /**
      * @brief 行間のギャップ（行高さに加算される余白）を設定する．
@@ -153,6 +162,7 @@ class TextRenderer {
     static constexpr int kGreenMask{0x3F};
     static constexpr int kRedShift{11};
     static constexpr int kRedMask{0x1F};
+    static constexpr int kMinFontSizePx{6};  // フォントサイズの最小値（ピクセル単位）
 
     // UTF-8デコード用定数
     static constexpr unsigned char kUtf8AsciiMax{0b10000000};        // ASCII文字の最大値+1

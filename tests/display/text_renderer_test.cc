@@ -1530,4 +1530,33 @@ TEST_F(TextRendererTest, SetLineGapPx_NegativeValue) {
     EXPECT_EQ(text_renderer->line_gap_px_, 0);
 }
 
+// =============================================================
+// SetFontSizePxのユニットテスト
+// -------------------------------------------------------------
+// 要件：font_size_px_にkMinFontSizePx以上の任意の値を設定できること．
+// 1. kMinFontSizePx以上の値を設定した場合、その値がfont_size_px_に正しく設定されること
+// 2. kMinFontSizePx未満の値を設定した場合，kMinFontSizePxがfont_size_px_に設定されること
+// (理由) kMinFontSizePx未満は視認性の問題があるため，最小値を設定する
+// =============================================================
+
+// 要件1: kMinFontSizePx以上の値を設定した場合、その値がfont_size_px_に正しく設定されること
+TEST_F(TextRendererTest, SetFontSizePx_ValidValue) {
+    const int font_size_px{TextRenderer::kMinFontSizePx + 10};
+    text_renderer->SetFontSizePx(font_size_px);
+    EXPECT_EQ(text_renderer->font_size_px_, font_size_px);
+}
+
+TEST_F(TextRendererTest, SetFontSizePx_MinValue) {
+    const int font_size_px{TextRenderer::kMinFontSizePx};
+    text_renderer->SetFontSizePx(font_size_px);
+    EXPECT_EQ(text_renderer->font_size_px_, font_size_px);
+}
+
+// 要件2: kMinFontSizePx未満の値を設定した場合，kMinFontSizePxがfont_size_px_に設定されること
+TEST_F(TextRendererTest, SetFontSizePx_BelowMinValue) {
+    const int font_size_px{TextRenderer::kMinFontSizePx - 1};
+    text_renderer->SetFontSizePx(font_size_px);
+    EXPECT_EQ(text_renderer->font_size_px_, TextRenderer::kMinFontSizePx);
+}
+
 }  // namespace ui

@@ -78,8 +78,8 @@ void TextRenderer::SetColors(Color565 fg, Color565 bg) {
     background_color_ = bg;
 }
 
-void TextRenderer::SetFontSizePx(int px) {
-    font_size_px_ = std::max(6, px);
+void TextRenderer::SetFontSizePx(const int &font_size_px) {
+    font_size_px_ = std::max(kMinFontSizePx, font_size_px);
     font_loader_.SetPixelSize(font_size_px_);
 }
 
