@@ -1478,4 +1478,30 @@ TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
     EXPECT_TRUE(glyph.alpha.empty());
 }
 
+// =============================================================
+// SetWrapWidthPxのユニットテスト
+// -------------------------------------------------------------
+// 要件：wrap_width_px_に0以上の任意の値を設定できること．
+// 1. 0以上の値を設定した場合、その値がwrap_width_px_に正しく設定されること
+// 2. 0未満の値を設定した場合，0がwrap_width_px_に設定されること
+// (理由) 0未満は意図しない値のため，デフォルト値を設定する
+// =============================================================
+
+// 要件1: 0以上の値を設定した場合、その値がwrap_width_px_に正しく設定されること
+TEST_F(TextRendererTest, SetWrapWidthPx_PositiveValue) {
+    text_renderer->SetWrapWidthPx(480);
+    EXPECT_EQ(text_renderer->wrap_width_px_, 480);
+}
+
+TEST_F(TextRendererTest, SetWrapWidthPx_ZeroValue) {
+    text_renderer->SetWrapWidthPx(0);
+    EXPECT_EQ(text_renderer->wrap_width_px_, 0);
+}
+
+// 要件2: 0未満の値を設定した場合，0がwrap_width_px_に設定されること
+TEST_F(TextRendererTest, SetWrapWidthPx_NegativeValue) {
+    text_renderer->SetWrapWidthPx(-100);
+    EXPECT_EQ(text_renderer->wrap_width_px_, 0);
+}
+
 }  // namespace ui

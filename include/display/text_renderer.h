@@ -90,6 +90,9 @@ class TextRenderer {
     friend class TextRendererTest_GetGlyph_EmojiCharacter_IsCached_Test;
     friend class TextRendererTest_GetGlyph_MultipleCharacters_AllCached_Test;
     friend class TextRendererTest_GetGlyph_InvalidCodepoint_ReturnsValidGlyph_Test;
+    friend class TextRendererTest_SetWrapWidthPx_PositiveValue_Test;
+    friend class TextRendererTest_SetWrapWidthPx_ZeroValue_Test;
+    friend class TextRendererTest_SetWrapWidthPx_NegativeValue_Test;
 
   public:
     // 型・エイリアス
@@ -112,7 +115,13 @@ class TextRenderer {
     void SetColors(Color565 fg, Color565 bg);
     void SetFontSizePx(int px);
     void SetLineGapPx(int px);
-    void SetWrapWidthPx(int px);  // 0 で折り返しなし
+
+    /**
+     * @brief テキストの自動折り返しを有効にするためのラップ幅を設定する．
+     *
+     * @param wrap_width_px ラップ幅（ピクセル単位、0の場合は折り返しなし）
+     */
+    void SetWrapWidthPx(const int &wrap_width_px);
 
   private:
     // 型・エイリアス
@@ -180,7 +189,7 @@ class TextRenderer {
     int font_size_px_{32};
     driver::IDisplay &lcd_;
     int line_gap_px_{4};
-    int wrap_width_px_{0};
+    int wrap_width_px_{0};  // テキストの自動折り返し幅（0の場合は折り返しなし）
 };
 
 }  // namespace ui

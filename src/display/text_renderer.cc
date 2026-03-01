@@ -87,8 +87,8 @@ void TextRenderer::SetLineGapPx(int px) {
     line_gap_px_ = std::max(0, px);
 }
 
-void TextRenderer::SetWrapWidthPx(int px) {
-    wrap_width_px_ = std::max(0, px);
+void TextRenderer::SetWrapWidthPx(const int &wrap_width_px) {
+    wrap_width_px_ = std::max(0, wrap_width_px);
 }
 
 // private メンバ関数
