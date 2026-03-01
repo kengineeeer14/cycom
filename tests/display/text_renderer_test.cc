@@ -1504,4 +1504,30 @@ TEST_F(TextRendererTest, SetWrapWidthPx_NegativeValue) {
     EXPECT_EQ(text_renderer->wrap_width_px_, 0);
 }
 
+// =============================================================
+// SetLineGapPxのユニットテスト
+// -------------------------------------------------------------
+// 要件：line_gap_px_に0以上の任意の値を設定できること．
+// 1. 0以上の値を設定した場合、その値がline_gap_px_に正しく設定されること
+// 2. 0未満の値を設定した場合，0がline_gap_px_に設定されること
+// (理由) 0未満は意図しない値のため，デフォルト値を設定する
+// =============================================================
+
+// 要件1: 0以上の値を設定した場合、その値がline_gap_px_に正しく設定されること
+TEST_F(TextRendererTest, SetLineGapPx_PositiveValue) {
+    text_renderer->SetLineGapPx(10);
+    EXPECT_EQ(text_renderer->line_gap_px_, 10);
+}
+
+TEST_F(TextRendererTest, SetLineGapPx_ZeroValue) {
+    text_renderer->SetLineGapPx(0);
+    EXPECT_EQ(text_renderer->line_gap_px_, 0);
+}
+
+// 要件2: 0未満の値を設定した場合，0がline_gap_px_に設定されること
+TEST_F(TextRendererTest, SetLineGapPx_NegativeValue) {
+    text_renderer->SetLineGapPx(-5);
+    EXPECT_EQ(text_renderer->line_gap_px_, 0);
+}
+
 }  // namespace ui

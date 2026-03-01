@@ -93,6 +93,9 @@ class TextRenderer {
     friend class TextRendererTest_SetWrapWidthPx_PositiveValue_Test;
     friend class TextRendererTest_SetWrapWidthPx_ZeroValue_Test;
     friend class TextRendererTest_SetWrapWidthPx_NegativeValue_Test;
+    friend class TextRendererTest_SetLineGapPx_PositiveValue_Test;
+    friend class TextRendererTest_SetLineGapPx_ZeroValue_Test;
+    friend class TextRendererTest_SetLineGapPx_NegativeValue_Test;
 
   public:
     // 型・エイリアス
@@ -114,7 +117,13 @@ class TextRenderer {
     TextMetrics DrawText(int x, int y, const std::string &utf8);
     void SetColors(Color565 fg, Color565 bg);
     void SetFontSizePx(int px);
-    void SetLineGapPx(int px);
+
+    /**
+     * @brief 行間のギャップ（行高さに加算される余白）を設定する．
+     *
+     * @param line_gap_px 行間のギャップ（ピクセル単位、0未満の場合は0に補正）
+     */
+    void SetLineGapPx(const int &line_gap_px);
 
     /**
      * @brief テキストの自動折り返しを有効にするためのラップ幅を設定する．

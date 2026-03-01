@@ -83,8 +83,8 @@ void TextRenderer::SetFontSizePx(int px) {
     font_loader_.SetPixelSize(font_size_px_);
 }
 
-void TextRenderer::SetLineGapPx(int px) {
-    line_gap_px_ = std::max(0, px);
+void TextRenderer::SetLineGapPx(const int &line_gap_px) {
+    line_gap_px_ = std::max(0, line_gap_px);
 }
 
 void TextRenderer::SetWrapWidthPx(const int &wrap_width_px) {
