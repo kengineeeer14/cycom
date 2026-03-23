@@ -1479,7 +1479,7 @@ TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
 }
 
 // =============================================================
-// SetWrapWidthPxのユニットテスト
+// SetWrapWidthPx のユニットテスト
 // -------------------------------------------------------------
 // 要件：wrap_width_px_に0以上の任意の値を設定できること．
 // 1. 0以上の値を設定した場合、その値がwrap_width_px_に正しく設定されること
@@ -1505,7 +1505,7 @@ TEST_F(TextRendererTest, SetWrapWidthPx_NegativeValue) {
 }
 
 // =============================================================
-// SetLineGapPxのユニットテスト
+// SetLineGapPx のユニットテスト
 // -------------------------------------------------------------
 // 要件：line_gap_px_に0以上の任意の値を設定できること．
 // 1. 0以上の値を設定した場合、その値がline_gap_px_に正しく設定されること
@@ -1531,7 +1531,7 @@ TEST_F(TextRendererTest, SetLineGapPx_NegativeValue) {
 }
 
 // =============================================================
-// SetFontSizePxのユニットテスト
+// SetFontSizePx のユニットテスト
 // -------------------------------------------------------------
 // 要件：font_size_px_にkMinFontSizePx以上の任意の値を設定できること．
 // 1. kMinFontSizePx以上の値を設定した場合、その値がfont_size_px_に正しく設定されること
