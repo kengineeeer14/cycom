@@ -13,6 +13,7 @@ class MockFontLoader : public IFontLoader {
     MOCK_METHOD(void, SetPixelSize, (int size_px), (override));
     MOCK_METHOD(int, GetLineHeightPx, (), (const, override));
     MOCK_METHOD(int, GetAscentPx, (), (const, override));
+    MOCK_METHOD(int, GetDescentPx, (), (const, override));
 };
 
 }  // namespace ui

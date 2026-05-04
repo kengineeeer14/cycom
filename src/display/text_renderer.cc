@@ -26,51 +26,55 @@ TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int 
 }
 
 TextRenderer::TextMetrics TextRenderer::DrawText(int x, int y, const std::string &utf8) {
-    int pen_x = x, pen_y = y;
+    int pen_x{x};  // 仮想的なペンのX座標（ベースライン上）
+    int pen_y{y};  // 仮想的なペンのY座標（ベースラインの位置）
     // フォントメトリクスを取得
     int ascent{font_loader_.GetAscentPx()};      // ベースラインから文字上端までの高さ
-    int descent{font_size_px_ - ascent};         // ベースラインから文字下端までの深さの推定値
+    int descent{font_loader_.GetDescentPx()};    // ベースラインから文字下端までの深さ
     int line_h{font_loader_.GetLineHeightPx()};  // 推奨される行の高さ
     if (line_h <= 0)
+        // フォントメトリクスが不正な場合（破損フォント、極小サイズ等）のフェイルセーフ
         line_h = ascent + descent + line_gap_px_;
 
-    int wrap_w = wrap_width_px_;
-    int cur_w = 0, max_w = 0, total_h = line_h;
+    int wrap_w{wrap_width_px_};  // 折り返し幅。0の場合は折り返しなし
+    int current_width{0};        // 現在の行の幅
+    int max_width{0};            // テキスト全体の中で最も幅が広い行の幅
+    int total_height{line_h};    // テキスト全体の高さ。初期値は1行分の高さ（line_h）。行が増えるごとに line_h + line_gap_px_ が加算される
 
-    size_t i = 0;
+    size_t i{0};
     while (i < utf8.size()) {
-        uint32_t cp;
-        if (!GetCodepoint(utf8, i, cp))
+        uint32_t codepoint;
+        if (!GetCodepoint(utf8, i, codepoint))
             break;
 
-        if (cp == '\n') {
-            max_w = std::max(max_w, cur_w);
-            pen_x = x;
-            pen_y += line_h + line_gap_px_;
-            total_h += line_h + line_gap_px_;
-            cur_w = 0;
+        if (codepoint == '\n') {  // 改行文字の場合、現在の行幅を最大幅と比較し、行幅をリセットして次の行へ
+            max_width = std::max(max_width, current_width);
+            pen_x = x;                       // X座標ペン位置を行頭にリセット
+            pen_y += line_h + line_gap_px_;  // Y座標ペン位置を次の行に移動
+            total_height += line_h + line_gap_px_;
+            current_width = 0;
             continue;
         }
 
-        const Glyph *g = getGlyph(cp);
-        int adv = (g ? g->advance : font_size_px_ / 2);
-        if (wrap_w > 0 && (pen_x - x + adv) > wrap_w) {
-            max_w = std::max(max_w, cur_w);
-            pen_x = x;
-            pen_y += line_h + line_gap_px_;
-            total_h += line_h + line_gap_px_;
-            cur_w = 0;
+        const Glyph *glyph{getGlyph(codepoint)};
+        int advance{glyph->advance};                             // グリフを描画した際にペンが水平方向に進むべき距離
+        if ((wrap_w > 0) && ((pen_x - x + advance) > wrap_w)) {  // 折り返し幅を超える場合は改行
+            max_width = std::max(max_width, current_width);
+            pen_x = x;                       // X座標ペン位置を行頭にリセット
+            pen_y += line_h + line_gap_px_;  // Y座標ペン位置を次の行に移動
+            total_height += line_h + line_gap_px_;
+            current_width = 0;
         }
 
-        if (g) {
-            blitGlyph(pen_x, pen_y, *g);
-            pen_x += g->advance;
-            cur_w += g->advance;
+        if (glyph) {
+            blitGlyph(pen_x, pen_y, *glyph);
+            pen_x += glyph->advance;
+            current_width += glyph->advance;
         }
     }
-    max_w = std::max(max_w, cur_w);
+    max_width = std::max(max_width, current_width);
 
-    return TextMetrics{max_w, total_h, ascent};
+    return TextMetrics{max_width, total_height, ascent};
 }
 
 void TextRenderer::SetColors(const Color565 &foreground_color, const Color565 &background_color) {
@@ -108,7 +112,7 @@ TextRenderer::TextMetrics TextRenderer::MeasureText(const std::string &utf8_str)
     // フォントメトリクスが不正な場合（破損フォント、極小サイズ等）のフェイルセーフ
     // フォントサイズを基準に代替の行高さを計算して最低限の描画品質を保証
     if (line_height_px <= 0)
-        line_height_px = font_size_px_ + line_gap_px_;  // TODO: エラー処理
+        line_height_px = ascent_px + font_loader_.GetDescentPx() + line_gap_px_;  // TODO: エラー処理
     size_t i{0};
     while (i < utf8_str.size()) {
         uint32_t codepoint;
@@ -182,7 +186,7 @@ uint16_t TextRenderer::Blend565(const uint16_t &background, const uint16_t &fore
  * @param[in] baseline_y ベースラインのY座標（ピクセル単位）
  * @param[in] glyph 描画するグリフ
  */
-void TextRenderer::blitGlyph(const int baseline_x, const int baseline_y, const Glyph &glyph) {
+void TextRenderer::blitGlyph(const int &baseline_x, const int &baseline_y, const Glyph &glyph) {
     if ((glyph.width <= 0) || (glyph.height <= 0))
         return;  // TODO: エラー処理
     const int screen_x{baseline_x + glyph.left};

@@ -43,6 +43,90 @@ class TextRendererTest : public ::testing::Test {
 };
 
 // =============================================================
+// DrawTextのユニットテスト
+// -------------------------------------------------------------
+// 要件：UTF-8文字列を正しく描画できること
+// 1. 空文字列の場合、描画が行われず、幅=0・高さ=1行分・ベースライン=アセントになること
+// 2. 改行・折り返しがない場合で、正しい幅・高さ・ベースラインのメトリクスが返されること
+// 3. 改行がある場合、行ごとに正しい位置に描画されること
+// 4. 折り返し幅を設定すると、幅を超えた時点で次の行に正しく折り返されること
+// =============================================================
+
+TEST_F(TextRendererTest, DrawText_EmptyString) {
+    // 空文字列の場合、描画が行われず、幅=0・高さ=1行分・ベースライン=アセントになること
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
+
+    const TextRenderer::TextMetrics metrics{text_renderer->DrawText(0, 100, "")};
+
+    EXPECT_EQ(metrics.width_px, 0);
+    EXPECT_EQ(metrics.height_px, font_loader->GetLineHeightPx());
+    EXPECT_EQ(metrics.baseline_px, font_loader->GetAscentPx());
+}
+
+TEST_F(TextRendererTest, DrawText_SimpleText_ReturnsCorrectMetrics) {
+    // 改行・折り返しがない場合、アドバンス幅・1行分の高さ・アセントが正しく返ること
+    IFontLoader::GlyphData glyph_data;
+    font_loader->LoadChar('A', glyph_data);
+    const int expected_width{glyph_data.advance};
+    const int expected_height{font_loader->GetLineHeightPx()};
+    const int expected_baseline{font_loader->GetAscentPx()};
+
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(::testing::AnyNumber());
+
+    const TextRenderer::TextMetrics metrics{text_renderer->DrawText(0, 100, "A")};
+
+    EXPECT_EQ(metrics.width_px, expected_width);
+    EXPECT_EQ(metrics.height_px, expected_height);
+    EXPECT_EQ(metrics.baseline_px, expected_baseline);
+}
+
+TEST_F(TextRendererTest, DrawText_Newline_SecondLineDrawnBelow) {
+    // 改行がある場合、2行目が1行目よりも line_h + line_gap_px 分下に描画されること
+    IFontLoader::GlyphData glyph_data;
+    font_loader->LoadChar('A', glyph_data);
+    const int pen_y{100};
+    const int line_h{font_loader->GetLineHeightPx()};
+    const int line_gap_px{4};  // デフォルト値
+
+    // blitGlyph は baseline_y - glyph.top の行から描画を開始する
+    const int expected_y_line1{pen_y - glyph_data.top};
+    const int expected_y_line2{pen_y + line_h + line_gap_px - glyph_data.top};
+
+    std::vector<int> captured_y_values;
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke([&captured_y_values](int /*x*/, int y, const uint16_t * /*rgb565*/, int /*len*/) { captured_y_values.push_back(y); }));
+
+    text_renderer->DrawText(0, pen_y, "A\nA");
+
+    EXPECT_THAT(captured_y_values, ::testing::Contains(expected_y_line1));
+    EXPECT_THAT(captured_y_values, ::testing::Contains(expected_y_line2));
+}
+
+TEST_F(TextRendererTest, DrawText_WrapWidth_WrappedLineDrawnBelow) {
+    // 折り返し幅を超えた場合、折り返し後の行が正しい位置（1行下）に描画されること
+    IFontLoader::GlyphData glyph_data;
+    font_loader->LoadChar('A', glyph_data);
+    const int advance{glyph_data.advance};
+    const int pen_y{100};
+    const int line_h{font_loader->GetLineHeightPx()};
+    const int line_gap_px{4};  // デフォルト値
+
+    // 2文字分の幅を折り返し幅に設定 → 3文字目で折り返しが発生する
+    text_renderer->SetWrapWidthPx(advance * 2);
+
+    // 折り返し後のベースラインが1行下になるため、描画Y座標も1行分下になる
+    const int expected_y_line2{pen_y + line_h + line_gap_px - glyph_data.top};
+
+    std::vector<int> captured_y_values;
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke([&captured_y_values](int /*x*/, int y, const uint16_t * /*rgb565*/, int /*len*/) { captured_y_values.push_back(y); }));
+
+    text_renderer->DrawText(0, pen_y, "AAAA");
+
+    EXPECT_THAT(captured_y_values, ::testing::Contains(expected_y_line2));
+}
+
+// =============================================================
 // MakeKeyのユニットテスト
 // -------------------------------------------------------------
 // 要件：フォントサイズとコードポイントから一意のキャッシュキーを生成できること
@@ -1069,12 +1153,14 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_ZeroLineHeight) {
     MockFontLoader mock_font_loader;
     TextRenderer testable_renderer{mock_display, mock_font_loader};
     testable_renderer.SetFontSizePx(32);
-    const int font_size = 32;
     const int line_gap = 4;  // TextRendererのデフォルト値
+    const int ascent = 20;
+    const int descent = 8;
 
     // line_height_px = 0 を強制
     EXPECT_CALL(mock_font_loader, GetLineHeightPx()).WillRepeatedly(testing::Return(0));
-    EXPECT_CALL(mock_font_loader, GetAscentPx()).WillRepeatedly(testing::Return(20));
+    EXPECT_CALL(mock_font_loader, GetAscentPx()).WillRepeatedly(testing::Return(ascent));
+    EXPECT_CALL(mock_font_loader, GetDescentPx()).WillRepeatedly(testing::Return(descent));
 
     // LoadCharを設定（グリフロード時に呼ばれる）
     EXPECT_CALL(mock_font_loader, LoadChar(testing::_, testing::_)).WillRepeatedly(testing::Invoke([](uint32_t codepoint, IFontLoader::GlyphData &glyph_data) {
@@ -1092,8 +1178,7 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_ZeroLineHeight) {
     const TextRenderer::TextMetrics metrics{testable_renderer.MeasureText(text)};
 
     // フェイルセーフ値を計算: ascent + descent + line_gap_px_
-    // descent ≈ font_size - ascent = 32 - 20 = 12
-    const int expected_height{20 + 12 + line_gap};
+    const int expected_height{ascent + descent + line_gap};
 
     // フェイルセーフが発動し、計算された値が使用されることを確認
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -1105,12 +1190,14 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
     MockFontLoader mock_font_loader;
     TextRenderer testable_renderer{mock_display, mock_font_loader};
     testable_renderer.SetFontSizePx(32);
-    const int font_size = 32;
     const int line_gap = 4;
+    const int ascent = 20;
+    const int descent = 8;
 
     // line_height_px = -5 を強制
     EXPECT_CALL(mock_font_loader, GetLineHeightPx()).WillRepeatedly(testing::Return(-5));
-    EXPECT_CALL(mock_font_loader, GetAscentPx()).WillRepeatedly(testing::Return(20));
+    EXPECT_CALL(mock_font_loader, GetAscentPx()).WillRepeatedly(testing::Return(ascent));
+    EXPECT_CALL(mock_font_loader, GetDescentPx()).WillRepeatedly(testing::Return(descent));
 
     // LoadCharを設定
     EXPECT_CALL(mock_font_loader, LoadChar(testing::_, testing::_)).WillRepeatedly(testing::Invoke([](uint32_t codepoint, IFontLoader::GlyphData &glyph_data) {
@@ -1128,7 +1215,7 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
     const TextRenderer::TextMetrics metrics{testable_renderer.MeasureText(text)};
 
     // フェイルセーフ値を計算: ascent + descent + line_gap_px_
-    const int expected_height{20 + 12 + line_gap};
+    const int expected_height{ascent + descent + line_gap};
 
     // フェイルセーフが発動することを確認
     EXPECT_EQ(metrics.height_px, expected_height);
@@ -1579,6 +1666,54 @@ TEST_F(TextRendererTest, SetColors_CustomColors) {
     text_renderer->SetColors(foreground, background);
     EXPECT_EQ(text_renderer->foreground_color_.value, 0xF800);
     EXPECT_EQ(text_renderer->background_color_.value, 0x001F);
+}
+
+// =============================================================
+// GetDescentPx のユニットテスト
+// -------------------------------------------------------------
+// 要件：FreeTypeFontLoaderが正確なディセント値を返すこと
+// 1. ディセントが正の値であること
+// 2. ディセントがフォントサイズより小さいこと
+// 3. ascent + descent <= line_height の関係が成り立つこと
+// 4. フォントサイズ変更後もディセントが正しく更新されること
+// =============================================================
+
+// 要件1: ディセントが正の値であること
+TEST_F(TextRendererTest, GetDescentPx_ReturnsPositiveValue) {
+    const int descent{font_loader->GetDescentPx()};
+    EXPECT_GT(descent, 0) << "ディセントは正の値であるべき";
+}
+
+// 要件2: ディセントがフォントサイズより小さいこと
+TEST_F(TextRendererTest, GetDescentPx_SmallerThanFontSize) {
+    const int font_size{32};
+    text_renderer->SetFontSizePx(font_size);
+    const int descent{font_loader->GetDescentPx()};
+    EXPECT_LT(descent, font_size) << "ディセントはフォントサイズより小さいべき";
+}
+
+// 要件3: ascent + descent と line_height がほぼ等しいこと
+// 注意: FreeTypeの26.6固定小数点から整数への変換時の丸め誤差により、
+//       個々の値の合計が line_height と最大1px程度ずれることがある
+TEST_F(TextRendererTest, GetDescentPx_AscentDescentLineHeightRelation) {
+    const int ascent{font_loader->GetAscentPx()};
+    const int descent{font_loader->GetDescentPx()};
+    const int line_height{font_loader->GetLineHeightPx()};
+    const int sum{ascent + descent};
+    EXPECT_NEAR(sum, line_height, 1) << "ascent(" << ascent << ") + descent(" << descent << ") は line_height(" << line_height << ") とほぼ等しいべき";
+}
+
+// 要件4: フォントサイズ変更後もディセントが正しく更新されること
+TEST_F(TextRendererTest, GetDescentPx_UpdatesWithFontSize) {
+    text_renderer->SetFontSizePx(16);
+    const int descent_small{font_loader->GetDescentPx()};
+
+    text_renderer->SetFontSizePx(48);
+    const int descent_large{font_loader->GetDescentPx()};
+
+    EXPECT_GT(descent_small, 0);
+    EXPECT_GT(descent_large, 0);
+    EXPECT_GT(descent_large, descent_small) << "フォントサイズが大きいほどディセントも大きくなるべき";
 }
 
 }  // namespace ui

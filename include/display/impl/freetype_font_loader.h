@@ -32,6 +32,7 @@ class FreeTypeFontLoader : public IFontLoader {
     void SetPixelSize(int size_px) override;
     int GetLineHeightPx() const override;
     int GetAscentPx() const override;
+    int GetDescentPx() const override;
 
   private:
     static constexpr int kFreeTypeFractionalBits{6};  // FreeTypeの26.6固定小数点形式における小数部のビット数

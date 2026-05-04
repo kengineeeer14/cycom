@@ -70,4 +70,9 @@ int FreeTypeFontLoader::GetAscentPx() const {
     return static_cast<int>(face_->size->metrics.ascender >> kFreeTypeFractionalBits);
 }
 
+int FreeTypeFontLoader::GetDescentPx() const {
+    // descender は負の値なので絶対値を返す
+    return static_cast<int>(-face_->size->metrics.descender >> kFreeTypeFractionalBits);
+}
+
 }  // namespace ui

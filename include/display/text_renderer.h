@@ -101,13 +101,17 @@ class TextRenderer {
     friend class TextRendererTest_SetFontSizePx_BelowMinValue_Test;
     friend class TextRendererTest_SetColors_BasicColors_Test;
     friend class TextRendererTest_SetColors_CustomColors_Test;
+    friend class TextRendererTest_DrawText_EmptyString_Test;
+    friend class TextRendererTest_DrawText_SimpleText_ReturnsCorrectMetrics_Test;
+    friend class TextRendererTest_DrawText_Newline_SecondLineDrawnBelow_Test;
+    friend class TextRendererTest_DrawText_WrapWidth_WrappedLineDrawnBelow_Test;
 
   public:
     // 型・エイリアス
     struct TextMetrics {
         int width_px;     // テキスト全体の中で最も幅が広い行の幅
-        int height_px;    // 1行分の推奨される総高さです。次の行までの距離で、ascent + descent + 行間を含む．
-        int baseline_px;  // // ベースラインから文字上端までの高さ．大文字や上に伸びる文字（'A', 'h', 'b'など）の高さ．
+        int height_px;    // テキスト全体の高さ（複数行の場合は全行の合計、1行の場合は ascent + descent + 行間）
+        int baseline_px;  // ベースラインから文字上端までの高さ．大文字や上に伸びる文字（'A', 'h', 'b'など）の高さ．
     };
 
     // コンストラクタ/デストラクタ
@@ -118,11 +122,19 @@ class TextRenderer {
     // メンバ関数
     // パネル塗り→中央寄せ描画
     TextMetrics DrawLabel(int panel_x, int panel_y, int panel_w, int panel_h, const std::string &utf8, bool center = true);
-    // (x,y) はベースライン基準（左下寄り）
+
+    /**
+     * @brief UTF-8文字列を描画する。改行文字 '\n' をサポートし、行間のギャップも考慮する。
+     *
+     * @param x 描画開始位置のX座標（ベースライン基準（左下より））
+     * @param y 描画開始位置のY座標（ベースライン基準（左下より））
+     * @param utf8 UTF-8文字列
+     * @return TextMetrics 描画に必要なメトリクス
+     */
     TextMetrics DrawText(int x, int y, const std::string &utf8);
 
     /**
-     * @brief 描画するテキストの前傾色と背景色を設定する
+     * @brief 描画するテキストの前景色と背景色を設定する
      *
      * @param foreground_color 描画するテキストの前景色（Color565形式）
      * @param background_color 描画するテキストの背景色（Color565形式）。
@@ -203,7 +215,7 @@ class TextRenderer {
     TextMetrics MeasureText(const std::string &utf8) const;
     static GlyphKey MakeKey(const int &size_px, const uint32_t &codepoint);
     uint16_t Blend565(const uint16_t &background, const uint16_t &foreground, const uint8_t &alpha);
-    void blitGlyph(const int baseline_x, const int baseline_y, const Glyph &glyph);
+    void blitGlyph(const int &baseline_x, const int &baseline_y, const Glyph &glyph);
     int ExtractColorComponent(const uint16_t &color, const int &shift, const int &mask);
     const Glyph *getGlyph(const uint32_t &codepoint);
     Glyph loadGlyph(const uint32_t &codepoint);

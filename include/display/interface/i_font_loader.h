@@ -52,6 +52,12 @@ class IFontLoader {
      * @return int ピクセル単位のアセント
      */
     virtual int GetAscentPx() const = 0;
+
+    /**
+     * @brief フォントメトリクスのディセント（ベースラインから文字下端までの深さ）を取得する
+     * @return int ピクセル単位のディセント（正の値）
+     */
+    virtual int GetDescentPx() const = 0;
 };
 
 }  // namespace ui
