@@ -42,16 +42,54 @@ class TextRendererTest : public ::testing::Test {
     std::unique_ptr<TextRenderer> text_renderer;
 };
 
-// =============================================================
-// DrawTextのユニットテスト
-// -------------------------------------------------------------
+// 要件：コンストラクタが依存オブジェクトを正しく初期化すること
+// 1. デフォルトのフォントサイズ（32px）でIFontLoaderのSetPixelSizeが呼ばれること
+// 2. 渡されたIDisplay・IFontLoaderの参照が保持され、以降のメンバ関数呼び出しで
+//    実際に使用されること
+TEST(TextRendererConstructorTest, CallsSetPixelSizeWithDefaultFontSize) {
+    // コンストラクタ実行時に、デフォルトフォントサイズ(32px)でSetPixelSizeが呼ばれること
+    driver::MockDisplay mock_display;
+    MockFontLoader mock_font_loader;
+
+    EXPECT_CALL(mock_font_loader, SetPixelSize(32)).Times(1);
+
+    TextRenderer renderer(mock_display, mock_font_loader);
+}
+
+TEST(TextRendererConstructorTest, StoresLcdAndFontLoaderReferences) {
+    // コンストラクタで渡したIDisplay・IFontLoaderの参照がそのまま保持され、
+    // 以降のDrawTextで使用されること（渡したモック以外が呼ばれないこと）を確認する
+    ::testing::NiceMock<driver::MockDisplay> mock_display;
+    ::testing::NiceMock<MockFontLoader> mock_font_loader;
+
+    IFontLoader::GlyphData glyph_data;
+    glyph_data.width = 2;
+    glyph_data.height = 2;
+    glyph_data.left = 0;
+    glyph_data.top = 2;
+    glyph_data.advance = 5;
+    glyph_data.pitch = 2;
+    glyph_data.alpha = std::vector<uint8_t>(4, 128);
+    ON_CALL(mock_font_loader, LoadChar(::testing::_, ::testing::_)).WillByDefault(::testing::Invoke([glyph_data](uint32_t /*codepoint*/, IFontLoader::GlyphData &out) {
+        out = glyph_data;
+        return 0;
+    }));
+
+    TextRenderer renderer(mock_display, mock_font_loader);
+
+    // font_loader_の参照が正しいことをLoadChar呼び出しで検証
+    EXPECT_CALL(mock_font_loader, LoadChar(::testing::_, ::testing::_)).Times(::testing::AtLeast(1));
+    // lcd_の参照が正しいことをDrawRGB565Line呼び出しで検証
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(::testing::AtLeast(1));
+
+    renderer.DrawText(0, 100, "A");
+}
+
 // 要件：UTF-8文字列を正しく描画できること
 // 1. 空文字列の場合、描画が行われず、幅=0・高さ=1行分・ベースライン=アセントになること
 // 2. 改行・折り返しがない場合で、正しい幅・高さ・ベースラインのメトリクスが返されること
 // 3. 改行がある場合、行ごとに正しい位置に描画されること
 // 4. 折り返し幅を設定すると、幅を超えた時点で次の行に正しく折り返されること
-// =============================================================
-
 TEST_F(TextRendererTest, DrawText_EmptyString) {
     // 空文字列の場合、描画が行われず、幅=0・高さ=1行分・ベースライン=アセントになること
     EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
@@ -126,15 +164,10 @@ TEST_F(TextRendererTest, DrawText_WrapWidth_WrappedLineDrawnBelow) {
     EXPECT_THAT(captured_y_values, ::testing::Contains(expected_y_line2));
 }
 
-// =============================================================
-// DrawLabel のユニットテスト
-// -------------------------------------------------------------
 // 要件：パネル内にテキストを描画できること
 // 1. 空文字列の場合、描画が行われないこと
 // 2. center=true の場合、テキストがパネル水平中央に寄せて描画されること
 // 3. center=false の場合、テキストがパネル左上基準のオフセット位置に描画されること
-// =============================================================
-
 // 要件1: 空文字列の場合、描画が行われないこと
 TEST_F(TextRendererTest, DrawLabel_EmptyString_NoDrawCalls) {
     EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
@@ -183,11 +216,7 @@ TEST_F(TextRendererTest, DrawLabel_NoCenter_DrawsAtPanelOffset) {
     EXPECT_EQ(captured_x_values.front(), expected_screen_x);
 }
 
-// =============================================================
-// MakeKeyのユニットテスト
-// -------------------------------------------------------------
 // 要件：フォントサイズとコードポイントから一意のキャッシュキーを生成できること
-// =============================================================
 TEST_F(TextRendererTest, MakeKey_BasicGeneration) {
     // 基本的なキー生成が正しく動作することを確認
     const int size_px{32};
@@ -286,11 +315,7 @@ TEST_F(TextRendererTest, MakeKey_ZeroValues) {
     EXPECT_EQ(key, 0);
 }
 
-// =============================================================
-// Blend565のユニットテスト
-// -------------------------------------------------------------
 // 要件：アルファ値に基づいて、背景色と前景色を正しく合成できること
-// =============================================================
 TEST_F(TextRendererTest, Blend565_FullyOpaque) {
     // アルファ = 255（完全不透明）の場合、前景色がそのまま返る
     const uint16_t background{0xF800};  // 赤（RGB565）
@@ -391,11 +416,7 @@ TEST_F(TextRendererTest, Blend565_SameColor) {
     EXPECT_EQ(result_half, color);
 }
 
-// =============================================================
-// ExtractColorComponentのユニットテスト
-// -------------------------------------------------------------
 // 要件：RGB565形式の色から，指定された色成分（赤・緑・青）を抽出できること
-// =============================================================
 TEST_F(TextRendererTest, ExtractColorComponentTest) {
     const uint16_t color{0xABCD};  // RGB565
 
@@ -416,13 +437,9 @@ TEST_F(TextRendererTest, ExtractColorComponentTest) {
     EXPECT_EQ(b, 0b01101);   // 青成分
 }
 
-// =============================================================
-// GetCodepointのユニットテスト
-// -------------------------------------------------------------
 // 要件：
 // - UTF-8文字列の現在位置のコードポイントを取得し、インデックスを次の位置に更新すること
 // - 不正な文字列が与えられた場合、異常とわかる処置を行うこと
-// =============================================================
 TEST_F(TextRendererTest, GetCodepoint_AsciiCharacter) {
     // ASCII文字（1バイト）の取得
     const std::string utf8_str{"Hello"};
@@ -585,11 +602,7 @@ TEST_F(TextRendererTest, GetCodepoint_SequentialCalls) {
     EXPECT_FALSE(TextRenderer::GetCodepoint(utf8_str, index, codepoint));
 }
 
-// =============================================================
-// blitGlyphのユニットテスト
-// -------------------------------------------------------------
 // 要件：指定位置にグリフを正しく描画できること
-// =============================================================
 TEST_F(TextRendererTest, BlitGlyph_EmptyGlyph_WidthZero) {
     // 幅が0のグリフは描画されない
     TextRenderer::Glyph glyph;
@@ -833,11 +846,7 @@ TEST_F(TextRendererTest, BlitGlyph_MultipleRows) {
     text_renderer->blitGlyph(baseline_x, baseline_y, glyph);
 }
 
-// =============================================================
-// MeasureTextのユニットテスト
-// -------------------------------------------------------------
 // 要件：UTF-8文字列の描画に必要なメトリクス（幅・高さ・ベースライン）を正しく計測できること
-// =============================================================
 TEST_F(TextRendererTest, MeasureText_EmptyString) {
     // 空文字列の場合、幅は0になること
     const TextRenderer::TextMetrics metrics{text_renderer->MeasureText("")};
@@ -1200,11 +1209,7 @@ TEST_F(TextRendererTest, MeasureText_InvalidUTF8_AfterNewline) {
     EXPECT_EQ(metrics.baseline_px, expected_baseline);
 }
 
-// =============================================================
-// MeasureText フェイルセーフロジックの明示的テスト
-// -------------------------------------------------------------
 // 要件：line_height_px <= 0 の場合にフェイルセーフが確実に動作すること
-// =============================================================
 TEST_F(TextRendererTest, MeasureText_FailsafeLogic_ZeroLineHeight) {
     // MockFontLoaderを使用してline_height = 0を返すように設定
     MockFontLoader mock_font_loader;
@@ -1279,9 +1284,6 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
     EXPECT_GT(metrics.height_px, 0);
 }
 
-// =============================================================
-// getGlyph のユニットテスト
-// -------------------------------------------------------------
 // 要件：
 // 1. キャッシュが存在しない場合：
 //    - グリフがフォントローダーからロードされること
@@ -1290,7 +1292,6 @@ TEST_F(TextRendererTest, MeasureText_FailsafeLogic_NegativeLineHeight) {
 // 2. キャッシュが存在する場合：
 //    - キャッシュから直接グリフが取得されること
 //    - 同じアドレスが返されること（ロード処理が発生しないこと）
-// =============================================================
 
 // 要件1: キャッシュが存在しない場合、グリフがロードされてキャッシュに追加されること
 // 1-1. 初回アクセス時にグリフがロードされてキャッシュに追加されること
@@ -1489,15 +1490,10 @@ TEST_F(TextRendererTest, GetGlyph_MultipleAccesses_ReturnsSamePointer) {
     EXPECT_EQ(text_renderer->cache_.count(key), 1);
 }
 
-// =============================================================
-// loadGlyph のユニットテスト
-// -------------------------------------------------------------
 // 要件：
 // 1. フォントローダーからグリフデータを正しくロードできること
 // 2. ロードしたグリフデータを内部のGlyph構造体に正しく変換できること
 // 3. LoadCharが失敗した場合、初期化されたグリフ（ゼロ値）を返すこと
-// =============================================================
-
 // 要件1&2: グリフデータが正しくロードされ、Glyph構造体に正しく変換されること
 // 1-1. ASCII文字のグリフが正しくロードされること
 TEST_F(TextRendererTest, LoadGlyph_AsciiCharacter) {
@@ -1621,10 +1617,10 @@ TEST_F(TextRendererTest, LoadGlyph_MetricsAreValid) {
     const uint32_t codepoint{0x0041};  // 'A'
     const TextRenderer::Glyph glyph{text_renderer->loadGlyph(codepoint)};
 
-    EXPECT_GT(glyph.advance, 0);                                     // アドバンス値は正の値
-    EXPECT_GT(glyph.top, 0);                                         // 大文字Aはベースラインより上に伸びる
-    EXPECT_GE(glyph.left, 0);                                        // 左オフセットは0以上
-    EXPECT_LE(glyph.advance, font_loader->GetLineHeightPx() * 2);    // アドバンスはフォントサイズの2倍以下
+    EXPECT_GT(glyph.advance, 0);                                   // アドバンス値は正の値
+    EXPECT_GT(glyph.top, 0);                                       // 大文字Aはベースラインより上に伸びる
+    EXPECT_GE(glyph.left, 0);                                      // 左オフセットは0以上
+    EXPECT_LE(glyph.advance, font_loader->GetLineHeightPx() * 2);  // アドバンスはフォントサイズの2倍以下
 }
 
 // 1-10. アルファデータのサイズがビットマップのサイズ（height * pitch）と一致すること
@@ -1632,8 +1628,7 @@ TEST_F(TextRendererTest, LoadGlyph_AlphaSizeMatchesBitmap) {
     const std::vector<uint32_t> codepoints{0x0041, 0x0042, 0x3042};  // 'A', 'B', 'あ'
     for (const uint32_t codepoint : codepoints) {
         const TextRenderer::Glyph glyph{text_renderer->loadGlyph(codepoint)};
-        EXPECT_EQ(glyph.alpha.size(), static_cast<size_t>(glyph.height * glyph.pitch))
-            << "コードポイント U+" << std::hex << codepoint << " のアルファデータサイズが不正";
+        EXPECT_EQ(glyph.alpha.size(), static_cast<size_t>(glyph.height * glyph.pitch)) << "コードポイント U+" << std::hex << codepoint << " のアルファデータサイズが不正";
     }
 }
 
@@ -1661,14 +1656,10 @@ TEST_F(TextRendererTest, LoadGlyph_FT_Load_Char_Failure) {
     EXPECT_TRUE(glyph.alpha.empty());
 }
 
-// =============================================================
-// SetWrapWidthPx のユニットテスト
-// -------------------------------------------------------------
 // 要件：wrap_width_px_に0以上の任意の値を設定できること．
 // 1. 0以上の値を設定した場合、その値がwrap_width_px_に正しく設定されること
 // 2. 0未満の値を設定した場合，0がwrap_width_px_に設定されること
 // (理由) 0未満は意図しない値のため，デフォルト値を設定する
-// =============================================================
 
 // 要件1: 0以上の値を設定した場合、その値がwrap_width_px_に正しく設定されること
 TEST_F(TextRendererTest, SetWrapWidthPx_PositiveValue) {
@@ -1687,14 +1678,10 @@ TEST_F(TextRendererTest, SetWrapWidthPx_NegativeValue) {
     EXPECT_EQ(text_renderer->wrap_width_px_, 0);
 }
 
-// =============================================================
-// SetLineGapPx のユニットテスト
-// -------------------------------------------------------------
 // 要件：line_gap_px_に0以上の任意の値を設定できること．
 // 1. 0以上の値を設定した場合、その値がline_gap_px_に正しく設定されること
 // 2. 0未満の値を設定した場合，0がline_gap_px_に設定されること
 // (理由) 0未満は意図しない値のため，デフォルト値を設定する
-// =============================================================
 
 // 要件1: 0以上の値を設定した場合、その値がline_gap_px_に正しく設定されること
 TEST_F(TextRendererTest, SetLineGapPx_PositiveValue) {
@@ -1713,14 +1700,10 @@ TEST_F(TextRendererTest, SetLineGapPx_NegativeValue) {
     EXPECT_EQ(text_renderer->line_gap_px_, 0);
 }
 
-// =============================================================
-// SetFontSizePx のユニットテスト
-// -------------------------------------------------------------
 // 要件：font_size_px_にkMinFontSizePx以上の任意の値を設定できること．
 // 1. kMinFontSizePx以上の値を設定した場合、その値がfont_size_px_に正しく設定されること
 // 2. kMinFontSizePx未満の値を設定した場合，kMinFontSizePxがfont_size_px_に設定されること
 // (理由) kMinFontSizePx未満は視認性の問題があるため，最小値を設定する
-// =============================================================
 
 // 要件1: kMinFontSizePx以上の値を設定した場合、その値がfont_size_px_に正しく設定されること
 TEST_F(TextRendererTest, SetFontSizePx_ValidValue) {
@@ -1742,12 +1725,7 @@ TEST_F(TextRendererTest, SetFontSizePx_BelowMinValue) {
     EXPECT_EQ(text_renderer->font_size_px_, TextRenderer::kMinFontSizePx);
 }
 
-// =============================================================
-// SetColorsのユニットテスト
-// -------------------------------------------------------------
 // 要件：foreground_color_とbackground_color_に任意の色を設定できること．
-// =============================================================
-
 TEST_F(TextRendererTest, SetColors_BasicColors) {
     const Color565 foreground{Color565::Black()};
     const Color565 background{Color565::White()};
@@ -1764,15 +1742,11 @@ TEST_F(TextRendererTest, SetColors_CustomColors) {
     EXPECT_EQ(text_renderer->background_color_.value, 0x001F);
 }
 
-// =============================================================
-// GetDescentPx のユニットテスト
-// -------------------------------------------------------------
 // 要件：FreeTypeFontLoaderが正確なディセント値を返すこと
 // 1. ディセントが正の値であること
 // 2. ディセントがフォントサイズより小さいこと
 // 3. ascent + descent <= line_height の関係が成り立つこと
 // 4. フォントサイズ変更後もディセントが正しく更新されること
-// =============================================================
 
 // 要件1: ディセントが正の値であること
 TEST_F(TextRendererTest, GetDescentPx_ReturnsPositiveValue) {
