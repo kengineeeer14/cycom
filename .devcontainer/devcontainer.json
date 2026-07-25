@@ -16,6 +16,9 @@
         "ms-vscode.cpptools-themes",
         "ms-vscode.cmake-tools",
         
+        // テスト
+        "matepek.vscode-catch2-test-adapter",
+        
         // ドキュメント生成
         "cschlosser.doxdocgen",
         
