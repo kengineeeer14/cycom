@@ -19,8 +19,8 @@ TextRenderer::TextMetrics TextRenderer::DrawLabel(int panel_x, int panel_y, int 
         int y = panel_y + std::max(0, (panel_h + m.baseline_px) / 2);
         return DrawText(x, y, utf8);
     } else {
-        int x = panel_x + 4;
-        int y = panel_y + (font_size_px_ + 4);
+        int x = panel_x + kLabelPaddingPx;
+        int y = panel_y + (font_size_px_ + kLabelPaddingPx);
         return DrawText(x, y, utf8);
     }
 }

@@ -105,6 +105,9 @@ class TextRenderer {
     friend class TextRendererTest_DrawText_SimpleText_ReturnsCorrectMetrics_Test;
     friend class TextRendererTest_DrawText_Newline_SecondLineDrawnBelow_Test;
     friend class TextRendererTest_DrawText_WrapWidth_WrappedLineDrawnBelow_Test;
+    friend class TextRendererTest_DrawLabel_EmptyString_NoDrawCalls_Test;
+    friend class TextRendererTest_DrawLabel_Center_TextCenteredHorizontally_Test;
+    friend class TextRendererTest_DrawLabel_NoCenter_DrawsAtPanelOffset_Test;
 
   public:
     // 型・エイリアス
@@ -183,7 +186,8 @@ class TextRenderer {
     static constexpr int kGreenMask{0x3F};
     static constexpr int kRedShift{11};
     static constexpr int kRedMask{0x1F};
-    static constexpr int kMinFontSizePx{6};  // フォントサイズの最小値（ピクセル単位）
+    static constexpr int kMinFontSizePx{6};       // フォントサイズの最小値（ピクセル単位）
+    static constexpr int kLabelPaddingPx{4};      // DrawLabel非中央寄せ時のパネル端からの余白（ピクセル単位）
 
     // UTF-8デコード用定数
     static constexpr unsigned char kUtf8AsciiMax{0b10000000};        // ASCII文字の最大値+1

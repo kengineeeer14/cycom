@@ -127,6 +127,63 @@ TEST_F(TextRendererTest, DrawText_WrapWidth_WrappedLineDrawnBelow) {
 }
 
 // =============================================================
+// DrawLabel のユニットテスト
+// -------------------------------------------------------------
+// 要件：パネル内にテキストを描画できること
+// 1. 空文字列の場合、描画が行われないこと
+// 2. center=true の場合、テキストがパネル水平中央に寄せて描画されること
+// 3. center=false の場合、テキストがパネル左上基準のオフセット位置に描画されること
+// =============================================================
+
+// 要件1: 空文字列の場合、描画が行われないこと
+TEST_F(TextRendererTest, DrawLabel_EmptyString_NoDrawCalls) {
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_)).Times(0);
+    text_renderer->DrawLabel(0, 0, 320, 240, "");
+}
+
+// 要件2: center=true の場合、テキストがパネル水平中央に寄せて描画されること
+TEST_F(TextRendererTest, DrawLabel_Center_TextCenteredHorizontally) {
+    // 'A' のグリフメトリクスを取得
+    IFontLoader::GlyphData glyph_data;
+    font_loader->LoadChar('A', glyph_data);
+    const int panel_x{10};
+    const int panel_w{320};
+    // DrawLabel の中央寄せ計算: x = panel_x + (panel_w - advance) / 2
+    const int expected_baseline_x{panel_x + (panel_w - glyph_data.advance) / 2};
+    // blitGlyph では screen_x = baseline_x + glyph.left
+    const int expected_screen_x{expected_baseline_x + glyph_data.left};
+
+    std::vector<int> captured_x_values;
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke([&captured_x_values](int x, int /*y*/, const uint16_t * /*rgb565*/, int /*len*/) { captured_x_values.push_back(x); }));
+
+    text_renderer->DrawLabel(panel_x, 0, panel_w, 240, "A", true);
+
+    ASSERT_FALSE(captured_x_values.empty());
+    EXPECT_EQ(captured_x_values.front(), expected_screen_x);
+}
+
+// 要件3: center=false の場合、テキストがパネル左上基準のオフセット位置に描画されること
+TEST_F(TextRendererTest, DrawLabel_NoCenter_DrawsAtPanelOffset) {
+    // 'A' のグリフメトリクスを取得
+    IFontLoader::GlyphData glyph_data;
+    font_loader->LoadChar('A', glyph_data);
+    const int panel_x{50};
+    // DrawLabel の非中央寄せ計算: x = panel_x + 4
+    // blitGlyph では screen_x = baseline_x + glyph.left
+    const int expected_screen_x{panel_x + 4 + glyph_data.left};
+
+    std::vector<int> captured_x_values;
+    EXPECT_CALL(mock_display, DrawRGB565Line(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Invoke([&captured_x_values](int x, int /*y*/, const uint16_t * /*rgb565*/, int /*len*/) { captured_x_values.push_back(x); }));
+
+    text_renderer->DrawLabel(panel_x, 0, 320, 240, "A", false);
+
+    ASSERT_FALSE(captured_x_values.empty());
+    EXPECT_EQ(captured_x_values.front(), expected_screen_x);
+}
+
+// =============================================================
 // MakeKeyのユニットテスト
 // -------------------------------------------------------------
 // 要件：フォントサイズとコードポイントから一意のキャッシュキーを生成できること
@@ -1539,6 +1596,45 @@ TEST_F(TextRendererTest, LoadGlyph_DifferentFontSizes) {
     EXPECT_LT(glyph_16.width, glyph_32.width);
     EXPECT_LT(glyph_16.height, glyph_32.height);
     EXPECT_LT(glyph_16.advance, glyph_32.advance);
+}
+
+// 1-8. 異なる loadGlyph 呼び出しで返されるアルファデータが独立していること
+TEST_F(TextRendererTest, LoadGlyph_AlphaDataIsIndependent) {
+    const uint32_t codepoint{0x0041};  // 'A'
+    TextRenderer::Glyph glyph1{text_renderer->loadGlyph(codepoint)};
+    TextRenderer::Glyph glyph2{text_renderer->loadGlyph(codepoint)};
+
+    ASSERT_FALSE(glyph1.alpha.empty());
+    ASSERT_FALSE(glyph2.alpha.empty());
+
+    // 初期値が同じことを確認（同じ文字をロードしているため）
+    const uint8_t original_value{glyph2.alpha[0]};
+    EXPECT_EQ(glyph1.alpha[0], original_value);
+
+    // glyph1 のアルファデータを変更しても glyph2 に影響しないこと
+    glyph1.alpha[0] = static_cast<uint8_t>(~glyph1.alpha[0]);
+    EXPECT_EQ(glyph2.alpha[0], original_value);
+}
+
+// 1-9. ロードされたグリフのメトリクスが有効な範囲内にあること
+TEST_F(TextRendererTest, LoadGlyph_MetricsAreValid) {
+    const uint32_t codepoint{0x0041};  // 'A'
+    const TextRenderer::Glyph glyph{text_renderer->loadGlyph(codepoint)};
+
+    EXPECT_GT(glyph.advance, 0);                                     // アドバンス値は正の値
+    EXPECT_GT(glyph.top, 0);                                         // 大文字Aはベースラインより上に伸びる
+    EXPECT_GE(glyph.left, 0);                                        // 左オフセットは0以上
+    EXPECT_LE(glyph.advance, font_loader->GetLineHeightPx() * 2);    // アドバンスはフォントサイズの2倍以下
+}
+
+// 1-10. アルファデータのサイズがビットマップのサイズ（height * pitch）と一致すること
+TEST_F(TextRendererTest, LoadGlyph_AlphaSizeMatchesBitmap) {
+    const std::vector<uint32_t> codepoints{0x0041, 0x0042, 0x3042};  // 'A', 'B', 'あ'
+    for (const uint32_t codepoint : codepoints) {
+        const TextRenderer::Glyph glyph{text_renderer->loadGlyph(codepoint)};
+        EXPECT_EQ(glyph.alpha.size(), static_cast<size_t>(glyph.height * glyph.pitch))
+            << "コードポイント U+" << std::hex << codepoint << " のアルファデータサイズが不正";
+    }
 }
 
 // 要件3: LoadCharが失敗した場合、初期化されたグリフ（ゼロ値）が返されること
