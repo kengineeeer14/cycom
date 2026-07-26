@@ -10,7 +10,7 @@
 #include <memory>
 #include <thread>
 
-namespace display {
+namespace application::display {
 
 /**
  * @brief ディスプレイ更新を管理するクラス（Touch / Logger / SensorManager と同じパターン）
@@ -26,7 +26,7 @@ class DisplayManager {
      * @param lcd LCD ディスプレイへの参照
      * @param gps GPS データソースへの参照
      */
-    DisplayManager(driver::IDisplay &lcd, sensor::L76k &gps);
+    DisplayManager(driver::IDisplay &lcd, domain::sensor::L76k &gps);
 
     /**
      * @brief ディスプレイ更新スレッドを安全に停止させる
@@ -48,14 +48,14 @@ class DisplayManager {
     void DisplayLoop();
 
     driver::IDisplay &lcd_;
-    sensor::L76k &gps_;
-    std::unique_ptr<ui::FreeTypeFontLoader> font_loader_;
-    ui::TextRenderer tr_;
+    domain::sensor::L76k &gps_;
+    std::unique_ptr<presentation::display::FreeTypeFontLoader> font_loader_;
+    presentation::display::TextRenderer tr_;
 
     std::thread th_;
     std::atomic<bool> running_{false};
 };
 
-}  // namespace display
+}  // namespace application::display
 
 #endif  // CYCOM_SRC_APPLICATION_DISPLAY_DISPLAY_MANAGER_H_

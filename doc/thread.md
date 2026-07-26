@@ -39,12 +39,12 @@
 - **実装**: [main.cc](../main.cc) `[THREAD:SENSOR]` マーカー
 - **処理**: UART経由で受信した生データをバッファリングし、改行区切りでNMEA文を抽出して `gps.ProcessNmeaLine()` でパース
 - **周期**: タイムアウト付き（100ms）のイベント駆動
-- **終了**: `util::g_shutdown_requested` をチェック、`select()` のタイムアウトで定期確認
+- **終了**: `main.cc` の無名名前空間にある `g_shutdown_requested` をチェック、`select()` のタイムアウトで定期確認
 
 ### 4. タッチスレッド
 
 - **役割**: タッチスクリーン（GT911）からの入力監視
-- **生成**: `display::TouchManager` コンストラクタ
+- **生成**: `application::display::TouchManager` コンストラクタ
 - **実装**: [touch_manager.cc](../src/application/display/touch/touch_manager.cc) `TouchManager::TouchManager()`
 - **処理**: GPIO割り込みイベントでタッチ検出し、タッチ座標を内部変数へ保存（`LastXY()` でアクセス可能）
 - **周期**: イベント駆動（200msタイムアウト）

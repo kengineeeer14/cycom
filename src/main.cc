@@ -82,23 +82,23 @@ int main() {
     std::unique_ptr<driver::GT911> touch = std::make_unique<driver::GT911>(i2c.get(), touch_rst.get(), touch_int.get(), gt911_addr);
 
     // GPSドライバ（既存実装を使用）
-    sensor::L76k gps;
+    domain::sensor::L76k gps;
 
     // ====================================
     // アプリケーション層
     // ========================================
 
     // ロガー（Loggerスレッドを起動）
-    util::Logger logger(config_path, gps);
+    application::util::Logger logger(config_path, gps);
 
     // センサーマネージャー（Sensorスレッドを起動）
-    sensor::SensorManager sensor_manager(uart_fd, gps);
+    application::sensor::SensorManager sensor_manager(uart_fd, gps);
 
     // ディスプレイマネージャー（Displayスレッドを起動）
-    display::DisplayManager display_manager(*display, gps);
+    application::display::DisplayManager display_manager(*display, gps);
 
     // タッチマネージャー（Touchスレッドを起動）
-    display::TouchManager touch_manager(*touch);
+    application::display::TouchManager touch_manager(*touch);
 
     // ========================================
     // メインループ（終了シグナル待機のみ）

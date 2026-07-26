@@ -6,7 +6,7 @@
 #include <atomic>
 #include <thread>
 
-namespace sensor {
+namespace application::sensor {
 
 /**
  * @brief センサーデータ取得を管理するクラス（Touch / Logger クラスと同じパターン）
@@ -22,7 +22,7 @@ class SensorManager {
      * @param uart_fd UART ファイルディスクリプタ（GPS通信用）
      * @param gps GPS データを格納するオブジェクトへの参照
      */
-    SensorManager(int uart_fd, L76k &gps);
+    SensorManager(int uart_fd, domain::sensor::L76k &gps);
 
     /**
      * @brief センサー読み取りスレッドを安全に停止させる
@@ -39,11 +39,11 @@ class SensorManager {
     void SensorLoop();
 
     int uart_fd_;
-    L76k &gps_;
+    domain::sensor::L76k &gps_;
     std::thread th_;
     std::atomic<bool> running_{false};
 };
 
-}  // namespace sensor
+}  // namespace application::sensor
 
 #endif  // CYCOM_SRC_APPLICATION_SENSOR_SENSOR_MANAGER_H_

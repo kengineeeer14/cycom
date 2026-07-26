@@ -3,7 +3,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace ui {
+namespace presentation::display {
 
 FreeTypeFontLoader::FreeTypeFontLoader(const std::string &font_path) {
     if (FT_Init_FreeType(&ft_) != 0) {
@@ -75,4 +75,4 @@ int FreeTypeFontLoader::GetDescentPx() const {
     return static_cast<int>(-face_->size->metrics.descender >> kFreeTypeFractionalBits);
 }
 
-}  // namespace ui
+}  // namespace presentation::display

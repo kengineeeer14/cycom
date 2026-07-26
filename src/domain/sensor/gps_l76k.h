@@ -8,7 +8,7 @@
 #ifndef CYCOM_SRC_DOMAIN_SENSOR_GPS_L76K_H_
 #define CYCOM_SRC_DOMAIN_SENSOR_GPS_L76K_H_
 
-namespace sensor {
+namespace domain::sensor {
 // 受信データ
 struct GNRMC {
     GNRMC()
@@ -137,6 +137,6 @@ class L76k {
     GNGGA ParseGngga(const std::string &nmea);
 };
 
-}  // namespace sensor
+}  // namespace domain::sensor
 
 #endif  // CYCOM_SRC_DOMAIN_SENSOR_GPS_L76K_H_

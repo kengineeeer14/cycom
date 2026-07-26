@@ -7,13 +7,13 @@
 #include <string>
 #include <thread>
 
-namespace util {
+namespace application::util {
 class Logger {
   public:
     struct LogData {
-        sensor::GNRMC gnrmc{};
-        sensor::GNVTG gnvtg{};
-        sensor::GNGGA gngga{};
+        domain::sensor::GNRMC gnrmc{};
+        domain::sensor::GNVTG gnvtg{};
+        domain::sensor::GNGGA gngga{};
     };
 
     /**
@@ -22,7 +22,7 @@ class Logger {
      * @param config_path 設定ファイルのパス
      * @param gps GPS データソースへの参照
      */
-    Logger(const std::string &config_path, sensor::L76k &gps);
+    Logger(const std::string &config_path, domain::sensor::L76k &gps);
 
     /**
      * @brief ロギングスレッドを安全に停止させる
@@ -39,7 +39,7 @@ class Logger {
     void Stop();
     void LoggingLoop();
 
-    sensor::L76k &gps_;
+    domain::sensor::L76k &gps_;
     int log_interval_ms_;
     bool log_on_;
     std::string csv_file_path_;
@@ -47,6 +47,6 @@ class Logger {
     std::thread th_;
     std::atomic<bool> running_{false};
 };
-}  // namespace util
+}  // namespace application::util
 
 #endif  // CYCOM_SRC_APPLICATION_UTIL_LOGGER_H_

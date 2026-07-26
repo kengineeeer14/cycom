@@ -9,12 +9,12 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 
-namespace util {
+namespace application::util {
 namespace {
 using clock_type = std::chrono::steady_clock;
 }
 
-Logger::Logger(const std::string &config_path, sensor::L76k &gps) : gps_(gps) {
+Logger::Logger(const std::string &config_path, domain::sensor::L76k &gps) : gps_(gps) {
     std::ifstream ifs(config_path);
     if (!ifs.is_open()) {
         throw std::runtime_error("Failed to open config file");
@@ -68,7 +68,7 @@ void Logger::LoggingLoop() {
 
     while (running_.load(std::memory_order_acquire)) {
         // GPS データを取得してログに書き込む（Touch クラスのパターンと同様）
-        sensor::GnssSnapshot snap = gps_.Snapshot();
+        domain::sensor::GnssSnapshot snap = gps_.Snapshot();
         LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
         if (log_on_) {
             WriteCsv(log_data);
@@ -127,4 +127,4 @@ void Logger::WriteCsv(const LogData &log_data) {
         << log_data.gngga.dgps_age << ',' << log_data.gngga.dgps_id << ',' << static_cast<int>(log_data.gngga.checksum) << '\n';
 }
 
-}  // namespace util
+}  // namespace application::util

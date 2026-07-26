@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ui {
+namespace presentation::display {
 
 class TextRenderer {
     // テスト用フレンドクラス
@@ -236,6 +236,6 @@ class TextRenderer {
     int wrap_width_px_{0};  // テキストの自動折り返し幅（0の場合は折り返しなし）
 };
 
-}  // namespace ui
+}  // namespace presentation::display
 
 #endif  // CYCOM_SRC_PRESENTATION_DISPLAY_TEXT_RENDERER_H_

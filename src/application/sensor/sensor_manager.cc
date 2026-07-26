@@ -3,9 +3,9 @@
 #include <string>
 #include <unistd.h>
 
-namespace sensor {
+namespace application::sensor {
 
-SensorManager::SensorManager(int uart_fd, L76k &gps) : uart_fd_(uart_fd), gps_(gps) {
+SensorManager::SensorManager(int uart_fd, domain::sensor::L76k &gps) : uart_fd_(uart_fd), gps_(gps) {
     // Touch / Logger クラスと同様、コンストラクタで自動的にスレッドを起動
     Start();
 }
@@ -49,4 +49,4 @@ void SensorManager::SensorLoop() {
     }
 }
 
-}  // namespace sensor
+}  // namespace application::sensor

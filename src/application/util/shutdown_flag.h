@@ -3,12 +3,12 @@
 
 #include <atomic>
 
-namespace util {
+namespace application::util {
 
 // 全スレッドで共有する終了フラグ
 // SIGINT (Ctrl+C) や SIGTERM でtrueに設定される
 extern std::atomic<bool> g_shutdown_requested;
 
-}  // namespace util
+}  // namespace application::util
 
 #endif  // CYCOM_SRC_APPLICATION_UTIL_SHUTDOWN_FLAG_H_

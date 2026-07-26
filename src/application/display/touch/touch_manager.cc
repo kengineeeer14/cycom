@@ -3,7 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-namespace display {
+namespace application::display {
 
 TouchManager::TouchManager(driver::ITouch &touch) : touch_(touch) {
     // Logger / SensorManager / DisplayManager と同様、コンストラクタで自動的にスレッドを起動
@@ -63,4 +63,4 @@ void TouchManager::TouchLoop() {
     }
 }
 
-}  // namespace display
+}  // namespace application::display

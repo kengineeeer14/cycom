@@ -4,10 +4,10 @@
 #include <cstdio>
 #include <iostream>
 
-namespace display {
+namespace application::display {
 
-DisplayManager::DisplayManager(driver::IDisplay &lcd, sensor::L76k &gps)
-    : lcd_(lcd), gps_(gps), font_loader_(std::make_unique<ui::FreeTypeFontLoader>("config/fonts/DejaVuSans.ttf")), tr_(lcd, *font_loader_) {
+DisplayManager::DisplayManager(driver::IDisplay &lcd, domain::sensor::L76k &gps)
+    : lcd_(lcd), gps_(gps), font_loader_(std::make_unique<presentation::display::FreeTypeFontLoader>("config/fonts/DejaVuSans.ttf")), tr_(lcd, *font_loader_) {
     // 初期画面を表示
     ShowInitialScreens();
     // Touch / Logger / SensorManager と同様、コンストラクタで自動的にスレッドを起動
@@ -54,7 +54,7 @@ void DisplayManager::DisplayLoop() {
 
         // 単位エリア
         tr_.SetFontSizePx(28);
-        tr_.SetColors(ui::Color565::Black(), ui::Color565::White());
+        tr_.SetColors(presentation::display::Color565::Black(), presentation::display::Color565::White());
 
         const int UNIT_W = 120;
         const int UNIT_X = PANEL_X + PANEL_W - UNIT_W;
@@ -68,7 +68,7 @@ void DisplayManager::DisplayLoop() {
         const int NUM_H = PANEL_H - 20;
 
         tr_.SetFontSizePx(48);
-        tr_.SetColors(ui::Color565::Black(), ui::Color565::White());
+        tr_.SetColors(presentation::display::Color565::Black(), presentation::display::Color565::White());
 
         const auto UPDATE_INTERVAL = std::chrono::milliseconds(1000);
         std::string prev_text;
@@ -92,4 +92,4 @@ void DisplayManager::DisplayLoop() {
     }
 }
 
-}  // namespace display
+}  // namespace application::display

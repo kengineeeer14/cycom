@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 #include <unistd.h>
 
-namespace ui {
+namespace presentation::display {
 
 // TextRendererのためのテストフィクスチャ
 class TextRendererTest : public ::testing::Test {
@@ -1786,4 +1786,4 @@ TEST_F(TextRendererTest, GetDescentPx_UpdatesWithFontSize) {
     EXPECT_GT(descent_large, descent_small) << "フォントサイズが大きいほどディセントも大きくなるべき";
 }
 
-}  // namespace ui
+}  // namespace presentation::display

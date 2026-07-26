@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ui {
+namespace presentation::display {
 
 // コンストラクタ
 TextRenderer::TextRenderer(driver::IDisplay &lcd, IFontLoader &font_loader) : lcd_(lcd), font_loader_(font_loader) {
@@ -352,4 +352,4 @@ bool TextRenderer::GetCodepoint(const std::string &utf8_str, size_t &index, uint
     return is_valid;
 }
 
-}  // namespace ui
+}  // namespace presentation::display

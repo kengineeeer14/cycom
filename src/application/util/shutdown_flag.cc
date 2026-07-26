@@ -1,7 +1,7 @@
 #include "application/util/shutdown_flag.h"
 
-namespace util {
+namespace application::util {
 
 std::atomic<bool> g_shutdown_requested{false};
 
-}  // namespace util
+}  // namespace application::util

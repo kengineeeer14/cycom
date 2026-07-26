@@ -6,7 +6,7 @@
 #include <atomic>
 #include <thread>
 
-namespace display {
+namespace application::display {
 
 /**
  * @brief タッチ入力を管理するクラス（Logger / SensorManager / DisplayManager と同じパターン）
@@ -59,6 +59,6 @@ class TouchManager {
     std::atomic<int> last_y_{-1};
 };
 
-}  // namespace display
+}  // namespace application::display
 
 #endif  // CYCOM_SRC_APPLICATION_DISPLAY_TOUCH_TOUCH_MANAGER_H_

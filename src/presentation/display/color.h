@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace ui {
+namespace presentation::display {
 
 struct Color565 {
     uint16_t value;  // RGB565
@@ -13,6 +13,6 @@ struct Color565 {
     static Color565 Gray();
 };
 
-}  // namespace ui
+}  // namespace presentation::display
 
 #endif  // CYCOM_SRC_PRESENTATION_DISPLAY_COLOR_H_

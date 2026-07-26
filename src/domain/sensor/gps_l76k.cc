@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <iostream>
 
-namespace sensor {
+namespace domain::sensor {
 
 std::vector<std::string> L76k::SplitString(const std::string &line) {
     std::vector<std::string> fields;
@@ -146,4 +146,4 @@ GnssSnapshot L76k::Snapshot() const {
 double L76k::GetGnvtgSpeed() {
     return gnvtg_data_.speed_kmh;
 }
-}  // namespace sensor
+}  // namespace domain::sensor

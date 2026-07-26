@@ -5,7 +5,7 @@
 
 #include <gmock/gmock.h>
 
-namespace ui {
+namespace presentation::display {
 
 class MockFontLoader : public IFontLoader {
   public:
@@ -16,6 +16,6 @@ class MockFontLoader : public IFontLoader {
     MOCK_METHOD(int, GetDescentPx, (), (const, override));
 };
 
-}  // namespace ui
+}  // namespace presentation::display
 
 #endif  // CYCOM_TESTS_MOCKS_DISPLAY_MOCK_FONT_LOADER_H_

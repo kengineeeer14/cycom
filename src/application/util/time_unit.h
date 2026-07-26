@@ -1,7 +1,7 @@
 #ifndef CYCOM_SRC_APPLICATION_UTIL_TIME_UNIT_H_
 #define CYCOM_SRC_APPLICATION_UTIL_TIME_UNIT_H_
 
-namespace util {
+namespace application::util {
 class TimeUnit {
   public:
     static constexpr double kMs2Sec{0.001};
@@ -16,6 +16,6 @@ class TimeUnit {
      */
     static int msWithinMs(const int &time_sec);
 };
-}  // namespace util
+}  // namespace application::util
 
 #endif  // CYCOM_SRC_APPLICATION_UTIL_TIME_UNIT_H_

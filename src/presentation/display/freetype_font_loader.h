@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace ui {
+namespace presentation::display {
 
 /**
  * @brief FreeTypeライブラリを使用したフォントローダーの実装
@@ -41,6 +41,6 @@ class FreeTypeFontLoader : public IFontLoader {
     FT_Face face_{nullptr};
 };
 
-}  // namespace ui
+}  // namespace presentation::display
 
 #endif  // CYCOM_SRC_PRESENTATION_DISPLAY_FREETYPE_FONT_LOADER_H_

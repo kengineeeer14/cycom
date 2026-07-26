@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace ui {
+namespace presentation::display {
 
 /**
  * @brief フォントローダーのインターフェース
@@ -60,6 +60,6 @@ class IFontLoader {
     virtual int GetDescentPx() const = 0;
 };
 
-}  // namespace ui
+}  // namespace presentation::display
 
 #endif  // CYCOM_SRC_PRESENTATION_DISPLAY_INTERFACE_I_FONT_LOADER_H_
