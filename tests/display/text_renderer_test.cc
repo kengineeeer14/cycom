@@ -1,8 +1,8 @@
-#include "domain/display/text_renderer.h"
+#include "presentation/display/text_renderer.h"
 
-#include "domain/display/freetype_font_loader.h"
 #include "mocks/display/mock_font_loader.h"
 #include "mocks/driver/mock_display.h"
+#include "presentation/display/freetype_font_loader.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

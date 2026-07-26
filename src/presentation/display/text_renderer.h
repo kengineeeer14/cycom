@@ -1,9 +1,9 @@
-#ifndef CYCOM_SRC_DOMAIN_DISPLAY_TEXT_RENDERER_H_
-#define CYCOM_SRC_DOMAIN_DISPLAY_TEXT_RENDERER_H_
+#ifndef CYCOM_SRC_PRESENTATION_DISPLAY_TEXT_RENDERER_H_
+#define CYCOM_SRC_PRESENTATION_DISPLAY_TEXT_RENDERER_H_
 
-#include "domain/display/color.h"
-#include "domain/display/interface/i_font_loader.h"
 #include "driver/interface/i_display.h"
+#include "presentation/display/color.h"
+#include "presentation/display/interface/i_font_loader.h"
 
 #include <cstdint>
 #include <string>
@@ -238,4 +238,4 @@ class TextRenderer {
 
 }  // namespace ui
 
-#endif  // CYCOM_SRC_DOMAIN_DISPLAY_TEXT_RENDERER_H_
+#endif  // CYCOM_SRC_PRESENTATION_DISPLAY_TEXT_RENDERER_H_

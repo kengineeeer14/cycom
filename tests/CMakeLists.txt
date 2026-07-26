@@ -15,9 +15,9 @@ include_directories(
 # text_renderer_testのビルド
 add_executable(text_renderer_test
     display/text_renderer_test.cc
-    ${PROJECT_SOURCE_DIR}/src/domain/display/color.cc
-    ${PROJECT_SOURCE_DIR}/src/domain/display/text_renderer.cc
-    ${PROJECT_SOURCE_DIR}/src/domain/display/freetype_font_loader.cc
+    ${PROJECT_SOURCE_DIR}/src/presentation/display/color.cc
+    ${PROJECT_SOURCE_DIR}/src/presentation/display/text_renderer.cc
+    ${PROJECT_SOURCE_DIR}/src/presentation/display/freetype_font_loader.cc
 )
 
 target_link_libraries(text_renderer_test

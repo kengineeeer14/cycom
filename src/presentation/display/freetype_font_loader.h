@@ -1,7 +1,7 @@
-#ifndef CYCOM_SRC_DOMAIN_DISPLAY_FREETYPE_FONT_LOADER_H_
-#define CYCOM_SRC_DOMAIN_DISPLAY_FREETYPE_FONT_LOADER_H_
+#ifndef CYCOM_SRC_PRESENTATION_DISPLAY_FREETYPE_FONT_LOADER_H_
+#define CYCOM_SRC_PRESENTATION_DISPLAY_FREETYPE_FONT_LOADER_H_
 
-#include "domain/display/interface/i_font_loader.h"
+#include "presentation/display/interface/i_font_loader.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -43,4 +43,4 @@ class FreeTypeFontLoader : public IFontLoader {
 
 }  // namespace ui
 
-#endif  // CYCOM_SRC_DOMAIN_DISPLAY_FREETYPE_FONT_LOADER_H_
+#endif  // CYCOM_SRC_PRESENTATION_DISPLAY_FREETYPE_FONT_LOADER_H_

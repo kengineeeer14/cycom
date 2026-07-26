@@ -1,7 +1,7 @@
 #ifndef CYCOM_TESTS_MOCKS_DISPLAY_MOCK_FONT_LOADER_H_
 #define CYCOM_TESTS_MOCKS_DISPLAY_MOCK_FONT_LOADER_H_
 
-#include "domain/display/interface/i_font_loader.h"
+#include "presentation/display/interface/i_font_loader.h"
 
 #include <gmock/gmock.h>
 

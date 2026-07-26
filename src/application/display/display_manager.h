@@ -1,10 +1,10 @@
 #ifndef CYCOM_SRC_APPLICATION_DISPLAY_DISPLAY_MANAGER_H_
 #define CYCOM_SRC_APPLICATION_DISPLAY_DISPLAY_MANAGER_H_
 
-#include "domain/display/freetype_font_loader.h"
-#include "domain/display/text_renderer.h"
 #include "domain/sensor/gps_l76k.h"
 #include "driver/interface/i_display.h"
+#include "presentation/display/freetype_font_loader.h"
+#include "presentation/display/text_renderer.h"
 
 #include <atomic>
 #include <memory>
