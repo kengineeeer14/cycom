@@ -18,7 +18,7 @@
 
 - **役割**: UI更新（画面表示更新）
 - **生成**: `DisplayManager` コンストラクタ
-- **実装**: [display_manager.cc](../src/display/display_manager.cc) `DisplayManager::DisplayManager()`
+- **実装**: [display_manager.cc](../src/application/display/display_manager.cc) `DisplayManager::DisplayManager()`
 - **処理**: GPSから速度データを取得し、LCD画面へテキスト描画（差分更新）
 - **周期**: 1秒
 - **終了**: `std::atomic<bool> running_` による制御、デストラクタで自動停止
@@ -27,7 +27,7 @@
 
 - **役割**: センサデータのCSVログ記録
 - **生成**: `Logger` コンストラクタ
-- **実装**: [logger.cc](../src/util/logger.cc) `Logger::Logger()`
+- **実装**: [logger.cc](../src/application/util/logger.cc) `Logger::Logger()`
 - **処理**: 内部ループでGPSスナップショットを取得し、`log_on_` フラグがtrueの場合のみCSVへ書き込み
 - **周期**: 設定ファイル（`config/config.json`）の `log_interval_ms` で指定（デフォルト1000ms）
 - **終了**: `std::atomic<bool> running_` による制御、デストラクタで自動停止
@@ -44,8 +44,8 @@
 ### 4. タッチスレッド
 
 - **役割**: タッチスクリーン（GT911）からの入力監視
-- **生成**: `gt911::Touch` コンストラクタ
-- **実装**: [gt911.cc](../src/display/touch/gt911.cc) `Touch::Touch()`
+- **生成**: `display::TouchManager` コンストラクタ
+- **実装**: [touch_manager.cc](../src/application/display/touch/touch_manager.cc) `TouchManager::TouchManager()`
 - **処理**: GPIO割り込みイベントでタッチ検出し、タッチ座標を内部変数へ保存（`LastXY()` でアクセス可能）
 - **周期**: イベント駆動（200msタイムアウト）
 - **終了**: `std::atomic<bool> running_` による制御、デストラクタで自動停止

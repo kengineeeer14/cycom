@@ -24,7 +24,7 @@ else
     
     if [ -n "$NEWEST_TEST" ]; then
         # ソースファイル、ヘッダーファイル、CMakeLists.txtのいずれかが新しい場合
-        if [ -n "$(find src tests include CMakeLists.txt -type f -newer "$NEWEST_TEST" 2>/dev/null)" ]; then
+        if [ -n "$(find src tests CMakeLists.txt -type f -newer "$NEWEST_TEST" 2>/dev/null)" ]; then
             echo "📦 ソースファイルが更新されているため、ビルドを実行します..."
             NEED_BUILD=true
         fi

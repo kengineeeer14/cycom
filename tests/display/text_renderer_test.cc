@@ -1,6 +1,6 @@
-#include "display/text_renderer.h"
+#include "domain/display/text_renderer.h"
 
-#include "display/impl/freetype_font_loader.h"
+#include "domain/display/freetype_font_loader.h"
 #include "mocks/display/mock_font_loader.h"
 #include "mocks/driver/mock_display.h"
 

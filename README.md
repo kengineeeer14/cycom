@@ -38,12 +38,14 @@ sudo apt-get install -y build-essential cmake libfreetype6-dev libgpiod-dev
 
 ## 📁 プロジェクト構成
 
-- `src/` - C++ソースコード
+- `src/` - C++ソースコードと対応するヘッダー
+  - `main.cc` - アプリケーションのエントリポイント
   - `core/` - コアロジック
   - `display/` - ディスプレイドライバ・レンダリング
+  - `driver/` - LCD・タッチコントローラのドライバ
   - `hal/` - ハードウェア抽象化レイヤ（GPIO, I2C, SPI, UART）
   - `sensor/` - センサー統合
-- `include/` - 公開ヘッダー
+  - `util/` - ログ・時間などの共通機能
 - `tests/` - テストコード
 - `config/` - 設定ファイル
 - `scripts/` - ビルド・ユーティリティスクリプト
@@ -68,7 +70,7 @@ cmake -DUSE_HARDWARE=OFF ..
 Google C++ スタイルガイドに準拠。clang-formatで自動フォーマット：
 
 ```bash
-find src include -name "*.cc" -o -name "*.h" | xargs clang-format -i
+find src -name "*.cc" -o -name "*.h" | xargs clang-format -i
 ```
 
 ## 📖 ドキュメント

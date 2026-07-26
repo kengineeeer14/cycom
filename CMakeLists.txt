@@ -22,7 +22,7 @@ endif()
 
 # インクルードパス
 include_directories(
-    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
 )
 
 # FreeTypeを見つける
@@ -31,29 +31,23 @@ find_package(Freetype REQUIRED)
 # ソースファイルを収集
 # HAL実装は本番/モックを切り替え
 if(USE_HARDWARE)
-    file(GLOB_RECURSE HAL_IMPL_FILES CONFIGURE_DEPENDS 
-        ${PROJECT_SOURCE_DIR}/src/hal/impl/*.cc
+    file(GLOB HAL_IMPL_FILES CONFIGURE_DEPENDS
+        ${PROJECT_SOURCE_DIR}/src/hal/*.cc
     )
 else()
-    file(GLOB_RECURSE HAL_IMPL_FILES CONFIGURE_DEPENDS 
-        ${PROJECT_SOURCE_DIR}/tests/mocks/hal/impl/*.cc
+    file(GLOB HAL_IMPL_FILES CONFIGURE_DEPENDS
+        ${PROJECT_SOURCE_DIR}/tests/mocks/hal/*.cc
     )
 endif()
 
-file(GLOB_RECURSE DRIVER_IMPL_FILES CONFIGURE_DEPENDS 
-    ${PROJECT_SOURCE_DIR}/src/driver/impl/*.cc
+file(GLOB DRIVER_IMPL_FILES CONFIGURE_DEPENDS
+    ${PROJECT_SOURCE_DIR}/src/driver/*.cc
 )
-file(GLOB_RECURSE UTIL_FILES CONFIGURE_DEPENDS 
-    ${PROJECT_SOURCE_DIR}/src/util/*.cc
+file(GLOB_RECURSE APPLICATION_FILES CONFIGURE_DEPENDS
+    ${PROJECT_SOURCE_DIR}/src/application/*.cc
 )
-file(GLOB_RECURSE CORE_FILES CONFIGURE_DEPENDS 
-    ${PROJECT_SOURCE_DIR}/src/core/*.cc
-)
-file(GLOB_RECURSE SENSOR_FILES CONFIGURE_DEPENDS 
-    ${PROJECT_SOURCE_DIR}/src/sensor/*.cc
-)
-file(GLOB_RECURSE DISPLAY_FILES CONFIGURE_DEPENDS 
-    ${PROJECT_SOURCE_DIR}/src/display/*.cc
+file(GLOB_RECURSE DOMAIN_FILES CONFIGURE_DEPENDS
+    ${PROJECT_SOURCE_DIR}/src/domain/*.cc
 )
 file(GLOB_RECURSE THIRD_PARTY_FILES CONFIGURE_DEPENDS 
     ${PROJECT_SOURCE_DIR}/src/third_party/*.cc
@@ -61,13 +55,11 @@ file(GLOB_RECURSE THIRD_PARTY_FILES CONFIGURE_DEPENDS
 
 # 実行可能ファイル
 add_executable(cycom 
-    main.cc 
+    src/main.cc
     ${HAL_IMPL_FILES}
     ${DRIVER_IMPL_FILES}
-    ${UTIL_FILES}
-    ${CORE_FILES}
-    ${SENSOR_FILES}
-    ${DISPLAY_FILES}
+    ${APPLICATION_FILES}
+    ${DOMAIN_FILES}
     ${THIRD_PARTY_FILES}
 )
 
