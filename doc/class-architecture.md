@@ -4,20 +4,22 @@
 
 `cycom` は Raspberry Pi 上で動作するサイクルコンピュータです。GPS から NMEA 0183 形式の位置・速度情報を受信し、LCD へ表示し、必要に応じて CSV に記録します。タッチパネルの入力監視も同時に行います。
 
-設計は、ハードウェア依存部をインターフェースで抽象化した 5 層構造です。
+設計は、ハードウェア依存部をインターフェースで抽象化した 5 層構造です。アプリケーション層が実行の流れを管理し、ドメイン層が GPS データの意味を扱い、プレゼンテーション層が画面表現を担当します。
 
 ```mermaid
 flowchart TB
   Main[main.cc\n組み立て・寿命管理]
-  App[アプリケーション層\nSensorManager / DisplayManager\nTouchManager / Logger]
-  Domain[ドメイン・表示層\nL76k / TextRenderer / Color565]
-  Driver[デバイスドライバ層\nST7796 / GT911]
-  HAL[HAL 層\nGpioImpl / SpiImpl / I2cImpl / UartImpl]
+  App[アプリケーション層\napplication::*]
+  Domain[ドメイン層\ndomain::sensor]
+  Presentation[プレゼンテーション層\npresentation::display]
+  Driver[デバイスドライバ層\ndriver]
+  HAL[HAL 層\nhal]
   HW[Linux デバイス・実ハードウェア\nGPIO / SPI / I2C / UART]
 
   Main --> App
   App --> Domain
-  App --> Driver
+  App --> Presentation
+  Presentation --> Driver
   Driver --> HAL
   HAL --> HW
 ```
@@ -28,21 +30,18 @@ flowchart TB
 
 | ディレクトリ | 内容 |
 | --- | --- |
-| `include/` | 公開ヘッダー。クラスの利用側が依存する API を定義する。 |
-| `src/` | 公開ヘッダーに対応する実装。 |
-| `include/hal/`・`src/hal/` | Linux の GPIO、SPI、I2C、UART を覆うハードウェア抽象化層。 |
-| `include/driver/`・`src/driver/` | ST7796 LCD、GT911 タッチコントローラのチップ固有ドライバ。 |
-| `include/sensor/`・`src/sensor/` | GPS の NMEA パースとセンサー受信スレッド。 |
-| `include/display/`・`src/display/` | FreeType を利用する文字描画、LCD 更新、タッチ監視。 |
-| `include/util/`・`src/util/` | CSV ログ、時間定数、終了フラグ。 |
+| `src/` | C++ 実装と対応するヘッダーを同じ層・同じ相対パスに配置する。`main.cc` もここに置く。 |
+| `src/application/` | センサー受信、画面更新、タッチ監視、ログ記録の各管理クラス。 |
+| `src/domain/` | GPS の NMEA 解釈、測位状態、速度など、サイクルコンピュータ固有のデータと規則。 |
+| `src/presentation/` | FreeType を用いる文字描画・色表現など、画面への表現処理。 |
+| `src/hal/` | Linux の GPIO、SPI、I2C、UART を覆うハードウェア抽象化層。 |
+| `src/driver/` | ST7796 LCD、GT911 タッチコントローラのチップ固有ドライバ。 |
 | `tests/` | Google Test/Google Mock によるテスト。現在は `TextRenderer` の単体テストが中心。 |
 | `config/config.json` | UART 速度、ログ有効化、CSV 出力周期の設定。 |
 
-`include/core/` と `src/core/` は現時点で実装を持たない予約領域です。
-
 ### 2.1 論理層とフォルダ配置の対応
 
-前節の Mermaid 図は、実行時の**責務と依存方向**を表しています。一方、フォルダはソースコードを機能別に置くための**物理的な配置**です。両者は完全な一対一対応ではありません。特に `display/` は文字描画というドメイン処理と、画面更新スレッドというアプリケーション処理を両方含みます。
+前節の Mermaid 図に合わせ、物理フォルダも論理層へ対応させています。`src/application/` は管理クラス、`src/domain/` は GPS のドメイン処理、`src/presentation/` は画面表示処理を保持します。上位層は下位層の抽象インターフェースを介して利用します。
 
 ```mermaid
 flowchart TB
@@ -50,25 +49,28 @@ flowchart TB
     M[main.cc]
   end
 
-  subgraph Application[アプリケーション層: src/sensor, src/display, src/util]
-    SM[SensorManager\nsrc/sensor]
-    DM[DisplayManager\nsrc/display]
-    TM[TouchManager\nsrc/display/touch]
-    LG[Logger\nsrc/util]
+  subgraph Application[アプリケーション層: src/application]
+    SM[SensorManager\nsrc/application/sensor]
+    DM[DisplayManager\nsrc/application/display]
+    TM[TouchManager\nsrc/application/display/touch]
+    LG[Logger\nsrc/application/util]
   end
 
-  subgraph Domain[データ・描画処理: src/sensor/gps, src/display]
-    GPS[L76k\nsrc/sensor/gps]
-    TR[TextRenderer / Color565\nsrc/display]
-    FT[FreeTypeFontLoader\nsrc/display/impl]
+  subgraph Domain[GPS ドメイン処理: src/domain]
+    GPS[L76k\nsrc/domain/sensor]
   end
 
-  subgraph Driver[チップドライバ層: src/driver/impl]
+  subgraph Presentation[画面表示処理: src/presentation]
+    TR[TextRenderer / Color565\nsrc/presentation/display]
+    FT[FreeTypeFontLoader\nsrc/presentation/display]
+  end
+
+  subgraph Driver[チップドライバ層: src/driver]
     LCD[ST7796]
     Touch[GT911]
   end
 
-  subgraph Hardware[ハードウェア抽象化層: src/hal/impl]
+  subgraph Hardware[ハードウェア抽象化層: src/hal]
     GPIO[GpioImpl]
     SPI[SpiImpl]
     I2C[I2cImpl]
@@ -98,14 +100,39 @@ flowchart TB
 | 観点 | 対応する場所 | 意味 |
 | --- | --- | --- |
 | 起動時の組み立て | `main.cc` | どの実装を使うかを決め、依存先をコンストラクタへ渡す。 |
-| 定期処理・スレッド | `src/sensor/`, `src/display/`, `src/util/` | GPS 受信、画面更新、タッチ監視、ログ記録を並行実行する。 |
-| GPS のデータ解釈 | `src/sensor/gps/` | NMEA 文を構造体へ変換し、共有状態として保持する。 |
-| 文字をピクセルへ変換 | `src/display/` | FreeType のグリフを RGB565 の描画行に変換する。 |
-| チップ固有の制御 | `src/driver/impl/` | ST7796 と GT911 のレジスタ操作を担当する。 |
-| OS・デバイスファイルの操作 | `src/hal/impl/` | GPIO、SPI、I2C、UART を Linux API 経由で操作する。 |
-| 抽象 API の定義 | `include/**/interface/` | 上位層が具体チップや Linux API に依存しないための境界。 |
+| 定期処理・スレッド | `src/application/` | GPS 受信、画面更新、タッチ監視、ログ記録を並行実行する。 |
+| GPS のデータ解釈 | `src/domain/sensor/` | NMEA 文を構造体へ変換し、共有状態として保持する。 |
+| 文字をピクセルへ変換 | `src/presentation/display/` | FreeType のグリフを RGB565 の描画行に変換する。 |
+| チップ固有の制御 | `src/driver/` | ST7796 と GT911 のレジスタ操作を担当する。 |
+| OS・デバイスファイルの操作 | `src/hal/` | GPIO、SPI、I2C、UART を Linux API 経由で操作する。 |
+| 抽象 API の定義 | `src/**/interface/` | 上位層が具体チップや Linux API に依存しないための境界。 |
 
-つまり、フォルダを上から下へ読む場合は `main.cc` -> `sensor` / `display` / `util` -> `driver` -> `hal` の順が基本です。`include/` は同じ構成をヘッダーとして写したものであり、実装フォルダ `src/` の利用契約を定義します。
+つまり、フォルダを上から下へ読む場合は `src/main.cc` -> `src/application` -> `src/domain` / `src/presentation` -> `src/driver` -> `src/hal` の順が基本です。各層のヘッダーも実装ファイルと同じ `src/` 配下に置き、`src` をインクルードルートとして利用します。
+
+### 2.2 層・名前空間・責務の対応
+
+プロジェクト固有の公開クラスは、原則として所属する層と同じ先頭名前空間を持ちます。名前空間はクラス名の衝突を防ぐだけでなく、コードを読んだときに「どの層の、どの責務か」を示す境界です。
+
+| 層 | ディレクトリ | 名前空間 | 主なクラス | 役割 |
+| --- | --- | --- | --- | --- |
+| 起動・組み立て | `src/main.cc` | 無名名前空間 | `SignalHandler`、`g_shutdown_requested` | 具体実装を生成して依存性を注入し、プロセス終了を管理する。外部から参照させない実装詳細は無名名前空間へ閉じ込める。 |
+| アプリケーション | `src/application/sensor/` | `application::sensor` | `SensorManager` | UART 受信ループとセンサーデータ取り込みの実行を管理する。 |
+| アプリケーション | `src/application/display/` | `application::display` | `DisplayManager`、`TouchManager` | 画面更新・タッチ監視のスレッド、周期、停止を管理する。 |
+| アプリケーション | `src/application/util/` | `application::util` | `Logger`、`TimeUnit` | GPS ログ記録と、アプリケーションで用いる補助機能を提供する。 |
+| ドメイン | `src/domain/sensor/` | `domain::sensor` | `L76k`、`GNRMC`、`GNVTG`、`GNGGA`、`GnssSnapshot` | NMEA 文の意味を解釈し、GPS の測位状態・速度・位置を一貫した状態として保持する。 |
+| プレゼンテーション | `src/presentation/display/` | `presentation::display` | `TextRenderer`、`Color565`、`IFontLoader`、`FreeTypeFontLoader` | 文字列・フォント・色を LCD へ送る RGB565 ピクセル列へ変換し、画面上の表現を担う。 |
+| デバイスドライバ | `src/driver/` | `driver` | `ST7796`、`GT911`、`IDisplay`、`ITouch`、`IGps` | 特定チップの初期化・レジスタ操作を実装し、上位層へデバイス抽象 API を提供する。 |
+| HAL | `src/hal/` | `hal` | `GpioImpl`、`SpiImpl`、`I2cImpl`、`UartImpl` と各 `I*` | Linux の GPIO、SPI、I2C、UART API を覆い、ハードウェア通信を抽象化する。 |
+
+名前空間の依存方向は、層の依存方向と同じです。`application::*` は `domain::sensor` と `presentation::display` を利用し、`presentation::display` は `driver` の抽象 API を利用します。`driver` は `hal` の抽象 API を利用します。下位層は上位層の名前空間を参照しません。
+
+```mermaid
+flowchart LR
+  App[application::*\n実行制御] --> Domain[domain::sensor\nGPS の意味と状態]
+  App --> Presentation[presentation::display\n画面表現]
+  Presentation --> Driver[driver\nチップ制御]
+  Driver --> Hal[hal\nOS・ハードウェア操作]
+```
 
 ## 3. 起動から終了まで
 
@@ -116,7 +143,7 @@ flowchart TB
 1. `SIGINT` と `SIGTERM` のハンドラーを設定する。
 2. LCD 用の GPIO 3 本、SPI、タッチ用 GPIO 2 本、I2C、GPS 用 UART を生成する。
 3. `ST7796` に `ISpi` と 3 本の `IGpio`、`GT911` に `II2c` と 2 本の `IGpio` を注入する。
-4. GPS の状態を保持する `sensor::L76k` を生成する。
+4. GPS の状態を保持する `domain::sensor::L76k` を生成する。
 5. `Logger`、`SensorManager`、`DisplayManager`、`TouchManager` を生成する。各管理クラスはコンストラクタで専用スレッドを起動する。
 6. メインスレッドは 100 ms 間隔で終了シグナルを待つ。ローカル変数の破棄時に、各管理クラスのデストラクタがスレッド停止と `join` を担う。
 
@@ -146,10 +173,10 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 | 抽象クラス | 実装クラス | 実装ファイル | 役割 |
 | --- | --- | --- | --- |
-| `IGpio` | `GpioImpl` | `src/hal/impl/gpio_impl.cc` | GPIO の入出力、エッジ待機。`libgpiod` を使用する。 |
-| `ISpi` | `SpiImpl` | `src/hal/impl/spi_impl.cc` | SPI の送信、受信、全二重転送。 |
-| `II2c` | `I2cImpl` | `src/hal/impl/i2c_impl.cc` | 8/16 bit レジスタアドレスを持つ I2C 読み書き。 |
-| `IUart` | `UartImpl` | `src/hal/impl/uart_impl.cc` | シリアルポートのファイル記述子取得、読み書き、開閉状態確認。 |
+| `IGpio` | `GpioImpl` | `src/hal/gpio_impl.cc` | GPIO の入出力、エッジ待機。`libgpiod` を使用する。 |
+| `ISpi` | `SpiImpl` | `src/hal/spi_impl.cc` | SPI の送信、受信、全二重転送。 |
+| `II2c` | `I2cImpl` | `src/hal/i2c_impl.cc` | 8/16 bit レジスタアドレスを持つ I2C 読み書き。 |
+| `IUart` | `UartImpl` | `src/hal/uart_impl.cc` | シリアルポートのファイル記述子取得、読み書き、開閉状態確認。 |
 
 ### 4.1 `hal::IGpio` と `hal::GpioImpl`
 
@@ -194,13 +221,13 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 `IGps` は `GetData()`、`IsValid()`、`ReadAndParse()` を定義する GPS の汎用インターフェースです。値型 `GpsData` は緯度、経度、高度、km/h 速度、UTC 時刻、有効フラグをまとめます。
 
-現行の `sensor::L76k` は NMEA 文を詳細な構造体として保持するため、`IGps` は実装していません。従って `IGps` は将来の統一 GPS API 用の未接続な抽象化です。
+現行の `domain::sensor::L76k` は NMEA 文を詳細な構造体として保持するため、`IGps` は実装していません。従って `IGps` は将来の統一 GPS API 用の未接続な抽象化です。
 
 ## 6. GPS・センサー層
 
 ### 6.1 NMEA 値型
 
-`sensor::L76k` の公開ヘッダーは、次の受信文ごとの構造体を定義します。各構造体は未受信または不明な浮動小数値を `NaN` で初期化します。
+`domain::sensor::L76k` の公開ヘッダーは、次の受信文ごとの構造体を定義します。各構造体は未受信または不明な浮動小数値を `NaN` で初期化します。
 
 | 型 | 対象文 | 主な内容 |
 | --- | --- | --- |
@@ -211,7 +238,7 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 位置は NMEA の `dddmm.mmmm` 形式で保持され、方位は別フィールドの `N/S/E/W` で表します。`GNRMC::data_status` は `A` が有効、`V` が無効です。`GNGGA::quality` は 0 が無効、1 が SPS、2 が DGPS、4 が RTK Fix、5 が RTK Float を表します。
 
-### 6.2 `sensor::L76k`
+### 6.2 `domain::sensor::L76k`
 
 `L76k` は L76K GPS モジュールから届く NMEA 行のパーサ兼状態ストアです。
 
@@ -223,7 +250,7 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 内部の `ParseGnrmc()`、`ParseGnvtg()`、`ParseGngga()` が文ごとの解析を担い、`SplitString()` がフィールドを分割します。内部状態と読み取りは `mtx_` で同期されます。
 
-### 6.3 `sensor::SensorManager`
+### 6.3 `application::sensor::SensorManager`
 
 `SensorManager` は GPS 受信スレッドの管理者です。UART のファイル記述子と `L76k` への参照を保持します。コンストラクタが `Start()` を呼び、デストラクタが `Stop()` を呼びます。
 
@@ -231,11 +258,11 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 ## 7. 表示層
 
-### 7.1 `ui::Color565`
+### 7.1 `presentation::display::Color565`
 
 `Color565` は `uint16_t value` に RGB565 色を保持する値型です。`RGB(r, g, b)` で 8 bit RGB から変換し、`Black()`、`White()`、`Gray()` で標準色を生成します。LCD とテキスト描画の色表現を統一します。
 
-### 7.2 `ui::IFontLoader` と `ui::FreeTypeFontLoader`
+### 7.2 `presentation::display::IFontLoader` と `presentation::display::FreeTypeFontLoader`
 
 `IFontLoader` はフォントエンジンを抽象化します。ネストした `GlyphData` はビットマップの幅・高さ・ベアリング・送り幅・ピッチ・8 bit アルファ配列を持ちます。
 
@@ -248,7 +275,7 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 `FreeTypeFontLoader` は FreeType の `FT_Library` と `FT_Face` を所有する実装です。指定されたフォントファイルを開き、FreeType の 26.6 固定小数点値をピクセル値へ変換して `IFontLoader` の API として公開します。
 
-### 7.3 `ui::TextRenderer`
+### 7.3 `presentation::display::TextRenderer`
 
 `TextRenderer` は `IDisplay` と `IFontLoader` を受け取り、UTF-8 文字列を LCD に描画するクラスです。ST7796 や FreeType の詳細を直接知らないことが重要です。
 
@@ -272,13 +299,13 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 キャッシュは現状上限や失効ポリシーを持ちません。多数の異なる文字サイズ・文字種を長時間描画する設計に拡張する場合は、メモリ使用量を管理する必要があります。
 
-### 7.4 `display::DisplayManager`
+### 7.4 `application::display::DisplayManager`
 
 `DisplayManager` は表示専用スレッドを管理します。`IDisplay` と `L76k` への参照、`FreeTypeFontLoader` の所有権、`TextRenderer` を持ちます。
 
 初期画面を表示した後、`DisplayLoop()` が 1 秒周期で `L76k::GetGnvtgSpeed()` の値を取り、`TextRenderer` 経由で LCD に速度を表示します。背景画像の表示は `IDisplay::DrawBackgroundImage()` に委譲します。ドライバを直接 `ST7796` に固定していないため、表示 API を実装したテストダブルでも利用できます。
 
-### 7.5 `display::TouchManager`
+### 7.5 `application::display::TouchManager`
 
 `TouchManager` は `ITouch` を受け取り、タッチ監視用スレッドを起動します。最後に観測した X/Y 座標を `std::atomic<int>` に格納します。
 
@@ -291,17 +318,17 @@ HAL は `hal` 名前空間にあります。インターフェースはハード
 
 ## 8. ログとユーティリティ
 
-### 8.1 `util::Logger`
+### 8.1 `application::util::Logger`
 
 `Logger` は GPS の記録を行うスレッド所有クラスです。コンストラクタに設定ファイルのパスと `L76k` 参照を受け取り、設定からログ周期と有効フラグを読みます。
 
 ネスト型 `LogData` は `GNRMC`、`GNVTG`、`GNGGA` を持ちます。`LoggingLoop()` は `L76k::Snapshot()` の結果を `LogData` として取り、`WriteCsv()` で CSV に書き込みます。`GenerateCsvFilePath()` が時刻を含む出力先を作り、`WriteLogHeader()` が列ヘッダーを出力します。`log_on` が無効なら記録は行いません。
 
-### 8.2 `util::TimeUnit` と終了フラグ
+### 8.2 `application::util::TimeUnit` と終了フラグ
 
 `TimeUnit` は `kMs2Sec`、`kNs2Ms`、`kMs2Ns` の時間単位変換定数を提供します。
 
-`include/util/shutdown_flag.h` は終了要求を表す `std::atomic<bool> g_shutdown_requested` を宣言します。ただし、実行ファイルの `main.cc` では匿名名前空間内の同名フラグを使用しています。終了シグナルは `SIGINT` または `SIGTERM` を受けると設定され、メインループの終了条件になります。
+`src/application/util/shutdown_flag.h` は終了要求を表す `std::atomic<bool> g_shutdown_requested` を宣言します。ただし、実行ファイルの `src/main.cc` では匿名名前空間内の同名フラグを使用しています。終了シグナルは `SIGINT` または `SIGTERM` を受けると設定され、メインループの終了条件になります。
 
 ## 9. スレッド・所有権・同期
 
@@ -338,7 +365,7 @@ ST7796 と GT911 はどちらも 320 x 480 の座標系を使います。
 
 | 設定 | `USE_HARDWARE=ON` | `USE_HARDWARE=OFF` |
 | --- | --- | --- |
-| HAL 実装 | `src/hal/impl/*.cc` | `tests/mocks/hal/impl/*.cc` |
+| HAL 実装 | `src/hal/*.cc` | `tests/mocks/hal/*.cc` |
 | 想定用途 | 実機上のアプリ実行 | ハードウェアなしのテスト |
 
 実行ファイルは `gpiod`、`pthread`、FreeType にリンクします。画像読込には `stb_image` を同梱し、ST7796 の背景画像描画から利用します。
