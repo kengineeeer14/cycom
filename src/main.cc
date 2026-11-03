@@ -48,22 +48,35 @@ int main() {
     // ========================================
 
     // GPIO: ディスプレイ制御用
+    // DC（Data/Command）: 送信バイトの種別を選択するピン（Low=コマンド, High=データ）
+    // gpiochip0 の GPIO22 を出力モード、初期値 High に設定
     std::unique_ptr<hal::GpioImpl> display_dc = std::make_unique<hal::GpioImpl>("gpiochip0", 22, true, 1);
+    // RST（Reset）: ディスプレイICのハードウェアリセット用ピン（Low=リセット）
+    // gpiochip0 の GPIO27 を出力モード、初期値 High（リセット解除状態）に設定
     std::unique_ptr<hal::GpioImpl> display_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 27, true, 1);
+    // BL（Backlight）: バックライトの ON/OFF 用ピン（High=点灯）
+    // gpiochip0 の GPIO18 を出力モード、初期値 High（点灯状態）に設定
     std::unique_ptr<hal::GpioImpl> display_bl = std::make_unique<hal::GpioImpl>("gpiochip0", 18, true, 1);
 
-    // SPI: ディスプレイ通信用
+    // SPI: ディスプレイ（ST7796）との通信用
+    // /dev/spidev0.0 を クロック40MHz、SPIモード0、1ワード8ビットで設定
     std::unique_ptr<hal::SpiImpl> spi = std::make_unique<hal::SpiImpl>("/dev/spidev0.0", 40000000, 0, 8);
 
-    // GPIO: タッチコントローラ用
+    // GPIO: タッチコントローラ（GT911）用
+    // RST（Reset）: タッチコントローラのハードウェアリセット用ピン（Low=リセット）
+    // gpiochip0 の GPIO1 を出力モード、初期値 High（リセット解除状態）に設定
     std::unique_ptr<hal::GpioImpl> touch_rst = std::make_unique<hal::GpioImpl>("gpiochip0", 1, true, 1);
+    // INT（Interrupt）: タッチ検出をコントローラから通知される割り込みピン
+    // gpiochip0 の GPIO4 を入力モードに設定（initial は出力時のみ有効なので省略）
     std::unique_ptr<hal::GpioImpl> touch_int = std::make_unique<hal::GpioImpl>("gpiochip0", 4, false);
 
-    // I2C: タッチコントローラ通信用
+    // I2C: タッチコントローラ（GT911）との通信用
+    // /dev/i2c-1 を スレーブアドレス 0x5D に設定
     uint8_t gt911_addr = 0x5D;  // GT911のI2Cアドレス
     std::unique_ptr<hal::I2cImpl> i2c = std::make_unique<hal::I2cImpl>("/dev/i2c-1", gt911_addr);
 
-    // UART: GPS通信用
+    // UART: GPSモジュール（L76K）との通信用
+    // /dev/ttyS0 を ボーレート9600bps（8データビット、パリティなし、ストップビット1）で設定
     std::unique_ptr<hal::UartImpl> uart = std::make_unique<hal::UartImpl>("/dev/ttyS0", 9600);
     int uart_fd = uart->GetFileDescriptor();
     if (uart_fd < 0) {
@@ -105,7 +118,7 @@ int main() {
     // ========================================
     //
     // 各スレッドの役割:
-    // - Sensorスレッド:  GPS L76K からのデータ受信とパース（100msタイムアウト）
+    // - Sensorスレッド:  GPS L76K からのデータ受信とパース
     // - Loggerスレッド:  GPSデータのCSV記録（log_interval_ms 周期）
     // - Displayスレッド: UI更新（1秒周期）
     // - Touchスレッド:   タッチ入力監視（50msポーリング）

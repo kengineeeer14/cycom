@@ -77,6 +77,7 @@ find src -name "*.cc" -o -name "*.h" | xargs clang-format -i
 
 - [Docker環境セットアップ](doc/docker-setup.md)
 - [スレッド設計](doc/thread.md)
+- [要件一覧（CSV）](doc/requirements.csv)
 
 ## 📄 ライセンス
 

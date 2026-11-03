@@ -36,8 +36,8 @@ flowchart TB
 | `src/presentation/` | FreeType を用いる文字描画・色表現など、画面への表現処理。 |
 | `src/hal/` | Linux の GPIO、SPI、I2C、UART を覆うハードウェア抽象化層。 |
 | `src/driver/` | ST7796 LCD、GT911 タッチコントローラのチップ固有ドライバ。 |
-| `tests/` | Google Test/Google Mock によるテスト。現在は `TextRenderer` の単体テストが中心。 |
-| `config/config.json` | UART 速度、ログ有効化、CSV 出力周期の設定。 |
+| `tests/` | Google Test/Google Mock によるテスト。|
+| `config/` | UART 速度、ログ有効化、CSV 出力周期の設定。 |
 
 ### 2.1 論理層とフォルダ配置の対応
 
