@@ -1,14 +1,14 @@
-#include "display/text_renderer.h"
+#include "presentation/display/text_renderer.h"
 
-#include "display/impl/freetype_font_loader.h"
 #include "mocks/display/mock_font_loader.h"
 #include "mocks/driver/mock_display.h"
+#include "presentation/display/freetype_font_loader.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <unistd.h>
 
-namespace ui {
+namespace presentation::display {
 
 // TextRendererのためのテストフィクスチャ
 class TextRendererTest : public ::testing::Test {
@@ -1786,4 +1786,4 @@ TEST_F(TextRendererTest, GetDescentPx_UpdatesWithFontSize) {
     EXPECT_GT(descent_large, descent_small) << "フォントサイズが大きいほどディセントも大きくなるべき";
 }
 
-}  // namespace ui
+}  // namespace presentation::display

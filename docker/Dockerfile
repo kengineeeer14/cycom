@@ -20,7 +20,9 @@ RUN apt-get update && apt-get install -y \
     nlohmann-json3-dev \
     # テストフレームワーク
     libgtest-dev \
-    # 注: 本番環境では実機に直接インストール \
+    # Copilot Agent サンドボックス
+    bubblewrap \
+    socat \
     # デバッグ・開発ツール
     gdb \
     valgrind \

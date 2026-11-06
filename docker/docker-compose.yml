@@ -10,13 +10,21 @@ services:
         USERNAME: developer
         USER_UID: 1000
         USER_GID: 1000
-    
+
     image: cycom-dev:latest
     container_name: cycom-dev
-    
+
+    # Copilot Agent の sandbox (bubblewrap) 用
+    cap_add:
+      - SYS_ADMIN
+
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+
     # コンテナを起動し続ける
     command: sleep infinity
-    
+
     # ボリュームマウント
     volumes:
       # プロジェクトディレクトリ全体
@@ -26,19 +34,19 @@ services:
       - ~/.ssh:/home/developer/.ssh:ro
       # ビルドキャッシュの永続化（ビルド高速化）
       - cycom-build-cache:/workspace/build
-    
+
     # 作業ディレクトリ
     working_dir: /workspace
-    
+
     # 環境変数
     environment:
       - TZ=Asia/Tokyo
       - LANG=ja_JP.UTF-8
       - LC_ALL=ja_JP.UTF-8
-    
+
     # ネットワーク設定
     network_mode: host
-    
+
     # リソース制限（オプション）
     # deploy:
     #   resources:
@@ -46,7 +54,6 @@ services:
     #       cpus: '4'
     #       memory: 4G
 
-# 名前付きボリューム
 volumes:
   cycom-build-cache:
     driver: local

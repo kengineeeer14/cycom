@@ -33,6 +33,7 @@
         // ユーティリティ
         "gruntfuggly.todo-tree",
         "bierner.markdown-mermaid",
+        "janisdd.vscode-edit-csv",
         
         // AI支援
         "github.copilot",

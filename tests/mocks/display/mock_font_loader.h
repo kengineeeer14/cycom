@@ -1,11 +1,11 @@
 #ifndef CYCOM_TESTS_MOCKS_DISPLAY_MOCK_FONT_LOADER_H_
 #define CYCOM_TESTS_MOCKS_DISPLAY_MOCK_FONT_LOADER_H_
 
-#include "display/interface/i_font_loader.h"
+#include "presentation/display/interface/i_font_loader.h"
 
 #include <gmock/gmock.h>
 
-namespace ui {
+namespace presentation::display {
 
 class MockFontLoader : public IFontLoader {
   public:
@@ -16,6 +16,6 @@ class MockFontLoader : public IFontLoader {
     MOCK_METHOD(int, GetDescentPx, (), (const, override));
 };
 
-}  // namespace ui
+}  // namespace presentation::display
 
 #endif  // CYCOM_TESTS_MOCKS_DISPLAY_MOCK_FONT_LOADER_H_
