@@ -2,10 +2,8 @@
 
 #include <chrono>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
 #include <nlohmann/json.hpp>
 #include <sstream>
 
@@ -27,11 +25,8 @@ Logger::Logger(const std::string &config_path, domain::sensor::L76k &gps) : gps_
 
     csv_file_path_ = GenerateCsvFilePath();
     if (log_on_) {
-        WriteLogHeader();
+        Start();
     }
-
-    // Touch クラスと同様、コンストラクタで自動的にスレッドを起動
-    Start();
 }
 
 std::string Logger::GenerateCsvFilePath() {
@@ -51,15 +46,25 @@ Logger::~Logger() {
 }
 
 void Logger::Start() {
-    Stop();  // 既存スレッドが動いていれば停止
+    Stop();
+    csv_file_.open(csv_file_path_, std::ios::app);
+    if (!csv_file_.is_open()) {
+        throw std::runtime_error("Logger::Start: failed to open CSV file");
+    }
+    WriteLogHeader();
     running_.store(true, std::memory_order_release);
     th_ = std::thread([this] { LoggingLoop(); });
 }
 
 void Logger::Stop() {
-    bool was_running = running_.exchange(false, std::memory_order_acq_rel);
-    if (was_running && th_.joinable())
+    running_.store(false, std::memory_order_release);
+    if (th_.joinable()) {
         th_.join();
+    }
+    if (csv_file_.is_open()) {
+        csv_file_.flush();
+        csv_file_.close();
+    }
 }
 
 void Logger::LoggingLoop() {
@@ -70,9 +75,7 @@ void Logger::LoggingLoop() {
         // GPS データを取得してログに書き込む（Touch クラスのパターンと同様）
         domain::sensor::GnssSnapshot snap = gps_.Snapshot();
         LogData log_data{snap.gnrmc, snap.gnvtg, snap.gngga};
-        if (log_on_) {
-            WriteCsv(log_data);
-        }
+        WriteCsv(log_data);
 
         next += period;
         std::this_thread::sleep_until(next);
@@ -80,9 +83,7 @@ void Logger::LoggingLoop() {
 }
 
 void Logger::WriteLogHeader() {
-    std::ofstream ofs(csv_file_path_, std::ios::app);
-
-    ofs
+    csv_file_
         // RMC (GNRMC)
         << "gnrmc.hour" << ',' << "gnrmc.minute" << ',' << "gnrmc.second" << ',' << "gnrmc.data_status" << ',' << "gnrmc.latitude" << ',' << "gnrmc.lat_dir" << ',' << "gnrmc.longitude" << ','
         << "gnrmc.lon_dir" << ',' << "gnrmc.speed_knots" << ',' << "gnrmc.track_deg" << ',' << "gnrmc.date" << ',' << "gnrmc.mag_variation" << ',' << "gnrmc.mag_variation_dir" << ',' << "gnrmc.mode"
@@ -96,19 +97,14 @@ void Logger::WriteLogHeader() {
         << "gngga.hour" << ',' << "gngga.minute" << ',' << "gngga.second" << ',' << "gngga.latitude" << ',' << "gngga.lat_dir" << ',' << "gngga.longitude" << ',' << "gngga.lon_dir" << ','
         << "gngga.quality" << ',' << "gngga.num_satellites" << ',' << "gngga.hdop" << ',' << "gngga.altitude" << ',' << "gngga.altitude_unit" << ',' << "gngga.geoid_height" << ','
         << "gngga.geoid_unit" << ',' << "gngga.dgps_age" << ',' << "gngga.dgps_id" << ',' << "gngga.checksum" << '\n';
+    if (!csv_file_) {
+        throw std::runtime_error("Logger::WriteLogHeader: failed to write CSV header");
+    }
 }
 
 void Logger::WriteCsv(const LogData &log_data) {
-    static std::mutex mtx;  // guard against concurrent writes
-    std::lock_guard<std::mutex> lk(mtx);
-
-    std::ofstream ofs(csv_file_path_, std::ios::app);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Logger::WriteCsv: failed to open CSV file");
-    }
-
     // Row
-    ofs
+    csv_file_
         // RMC
         << static_cast<int>(log_data.gnrmc.hour) << ',' << static_cast<int>(log_data.gnrmc.minute) << ',' << log_data.gnrmc.second << ',' << log_data.gnrmc.data_status << ','
         << log_data.gnrmc.latitude << ',' << log_data.gnrmc.lat_dir << ',' << log_data.gnrmc.longitude << ',' << log_data.gnrmc.lon_dir << ',' << log_data.gnrmc.speed_knots << ','
@@ -125,6 +121,9 @@ void Logger::WriteCsv(const LogData &log_data) {
         << ',' << log_data.gngga.longitude << ',' << log_data.gngga.lon_dir << ',' << static_cast<int>(log_data.gngga.quality) << ',' << static_cast<int>(log_data.gngga.num_satellites) << ','
         << log_data.gngga.hdop << ',' << log_data.gngga.altitude << ',' << log_data.gngga.altitude_unit << ',' << log_data.gngga.geoid_height << ',' << log_data.gngga.geoid_unit << ','
         << log_data.gngga.dgps_age << ',' << log_data.gngga.dgps_id << ',' << static_cast<int>(log_data.gngga.checksum) << '\n';
+    if (!csv_file_) {
+        throw std::runtime_error("Logger::WriteCsv: failed to write CSV row");
+    }
 }
 
 }  // namespace application::util

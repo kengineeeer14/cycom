@@ -4,6 +4,7 @@
 #include "domain/sensor/gps_l76k.h"
 
 #include <atomic>
+#include <fstream>
 #include <string>
 #include <thread>
 
@@ -43,6 +44,7 @@ class Logger {
     int log_interval_ms_;
     bool log_on_;
     std::string csv_file_path_;
+    std::ofstream csv_file_;
 
     std::thread th_;
     std::atomic<bool> running_{false};
